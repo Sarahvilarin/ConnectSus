@@ -227,7 +227,7 @@ export default function Header({ tipo = "publico" }) {
           {tipo === "publico" && (
             <>
               <Link
-                href="/login"
+                href="/publico/login"
                 className="
                   rounded-lg
                   border
@@ -248,7 +248,7 @@ export default function Header({ tipo = "publico" }) {
               </Link>
 
               <Link
-                href="/cadastro"
+                href="/publico/cadastro"
                 className="
                   rounded-lg
                   bg-[#023E8A]
