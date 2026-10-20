@@ -1,9 +1,38 @@
-import "dotenv/config";
 
+import "dotenv/config";
 import app from "./app.js";
 
-const port = Number(process.env.PORT || 8080);
+import {
+  checkDatabaseConnection,
+  pool
+} from "./config/database.js";
 
-app.listen(port, () => {
-  console.log(`API running on port ${port}`);
-});
+const PORT = process.env.PORT || 8080;
+
+async function iniciarServidor() {
+  try {
+    const conectado = await checkDatabaseConnection();
+
+    if (!conectado) {
+      throw new Error("Falha na verificação do banco.");
+    }
+
+    console.log("Conexão com MySQL estabelecida!");
+
+    app.listen(PORT, () => {
+      console.log(
+        `Backend UneSUS rodando na porta ${PORT}`
+      );
+    });
+  } catch (error) {
+    console.error(
+      "Erro ao iniciar o backend:",
+      error.message
+    );
+
+    await pool.end();
+    process.exitCode = 1;
+  }
+}
+
+iniciarServidor();
