@@ -1,5 +1,4 @@
-
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail } from "lucide-react";
 
 function SocialIcon({ name }) {
   const common = {
@@ -35,8 +34,13 @@ function SocialIcon({ name }) {
   }
 
   return (
-    <svg viewBox="0 0 24 24" width="23" height="23"
-      fill="currentColor" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width="23"
+      height="23"
+      fill="currentColor"
+      aria-hidden="true"
+    >
       <path d="M13.5 21v-8h3l.5-4h-3.5V7c0-1.2.4-2 2-2H17V1.4A20 20 0 0 0 14.5 1C11 1 9 3.1 9 6.8V9H6v4h3v8z" />
     </svg>
   );
@@ -46,15 +50,14 @@ export default function Footer() {
   return (
     <footer className="relative mt-auto overflow-hidden bg-[#0B1756] text-white">
       {/* Elementos decorativos */}
-      <div className="pointer-events-none absolute -left-28 bottom-[-150px] h-72 w-72 rounded-full border border-blue-500/30 bg-blue-600/10" />
+      <div className="pointer-events-none absolute -left-28 bottom-[-150px] h-72 w-72 rounded-full border border-[#173C87]/50 bg-[#173C87]/10" />
 
-      <div className="pointer-events-none absolute -right-24 top-8 flex h-72 w-72 items-center justify-center rounded-[70px] bg-blue-500/[0.08]">
-        <div className="h-48 w-48 rounded-full border-2 border-blue-500/30" />
+      <div className="pointer-events-none absolute -right-24 top-8 flex h-72 w-72 items-center justify-center rounded-[70px] bg-[#173C87]/10">
+        <div className="h-48 w-48 rounded-full border-2 border-[#173C87]/70" />
       </div>
 
       <div className="relative mx-auto max-w-[1500px] px-6 py-10 md:px-12 lg:py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
-
           {/* Logo e apresentação */}
           <div className="flex flex-col items-start">
             <img
@@ -63,7 +66,7 @@ export default function Footer() {
               className="mb-4 w-full max-w-[320px] object-contain object-left"
             />
 
-            <p className="max-w-md text-sm leading-6 text-blue-100 md:text-base mt-3">
+            <p className="mt-3 max-w-md text-sm leading-6 text-blue-100 md:text-base">
               Tecnologia e integração para um sistema de saúde
               mais acessível, eficiente e humano.
             </p>
@@ -71,16 +74,16 @@ export default function Footer() {
 
           {/* Contato */}
           <div>
-            <h2 className="mb-5 text-xl font-bold text-[#2196F3]">
+            <h2 className="mb-5 text-xl font-bold text-white">
               Contato
             </h2>
 
             <div className="space-y-3">
               <a
                 href="tel:+5519994632008"
-                className="group flex items-center gap-3 text-sm text-blue-50 transition-colors hover:text-[#38BDF8] md:text-base"
+                className="group flex items-center gap-3 text-sm text-blue-50 transition-colors hover:text-[#173C87] md:text-base"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2196F3] text-[#0B1756] transition-transform group-hover:scale-110">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#173C87] text-white transition-transform group-hover:scale-110">
                   <Phone size={18} />
                 </span>
                 <span>(19) 99463-2008</span>
@@ -88,23 +91,19 @@ export default function Footer() {
 
               <a
                 href="mailto:unesus@email.com.br"
-                className="group flex items-center gap-3 text-sm text-blue-50 transition-colors hover:text-[#38BDF8] md:text-base"
+                className="group flex items-center gap-3 text-sm text-blue-50 transition-colors hover:text-[#173C87] md:text-base"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2196F3] text-[#0B1756] transition-transform group-hover:scale-110">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#173C87] text-white transition-transform group-hover:scale-110">
                   <Mail size={18} />
                 </span>
-                <span className="break-all">
-                  unesus@email.com.br
-                </span>
+                <span className="break-all">unesus@email.com.br</span>
               </a>
-
-              
             </div>
           </div>
 
           {/* Redes sociais */}
-          <div className="border-t border-blue-400/30 pt-6 md:col-span-2 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
-            <h2 className="mb-5 text-xl font-bold text-[#2196F3]">
+          <div className="border-t border-[#173C87]/50 pt-6 md:col-span-2 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+            <h2 className="mb-5 text-xl font-bold text-white">
               Siga-nos nas redes
             </h2>
 
@@ -118,7 +117,7 @@ export default function Footer() {
                   key={social.name}
                   href="#"
                   aria-label={social.label}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 text-blue-100 transition-all hover:border-[#2196F3] hover:bg-[#2196F3] hover:text-white"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#173C87] text-blue-100 transition-all hover:bg-[#173C87] hover:text-white"
                 >
                   <SocialIcon name={social.name} />
                 </a>
@@ -132,7 +131,7 @@ export default function Footer() {
         </div>
 
         {/* Rodapé inferior */}
-        <div className="mt-8 border-t border-[#2196F3]/70 pt-5">
+        <div className="mt-8 border-t border-[#173C87] pt-5">
           <p className="text-center text-xs leading-5 text-blue-100 md:text-sm">
             © {new Date().getFullYear()} – UneSUS – Sistema de
             Gestão para Saúde Pública Municipal
