@@ -15,10 +15,8 @@ import {
   CheckCircle2,
   X,
   KeyRound,
-  Stethoscope,
   Building2,
   BadgeCheck,
-  Settings,
 } from "lucide-react";
 
 export default function PerfilAdminPage() {
@@ -125,19 +123,19 @@ export default function PerfilAdminPage() {
       <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 py-10 sm:px-8 lg:px-12 lg:py-11">
+      {/* Conteúdo principal com espaçamento superior reduzido */}
+      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-10 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
         {/* Cabeçalho */}
-        <header className="mb-8 text-center sm:mb-9">
 
-
+        {/* Cabeçalho alinhado à esquerda */}
+        <header className="mb-6 text-left sm:mb-7">
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
             Gerenciar seu{" "}
             <span className="text-[#3563A7]">Perfil</span>
           </h1>
 
-          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-[#647EAE] sm:text-lg">
-            Gerencie suas informações e mantenha sua conta administrativa
-            segura no ConectaSUS.
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-[#647EAE]">
+            Gerencie suas informações e mantenha sua conta administrativa segura no UneSUS.
           </p>
         </header>
 
@@ -188,6 +186,7 @@ export default function PerfilAdminPage() {
                   <BadgeCheck size={15} />
                   Administrador
                 </span>
+
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   Conta ativa
@@ -207,6 +206,7 @@ export default function PerfilAdminPage() {
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
                     <UserRound size={24} />
                   </div>
+
                   <div className="min-w-0">
                     <p className="text-sm text-[#6B84B3]">Nome completo</p>
                     <p className="mt-1 break-words text-sm font-medium text-[#3563A7]">
@@ -219,8 +219,11 @@ export default function PerfilAdminPage() {
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
                     <Mail size={24} />
                   </div>
+
                   <div className="min-w-0">
-                    <p className="text-sm text-[#6B84B3]">E-mail administrativo</p>
+                    <p className="text-sm text-[#6B84B3]">
+                      E-mail administrativo
+                    </p>
                     <p className="mt-1 break-all text-sm font-medium text-[#3563A7]">
                       {email}
                     </p>
@@ -239,6 +242,7 @@ export default function PerfilAdminPage() {
               <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
                 <UserRound size={35} />
               </div>
+
               <div>
                 <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
                   Dados do administrador
@@ -251,9 +255,13 @@ export default function PerfilAdminPage() {
 
             <form onSubmit={salvarDados} className="space-y-5">
               <div>
-                <label htmlFor="nome-admin" className="mb-2 block text-sm font-semibold text-[#254A88]">
+                <label
+                  htmlFor="nome-admin"
+                  className="mb-2 block text-sm font-semibold text-[#254A88]"
+                >
                   Nome completo
                 </label>
+
                 <input
                   id="nome-admin"
                   type="text"
@@ -266,11 +274,16 @@ export default function PerfilAdminPage() {
               </div>
 
               <div>
-                <label htmlFor="telefone-admin" className="mb-2 block text-sm font-semibold text-[#254A88]">
+                <label
+                  htmlFor="telefone-admin"
+                  className="mb-2 block text-sm font-semibold text-[#254A88]"
+                >
                   Telefone (opcional)
                 </label>
+
                 <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-5 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                   <Phone size={21} className="shrink-0 text-[#3563A7]" />
+
                   <input
                     id="telefone-admin"
                     type="tel"
@@ -285,6 +298,7 @@ export default function PerfilAdminPage() {
               <div className="rounded-2xl border border-[#E1EAF7] bg-[#F8FBFF] p-4">
                 <div className="flex items-start gap-3">
                   <Building2 size={21} className="mt-0.5 shrink-0 text-[#3563A7]" />
+
                   <div>
                     <p className="text-sm font-semibold text-[#254A88]">
                       Tipo de acesso
@@ -314,6 +328,7 @@ export default function PerfilAdminPage() {
               <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
                 <ShieldCheck size={37} />
               </div>
+
               <div>
                 <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
                   Segurança da conta
@@ -330,6 +345,7 @@ export default function PerfilAdminPage() {
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFEAFF] text-[#3563A7]">
                     <LockKeyhole size={29} />
                   </div>
+
                   <div>
                     <h3 className="font-bold">Alterar senha</h3>
                     <p className="mt-1 text-sm leading-relaxed text-[#647EAE]">
@@ -337,6 +353,7 @@ export default function PerfilAdminPage() {
                     </p>
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => setModal("senha")}
@@ -352,6 +369,7 @@ export default function PerfilAdminPage() {
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFEAFF] text-[#3563A7]">
                     <Mail size={29} />
                   </div>
+
                   <div>
                     <h3 className="font-bold">Alterar e-mail</h3>
                     <p className="mt-1 text-sm leading-relaxed text-[#647EAE]">
@@ -359,6 +377,7 @@ export default function PerfilAdminPage() {
                     </p>
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -375,6 +394,7 @@ export default function PerfilAdminPage() {
 
             <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#DDEBFA] bg-[#F8FBFF] p-4">
               <ShieldCheck size={21} className="mt-0.5 shrink-0 text-[#3563A7]" />
+
               <p className="text-xs leading-relaxed text-[#647EAE]">
                 O acesso administrativo deve ser protegido. Não compartilhe
                 suas credenciais com outras pessoas.
@@ -391,7 +411,9 @@ export default function PerfilAdminPage() {
           className="fixed right-4 top-4 z-[60] flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-[#D3E5D9] bg-white px-5 py-4 text-sm font-medium text-[#245D43] shadow-xl sm:right-6 sm:top-6"
         >
           <CheckCircle2 size={22} className="shrink-0 text-emerald-600" />
+
           <span>{mensagem}</span>
+
           <button
             type="button"
             onClick={() => setMensagem("")}
@@ -426,15 +448,18 @@ export default function PerfilAdminPage() {
                     <Mail size={25} />
                   )}
                 </div>
+
                 <div>
                   <h2 id="modal-title" className="text-xl font-bold">
                     {modal === "senha" ? "Alterar senha" : "Alterar e-mail"}
                   </h2>
+
                   <p className="mt-1 text-sm text-[#7189B3]">
                     Atualize seus dados de acesso.
                   </p>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => setModal("")}
@@ -474,6 +499,7 @@ export default function PerfilAdminPage() {
                     >
                       {campo.label}
                     </label>
+
                     <div className="flex items-center rounded-xl border border-[#CFE0FF] bg-[#F7FAFF] pr-3 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                       <input
                         id={campo.id}
@@ -485,13 +511,20 @@ export default function PerfilAdminPage() {
                         placeholder="Digite sua senha"
                         required
                       />
+
                       <button
                         type="button"
                         onClick={() => setMostrarSenha(!mostrarSenha)}
-                        aria-label={mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"}
+                        aria-label={
+                          mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"
+                        }
                         className="rounded-lg p-1 text-[#647EAE] hover:text-[#0B1756]"
                       >
-                        {mostrarSenha ? <EyeOff size={19} /> : <Eye size={19} />}
+                        {mostrarSenha ? (
+                          <EyeOff size={19} />
+                        ) : (
+                          <Eye size={19} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -512,9 +545,13 @@ export default function PerfilAdminPage() {
             ) : (
               <form onSubmit={alterarEmail} className="space-y-5">
                 <div>
-                  <label htmlFor="email-atual-admin" className="mb-2 block text-sm font-semibold text-[#254A88]">
+                  <label
+                    htmlFor="email-atual-admin"
+                    className="mb-2 block text-sm font-semibold text-[#254A88]"
+                  >
                     E-mail atual
                   </label>
+
                   <input
                     id="email-atual-admin"
                     value={email}
@@ -524,9 +561,13 @@ export default function PerfilAdminPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="novo-email-admin" className="mb-2 block text-sm font-semibold text-[#254A88]">
+                  <label
+                    htmlFor="novo-email-admin"
+                    className="mb-2 block text-sm font-semibold text-[#254A88]"
+                  >
                     Novo e-mail
                   </label>
+
                   <input
                     id="novo-email-admin"
                     type="email"
