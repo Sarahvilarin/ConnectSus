@@ -409,21 +409,7 @@ export default function UnidadesPage() {
 
             <div>
 
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  text-sm
-                  font-semibold
-                  text-[#023E8A]
-                "
-              >
-                <HeartPulse size={17} />
-
-                Rede Pública Municipal de São Caetano do Sul
-              </div>
-
+              
               <h1
                 className="
                   mt-2

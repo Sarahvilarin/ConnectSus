@@ -103,7 +103,7 @@ const perguntas = [
   {
     pergunta: "Qual é o papel do Agente Comunitário de Saúde (ACS)?",
     resposta:
-      "O ACS atua como elo entre a comunidade e a equipe de saúde. Na proposta do ConectaSUS, a solicitação ficaria direcionada aos agentes para que a necessidade fosse recebida e encaminhada conforme a organização da unidade e os procedimentos definidos pelo município.",
+      "O ACS atua como elo entre a comunidade e a equipe de saúde. Na proposta do UneSUS, a solicitação ficaria direcionada aos agentes para que a necessidade fosse recebida e encaminhada conforme a organização da unidade e os procedimentos definidos pelo município.",
   },
   {
     pergunta: "Solicitar uma visita significa que ela está confirmada?",
@@ -161,7 +161,7 @@ export default function AcessibilidadePage() {
           </h1>
 
           <p className="mt-7 max-w-[720px] text-base leading-8 text-[#5D79A7] sm:text-lg xl:text-xl">
-            O ConectaSUS busca aproximar pessoas dos serviços de saúde com
+            O UneSUS busca aproximar pessoas dos serviços de saúde com
             informações claras, recursos inclusivos e caminhos que respeitam
             diferentes necessidades — inclusive de quem tem dificuldade para
             sair de casa.
@@ -280,22 +280,12 @@ export default function AcessibilidadePage() {
 
             <div>
               <p className="text-sm font-extrabold text-[#24549B] sm:text-base">
-                ConectaSUS
+                UneSUS
               </p>
               <p className="mt-1 text-xs text-[#6D85A8]">
                 Saúde mais acessível
               </p>
             </div>
-          </div>
-
-          {/* LEGENDA SOBRE A FOTO */}
-          <div className="absolute bottom-5 right-4 z-20 max-w-[400px] text-right text-white sm:bottom-8 sm:right-8 xl:right-12">
-            <h2 className="text-xl font-extrabold drop-shadow-md sm:text-2xl">
-              Cuidar também é incluir.
-            </h2>
-            <p className="mt-2 text-xs leading-6 drop-shadow sm:text-sm">
-              Mais autonomia, respeito e acesso à saúde para todos.
-            </p>
           </div>
         </div>
       </div>
@@ -360,14 +350,11 @@ export default function AcessibilidadePage() {
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-[#C8DCF5] bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#3563A7]">
                 <House size={16} />
-                Uma das principais propostas do ConectaSUS
+                Uma das principais propostas do UneSUS
               </span>
               <h2 className="mt-5 max-w-4xl text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
                 Visita domiciliar: o cuidado também pode começar em casa.
               </h2>
-            </div>
-            <div className="hidden h-20 w-20 items-center justify-center rounded-[28px] bg-white text-[#3563A7] shadow-sm md:flex">
-              <HeartPulse size={40} />
             </div>
           </div>
 
@@ -430,7 +417,7 @@ export default function AcessibilidadePage() {
 
               <p className="mt-5 leading-7 text-[#71829B]">
                 Os ACS são importantes na ligação entre a comunidade e a equipe
-                de saúde. Na proposta do ConectaSUS, a solicitação seria
+                de saúde. Na proposta do UneSUS, a solicitação seria
                 direcionada a esses profissionais para que a necessidade fosse
                 recebida e encaminhada conforme o fluxo definido pela unidade.
               </p>
@@ -490,18 +477,6 @@ export default function AcessibilidadePage() {
               </a>
             </div>
           </div>
-
-          <div className="mt-7 flex flex-col gap-4 rounded-2xl border border-[#D6E4F5] bg-white/80 p-5 sm:flex-row sm:items-center sm:p-6">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#3563A7]">
-              <ShieldCheck size={25} />
-            </div>
-            <div>
-              <h3 className="font-extrabold">Como isso funciona nesta versão do projeto?</h3>
-              <p className="mt-1 text-sm leading-6 text-[#71829B]">
-                Esta página apresenta o conceito da funcionalidade. O envio real de solicitações exigirá integração com a unidade de saúde, definição do fluxo de atendimento e proteção dos dados pessoais.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -528,7 +503,7 @@ export default function AcessibilidadePage() {
 
                     <div>
                     <p className="text-sm font-semibold text-blue-100">
-                        ConectaSUS
+                        UneSUS
                     </p>
                     <h2 className="text-xl font-extrabold sm:text-2xl">
                         Um acesso para cada pessoa
@@ -658,11 +633,10 @@ export default function AcessibilidadePage() {
             A inclusão começa quando o cuidado considera cada realidade.
           </h2>
           <p className="max-w-2xl leading-7 text-blue-100">
-            O ConectaSUS busca aproximar a população dos serviços de saúde com
+            O UneSUS busca aproximar a população dos serviços de saúde com
             informação, acolhimento e atenção às necessidades de cada pessoa.
           </p>
           <a
-            href="#visita-domiciliar"
             className="inline-flex items-center gap-3 rounded-2xl bg-white px-7 py-4 font-extrabold text-[#0B286F] transition hover:-translate-y-0.5 hover:bg-[#EAF3F7]"
           >
             Conhecer a visita domiciliar
