@@ -1,7 +1,12 @@
-export function errorHandler(error, request, response, next) {
-  console.error(error);
 
-  response.status(500).json({
-    message: "Erro interno no servidor",
+export function errorHandler(error, req, res, next) {
+  console.error("Erro na API:", error);
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  res.status(500).json({
+    mensagem: "Erro interno no servidor."
   });
 }

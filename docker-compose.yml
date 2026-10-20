@@ -1,3 +1,4 @@
+
 services:
   database:
     build:
@@ -34,8 +35,6 @@ services:
       DB_USER: ${DB_USER:-app_user}
       DB_PASSWORD: ${DB_PASSWORD:-app_password}
       DB_NAME: ${DB_NAME:-app_db}
-    expose:
-      - "${BACKEND_PORT:-8080}"
 
   frontend:
     build:
@@ -49,8 +48,6 @@ services:
       NODE_ENV: production
       PORT: ${FRONTEND_PORT:-3000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
-    expose:
-      - "${FRONTEND_PORT:-3000}"
 
 volumes:
   mysql-data:

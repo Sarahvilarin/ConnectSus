@@ -1,12 +1,11 @@
+
 services:
-  database:
-    ports:
-      - "${DATABASE_HOST_PORT:-3306}:3306"
+  database: {}
 
   backend:
     ports:
-      - "${BACKEND_HOST_PORT:-8080}:${BACKEND_PORT:-8080}"
+      - "8080:8080"
 
   frontend:
     ports:
-      - "${FRONTEND_HOST_PORT:-3000}:${FRONTEND_PORT:-3000}"
+      - "3000:3000"
