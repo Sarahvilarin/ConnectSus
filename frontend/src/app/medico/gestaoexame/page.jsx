@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import {
+  AlertTriangle,
   ArrowRight,
   Building2,
   Check,
@@ -151,7 +152,6 @@ export default function GestaoExamePage() {
   const [unidadeSelecionada, setUnidadeSelecionada] = useState(null);
   const [observacoes, setObservacoes] = useState("");
   const [erroPaciente, setErroPaciente] = useState(false);
-
   const [sucesso, setSucesso] = useState(false);
 
   const unidadesDisponiveis = useMemo(() => {
@@ -221,6 +221,7 @@ export default function GestaoExamePage() {
       unidade: unidadeSelecionada.nome,
 
       observacoes,
+      prioridade: "Emergencial",
       status: "Solicitado",
     };
 
@@ -249,7 +250,7 @@ export default function GestaoExamePage() {
       "
     >
       {/* =====================================================
-          BOLAS GRANDES DO FUNDO
+          BOLAS DO FUNDO
       ====================================================== */}
 
       <div
@@ -481,7 +482,7 @@ export default function GestaoExamePage() {
                     sm:text-4xl
                   "
                 >
-                  Solicitação de Exames
+                  Solicitação de Exames Emergenciais
                 </h1>
 
                 <p
@@ -494,9 +495,9 @@ export default function GestaoExamePage() {
                     sm:text-base
                   "
                 >
-                  Encontre o paciente, selecione o exame e
-                  encaminhe para uma unidade disponível da rede
-                  UneSUS.
+                  Solicite exames necessários em situações de
+                  urgência ou emergência e encaminhe o paciente
+                  para uma unidade disponível da rede UneSUS.
                 </p>
               </div>
 
@@ -517,14 +518,174 @@ export default function GestaoExamePage() {
 
                 <HeroInfo
                   icon={<HeartPulse size={18} />}
-                  titulo="Rede integrada"
-                  texto="UneSUS"
+                  titulo="Uso emergencial"
+                  texto="Prioridade clínica"
                 />
               </div>
             </div>
           </div>
 
-          {/* PASSOS */}
+          {/* =====================================================
+              AVISO EMERGENCIAL
+          ====================================================== */}
+
+          <div
+            className="
+              relative
+              z-20
+              mx-5
+              -mt-8
+              sm:mx-7
+            "
+          >
+            <div
+              className="
+                relative
+                overflow-hidden
+                rounded-[24px]
+                border
+                border-amber-200
+                bg-gradient-to-r
+                from-amber-50
+                via-[#FFF9E7]
+                to-white
+                p-5
+                shadow-[0_14px_35px_rgba(120,53,15,0.10)]
+              "
+            >
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  -right-10
+                  -top-10
+                  h-32
+                  w-32
+                  rounded-full
+                  bg-amber-100/70
+                "
+              />
+
+              <div
+                className="
+                  relative
+                  z-10
+                  flex
+                  flex-col
+                  gap-4
+                  md:flex-row
+                  md:items-center
+                  md:justify-between
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-start
+                    gap-4
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      h-12
+                      w-12
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-2xl
+                      bg-amber-100
+                      text-amber-700
+                    "
+                  >
+                    <AlertTriangle size={23} />
+                  </div>
+
+                  <div>
+                    <div
+                      className="
+                        flex
+                        flex-wrap
+                        items-center
+                        gap-2
+                      "
+                    >
+                      <h2
+                        className="
+                          text-sm
+                          font-bold
+                          text-amber-900
+                          sm:text-base
+                        "
+                      >
+                        Uso exclusivo para exames emergenciais
+                      </h2>
+
+                      <span
+                        className="
+                          rounded-full
+                          bg-amber-200
+                          px-2.5
+                          py-1
+                          text-[10px]
+                          font-bold
+                          uppercase
+                          tracking-wide
+                          text-amber-800
+                        "
+                      >
+                        Emergência
+                      </span>
+                    </div>
+
+                    <p
+                      className="
+                        mt-1
+                        max-w-3xl
+                        text-xs
+                        leading-5
+                        text-amber-800/80
+                        sm:text-sm
+                      "
+                    >
+                      Esta área deve ser utilizada somente para
+                      exames necessários durante atendimentos de
+                      urgência ou emergência. Exames de rotina,
+                      acompanhamento ou prevenção devem seguir o
+                      fluxo normal da rede.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="
+                    flex
+                    w-fit
+                    shrink-0
+                    items-center
+                    gap-2
+                    rounded-full
+                    border
+                    border-amber-200
+                    bg-white
+                    px-3
+                    py-2
+                    text-xs
+                    font-semibold
+                    text-amber-800
+                  "
+                >
+                  <HeartPulse size={15} />
+
+                  Atendimento emergencial
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* =====================================================
+              PASSOS
+          ====================================================== */}
 
           <div
             className="
@@ -532,19 +693,19 @@ export default function GestaoExamePage() {
               bg-white
               px-5
               pb-5
+              pt-5
               sm:px-7
             "
           >
             <div
               className="
                 relative
-                -mt-8
                 rounded-[24px]
                 border
                 border-slate-100
                 bg-white
                 p-4
-                shadow-[0_14px_40px_rgba(2,62,138,0.11)]
+                shadow-[0_14px_40px_rgba(2,62,138,0.08)]
               "
             >
               <div
@@ -615,7 +776,7 @@ export default function GestaoExamePage() {
         </section>
 
         {/* =====================================================
-            ETAPA 1 - PACIENTE
+            ETAPA 1
         ====================================================== */}
 
         <section className={`${cardClass} mt-5`}>
@@ -702,15 +863,12 @@ export default function GestaoExamePage() {
                     text-sm
                     font-semibold
                     text-white
-                    shadow-sm
                     transition-all
                     hover:-translate-y-0.5
                     hover:bg-[#0B1756]
-                    hover:shadow-md
                   "
                 >
                   <Search size={17} />
-
                   Buscar paciente
                 </button>
               </form>
@@ -752,20 +910,7 @@ export default function GestaoExamePage() {
                   py-3
                 "
               >
-                <div
-                  className="
-                    flex
-                    h-8
-                    w-8
-                    items-center
-                    justify-center
-                    rounded-lg
-                    bg-[#E8F2FA]
-                    text-[#174693]
-                  "
-                >
-                  <ShieldCheck size={15} />
-                </div>
+                <ShieldCheck size={16} className="text-[#174693]" />
 
                 <p className="text-xs text-slate-500">
                   Para testar, use{" "}
@@ -776,139 +921,23 @@ export default function GestaoExamePage() {
               </div>
             </>
           ) : (
-            <div
-              className="
-                mt-5
-                flex
-                flex-col
-                gap-4
-                rounded-[22px]
-                border
-                border-[#D8E6F2]
-                bg-[#F8FBFE]
-                p-5
-                md:flex-row
-                md:items-center
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-16
-                  w-16
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-2xl
-                  bg-gradient-to-br
-                  from-[#174693]
-                  to-[#3563A7]
-                  text-xl
-                  font-bold
-                  text-white
-                "
-              >
-                {iniciais(paciente.nome)}
-              </div>
-
-              <div className="flex-1">
-                <div
-                  className="
-                    flex
-                    flex-wrap
-                    items-center
-                    gap-2
-                  "
-                >
-                  <h2
-                    className="
-                      text-lg
-                      font-bold
-                      text-[#0B1756]
-                    "
-                  >
-                    {paciente.nome}
-                  </h2>
-
-                  <span
-                    className="
-                      flex
-                      items-center
-                      gap-1
-                      rounded-full
-                      bg-emerald-50
-                      px-2.5
-                      py-1
-                      text-[11px]
-                      font-semibold
-                      text-emerald-600
-                    "
-                  >
-                    <CheckCircle2 size={12} />
-
-                    Identificado
-                  </span>
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <DadoPaciente
-                    label="CPF"
-                    valor={paciente.cpf}
-                  />
-
-                  <DadoPaciente
-                    label="Nascimento"
-                    valor={paciente.nascimento}
-                  />
-
-                  <DadoPaciente
-                    label="Idade"
-                    valor={`${paciente.idade} anos`}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={trocarPaciente}
-                className="
-                  flex
-                  h-10
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-slate-200
-                  bg-white
-                  px-4
-                  text-xs
-                  font-semibold
-                  text-slate-500
-                  transition
-                  hover:border-red-200
-                  hover:bg-red-50
-                  hover:text-red-500
-                "
-              >
-                <X size={14} />
-
-                Trocar paciente
-              </button>
-            </div>
+            <PacienteSelecionado
+              paciente={paciente}
+              onTrocar={trocarPaciente}
+            />
           )}
         </section>
 
         {/* =====================================================
-            ETAPA 2 - EXAMES
+            ETAPA 2
         ====================================================== */}
 
         <section className={`${cardClass} mt-5`}>
           <TituloSecao
             numero="02"
             icon={<FileText size={21} />}
-            titulo="Selecionar exame"
-            descricao="Escolha o procedimento indicado."
+            titulo="Selecionar exame emergencial"
+            descricao="Escolha somente o exame necessário para o atendimento de urgência."
           />
 
           {!paciente ? (
@@ -918,186 +947,233 @@ export default function GestaoExamePage() {
               texto="Depois disso os exames serão liberados."
             />
           ) : (
-            <div
-              className="
-                mt-5
-                grid
-                gap-3
-                sm:grid-cols-2
-                lg:grid-cols-3
-                xl:grid-cols-4
-              "
-            >
-              {TIPOS_EXAME.map((exame) => {
-                const selecionado =
-                  exameSelecionado?.id ===
-                  exame.id;
+            <>
+              <div
+                className="
+                  mt-5
+                  flex
+                  items-start
+                  gap-3
+                  rounded-2xl
+                  border
+                  border-amber-200
+                  bg-amber-50
+                  p-4
+                "
+              >
+                <AlertTriangle
+                  size={18}
+                  className="
+                    mt-0.5
+                    shrink-0
+                    text-amber-700
+                  "
+                />
 
-                return (
-                  <button
-                    key={exame.id}
-                    type="button"
-                    onClick={() => {
-                      setExameSelecionado(exame);
-                      setUnidadeSelecionada(null);
-                    }}
-                    className={`
-                      group
-                      relative
-                      overflow-hidden
-                      rounded-[20px]
-                      border
-                      p-4
-                      text-left
-                      transition-all
-
-                      ${
-                        selecionado
-                          ? "border-[#174693] bg-[#EEF5FB] shadow-[0_8px_24px_rgba(23,70,147,0.10)]"
-                          : "border-slate-200 bg-[#FBFCFE] hover:-translate-y-0.5 hover:border-[#BED2E5] hover:bg-white hover:shadow-sm"
-                      }
-                    `}
+                <div>
+                  <p
+                    className="
+                      text-xs
+                      font-bold
+                      text-amber-900
+                    "
                   >
-                    <div
-                      className="
-                        pointer-events-none
-                        absolute
-                        -right-8
-                        -top-8
-                        h-24
-                        w-24
-                        rounded-full
-                        bg-[#EAF3F7]/70
-                      "
-                    />
+                    Selecione apenas exames necessários para a emergência
+                  </p>
 
-                    <div className="relative z-10">
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      leading-5
+                      text-amber-800/80
+                    "
+                  >
+                    Não utilize esta área para exames eletivos ou
+                    acompanhamento de rotina.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="
+                  mt-4
+                  grid
+                  gap-3
+                  sm:grid-cols-2
+                  lg:grid-cols-3
+                  xl:grid-cols-4
+                "
+              >
+                {TIPOS_EXAME.map((exame) => {
+                  const selecionado =
+                    exameSelecionado?.id === exame.id;
+
+                  return (
+                    <button
+                      key={exame.id}
+                      type="button"
+                      onClick={() => {
+                        setExameSelecionado(exame);
+                        setUnidadeSelecionada(null);
+                      }}
+                      className={`
+                        group
+                        relative
+                        overflow-hidden
+                        rounded-[20px]
+                        border
+                        p-4
+                        text-left
+                        transition-all
+
+                        ${
+                          selecionado
+                            ? "border-[#174693] bg-[#EEF5FB] shadow-[0_8px_24px_rgba(23,70,147,0.10)]"
+                            : "border-slate-200 bg-[#FBFCFE] hover:-translate-y-0.5 hover:border-[#BED2E5]"
+                        }
+                      `}
+                    >
                       <div
                         className="
-                          flex
-                          items-start
-                          justify-between
-                          gap-3
+                          pointer-events-none
+                          absolute
+                          -right-8
+                          -top-8
+                          h-24
+                          w-24
+                          rounded-full
+                          bg-[#EAF3F7]/70
                         "
-                      >
+                      />
+
+                      <div className="relative z-10">
                         <div
-                          className={`
+                          className="
                             flex
-                            h-11
-                            w-11
-                            items-center
-                            justify-center
-                            rounded-xl
-
-                            ${
-                              selecionado
-                                ? "bg-[#174693] text-white"
-                                : "bg-[#EAF3F7] text-[#174693]"
-                            }
-                          `}
+                            items-start
+                            justify-between
+                          "
                         >
-                          {iconeExame(exame.icone)}
-                        </div>
-
-                        {selecionado && (
                           <div
-                            className="
+                            className={`
                               flex
-                              h-6
-                              w-6
+                              h-11
+                              w-11
                               items-center
                               justify-center
-                              rounded-full
-                              bg-[#174693]
-                              text-white
-                            "
+                              rounded-xl
+
+                              ${
+                                selecionado
+                                  ? "bg-[#174693] text-white"
+                                  : "bg-[#EAF3F7] text-[#174693]"
+                              }
+                            `}
                           >
-                            <Check size={13} />
+                            {iconeExame(exame.icone)}
                           </div>
-                        )}
-                      </div>
 
-                      <p
-                        className="
-                          mt-3
-                          text-sm
-                          font-bold
-                          text-[#0B1756]
-                        "
-                      >
-                        {exame.nome}
-                      </p>
+                          {selecionado && (
+                            <div
+                              className="
+                                flex
+                                h-6
+                                w-6
+                                items-center
+                                justify-center
+                                rounded-full
+                                bg-[#174693]
+                                text-white
+                              "
+                            >
+                              <Check size={13} />
+                            </div>
+                          )}
+                        </div>
 
-                      <span
-                        className="
-                          mt-1
-                          inline-flex
-                          rounded-full
-                          bg-[#EDF4FA]
-                          px-2
-                          py-1
-                          text-[10px]
-                          font-semibold
-                          text-[#3563A7]
-                        "
-                      >
-                        {exame.categoria}
-                      </span>
-
-                      <p
-                        className="
-                          mt-3
-                          min-h-[40px]
-                          text-xs
-                          leading-5
-                          text-slate-500
-                        "
-                      >
-                        {exame.descricao}
-                      </p>
-
-                      <div
-                        className="
-                          mt-3
-                          flex
-                          items-center
-                          justify-between
-                          border-t
-                          border-slate-100
-                          pt-3
-                        "
-                      >
-                        <span
+                        <p
                           className="
-                            text-xs
-                            font-semibold
-                            text-[#174693]
+                            mt-3
+                            text-sm
+                            font-bold
+                            text-[#0B1756]
                           "
                         >
-                          {selecionado
-                            ? "Selecionado"
-                            : "Selecionar"}
+                          {exame.nome}
+                        </p>
+
+                        <span
+                          className="
+                            mt-1
+                            inline-flex
+                            rounded-full
+                            bg-[#EDF4FA]
+                            px-2
+                            py-1
+                            text-[10px]
+                            font-semibold
+                            text-[#3563A7]
+                          "
+                        >
+                          {exame.categoria}
                         </span>
 
-                        <ChevronRight
-                          size={15}
+                        <p
                           className="
-                            text-slate-300
-                            transition
-                            group-hover:translate-x-1
+                            mt-3
+                            min-h-[40px]
+                            text-xs
+                            leading-5
+                            text-slate-500
                           "
-                        />
+                        >
+                          {exame.descricao}
+                        </p>
+
+                        <div
+                          className="
+                            mt-3
+                            flex
+                            items-center
+                            justify-between
+                            border-t
+                            border-slate-100
+                            pt-3
+                          "
+                        >
+                          <span
+                            className="
+                              text-xs
+                              font-semibold
+                              text-[#174693]
+                            "
+                          >
+                            {selecionado
+                              ? "Selecionado"
+                              : "Selecionar"}
+                          </span>
+
+                          <ChevronRight
+                            size={15}
+                            className="
+                              text-slate-300
+                              transition
+                              group-hover:translate-x-1
+                            "
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </section>
 
         {/* =====================================================
-            ETAPA 3 - UNIDADES
+            ETAPA 3
         ====================================================== */}
 
         <section className={`${cardClass} mt-5`}>
@@ -1115,13 +1191,12 @@ export default function GestaoExamePage() {
               numero="03"
               icon={<Hospital size={21} />}
               titulo="Escolher unidade"
-              descricao="Mostramos somente unidades que realizam o exame."
+              descricao="Mostramos apenas unidades disponíveis para o exame selecionado."
             />
 
             {exameSelecionado && (
               <span
                 className="
-                  w-fit
                   rounded-full
                   bg-[#EDF5FB]
                   px-3
@@ -1153,17 +1228,14 @@ export default function GestaoExamePage() {
             >
               {unidadesDisponiveis.map((unidade) => {
                 const selecionada =
-                  unidadeSelecionada?.id ===
-                  unidade.id;
+                  unidadeSelecionada?.id === unidade.id;
 
                 return (
                   <button
                     key={unidade.id}
                     type="button"
                     onClick={() =>
-                      setUnidadeSelecionada(
-                        unidade
-                      )
+                      setUnidadeSelecionada(unidade)
                     }
                     className={`
                       group
@@ -1177,8 +1249,8 @@ export default function GestaoExamePage() {
 
                       ${
                         selecionada
-                          ? "border-[#174693] bg-[#EEF5FB] shadow-[0_10px_28px_rgba(23,70,147,0.10)]"
-                          : "border-slate-200 bg-[#FBFCFE] hover:-translate-y-0.5 hover:border-[#BDD2E6] hover:bg-white hover:shadow-sm"
+                          ? "border-[#174693] bg-[#EEF5FB]"
+                          : "border-slate-200 bg-[#FBFCFE] hover:-translate-y-0.5"
                       }
                     `}
                   >
@@ -1201,7 +1273,6 @@ export default function GestaoExamePage() {
                           flex
                           items-start
                           justify-between
-                          gap-4
                         "
                       >
                         <div
@@ -1246,7 +1317,6 @@ export default function GestaoExamePage() {
                           mt-4
                           text-sm
                           font-bold
-                          leading-5
                           text-[#0B1756]
                         "
                       >
@@ -1292,7 +1362,6 @@ export default function GestaoExamePage() {
                           "
                         >
                           <CheckCircle2 size={13} />
-
                           Exame disponível
                         </span>
 
@@ -1355,17 +1424,12 @@ export default function GestaoExamePage() {
               </div>
 
               <div>
-                <h2
-                  className="
-                    font-bold
-                    text-[#0B1756]
-                  "
-                >
-                  Revisar solicitação
+                <h2 className="font-bold text-[#0B1756]">
+                  Revisar solicitação emergencial
                 </h2>
 
                 <p className="text-xs text-slate-500">
-                  Confira antes de encaminhar.
+                  Confira os dados antes de encaminhar.
                 </p>
               </div>
             </div>
@@ -1413,12 +1477,10 @@ export default function GestaoExamePage() {
                 <textarea
                   value={observacoes}
                   onChange={(event) =>
-                    setObservacoes(
-                      event.target.value
-                    )
+                    setObservacoes(event.target.value)
                   }
                   rows={3}
-                  placeholder="Ex.: exame solicitado devido aos sintomas apresentados..."
+                  placeholder="Descreva brevemente o quadro clínico que justifica a solicitação emergencial..."
                   className="
                     w-full
                     resize-none
@@ -1429,12 +1491,8 @@ export default function GestaoExamePage() {
                     px-4
                     py-3
                     text-sm
-                    leading-6
                     text-[#0B1756]
                     outline-none
-                    transition
-
-                    placeholder:text-slate-400
 
                     focus:border-[#3563A7]
                     focus:bg-white
@@ -1442,6 +1500,56 @@ export default function GestaoExamePage() {
                     focus:ring-[#3563A7]/10
                   "
                 />
+              </div>
+
+              {/* AVISO FINAL */}
+
+              <div
+                className="
+                  mt-5
+                  flex
+                  items-start
+                  gap-3
+                  rounded-2xl
+                  border
+                  border-amber-200
+                  bg-amber-50
+                  p-4
+                "
+              >
+                <AlertTriangle
+                  size={19}
+                  className="
+                    mt-0.5
+                    shrink-0
+                    text-amber-700
+                  "
+                />
+
+                <div>
+                  <p
+                    className="
+                      text-xs
+                      font-bold
+                      text-amber-900
+                    "
+                  >
+                    Confirmação de emergência
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      leading-5
+                      text-amber-800/80
+                    "
+                  >
+                    Ao continuar, você confirma que este exame é
+                    necessário para o atendimento de urgência ou
+                    emergência deste paciente.
+                  </p>
+                </div>
               </div>
 
               <button
@@ -1460,17 +1568,14 @@ export default function GestaoExamePage() {
                   text-sm
                   font-semibold
                   text-white
-                  shadow-sm
                   transition-all
 
                   hover:-translate-y-0.5
                   hover:bg-[#0B1756]
-                  hover:shadow-md
                 "
               >
                 <CheckCircle2 size={18} />
-
-                Confirmar solicitação
+                Confirmar solicitação emergencial
               </button>
             </div>
           </section>
@@ -1478,7 +1583,7 @@ export default function GestaoExamePage() {
       </div>
 
       {/* =====================================================
-          TELA DE SUCESSO
+          SUCESSO
       ====================================================== */}
 
       {sucesso && (
@@ -1497,7 +1602,6 @@ export default function GestaoExamePage() {
         >
           <div
             className="
-              relative
               w-full
               max-w-[500px]
               overflow-hidden
@@ -1506,8 +1610,6 @@ export default function GestaoExamePage() {
               shadow-[0_30px_100px_rgba(0,0,0,0.30)]
             "
           >
-            {/* TOPO */}
-
             <div
               className="
                 relative
@@ -1523,8 +1625,6 @@ export default function GestaoExamePage() {
                 text-white
               "
             >
-              {/* DECORAÇÕES */}
-
               <div
                 className="
                   pointer-events-none
@@ -1538,32 +1638,15 @@ export default function GestaoExamePage() {
                 "
               />
 
-              <div
+              <Sparkles
+                size={28}
                 className="
-                  pointer-events-none
-                  absolute
-                  -bottom-20
-                  -left-16
-                  h-40
-                  w-40
-                  rounded-full
-                  bg-[#4F7FC4]/40
-                "
-              />
-
-              <div
-                className="
-                  pointer-events-none
                   absolute
                   right-[20%]
                   top-[15px]
                   text-white/20
                 "
-              >
-                <Sparkles size={28} />
-              </div>
-
-              {/* CHECK */}
+              />
 
               <div
                 className="
@@ -1576,11 +1659,7 @@ export default function GestaoExamePage() {
                   items-center
                   justify-center
                   rounded-full
-                  border
-                  border-white/20
                   bg-white/15
-                  shadow-[0_12px_35px_rgba(0,0,0,0.15)]
-                  backdrop-blur
                 "
               >
                 <div
@@ -1593,10 +1672,12 @@ export default function GestaoExamePage() {
                     rounded-full
                     bg-white
                     text-emerald-500
-                    shadow-md
                   "
                 >
-                  <Check size={34} strokeWidth={3} />
+                  <Check
+                    size={34}
+                    strokeWidth={3}
+                  />
                 </div>
               </div>
 
@@ -1609,7 +1690,7 @@ export default function GestaoExamePage() {
                   font-bold
                 "
               >
-                Tudo certo!
+                Solicitação emergencial confirmada!
               </h2>
 
               <p
@@ -1618,15 +1699,13 @@ export default function GestaoExamePage() {
                   z-10
                   mt-2
                   text-sm
-                  leading-6
                   text-blue-100
                 "
               >
-                A solicitação do exame foi registrada com sucesso.
+                O exame foi registrado e encaminhado para a
+                unidade selecionada.
               </p>
             </div>
-
-            {/* CONTEÚDO */}
 
             <div className="p-6">
               <div
@@ -1644,11 +1723,6 @@ export default function GestaoExamePage() {
                 />
 
                 <LinhaResumo
-                  label="CPF"
-                  valor={paciente?.cpf}
-                />
-
-                <LinhaResumo
                   label="Exame"
                   valor={exameSelecionado?.nome}
                 />
@@ -1657,9 +1731,12 @@ export default function GestaoExamePage() {
                   label="Unidade"
                   valor={unidadeSelecionada?.nome}
                 />
-              </div>
 
-              {/* CONFIRMAÇÃO */}
+                <LinhaResumo
+                  label="Prioridade"
+                  valor="Emergencial"
+                />
+              </div>
 
               <div
                 className="
@@ -1674,21 +1751,10 @@ export default function GestaoExamePage() {
                   p-4
                 "
               >
-                <div
-                  className="
-                    flex
-                    h-9
-                    w-9
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-emerald-500
-                    text-white
-                  "
-                >
-                  <CheckCircle2 size={17} />
-                </div>
+                <CheckCircle2
+                  size={20}
+                  className="text-emerald-600"
+                />
 
                 <div>
                   <p
@@ -1698,23 +1764,21 @@ export default function GestaoExamePage() {
                       text-emerald-700
                     "
                   >
-                    Solicitação confirmada
+                    Solicitação registrada
                   </p>
 
                   <p
                     className="
                       mt-1
                       text-xs
-                      leading-5
                       text-emerald-600
                     "
                   >
-                    O exame foi encaminhado para a unidade selecionada.
+                    A unidade selecionada já pode visualizar o
+                    encaminhamento emergencial.
                   </p>
                 </div>
               </div>
-
-              {/* OK */}
 
               <button
                 type="button"
@@ -1722,7 +1786,6 @@ export default function GestaoExamePage() {
                 className="
                   mt-5
                   flex
-                  h-13
                   w-full
                   items-center
                   justify-center
@@ -1734,16 +1797,11 @@ export default function GestaoExamePage() {
                   text-sm
                   font-bold
                   text-white
-                  shadow-[0_8px_20px_rgba(23,70,147,0.18)]
-                  transition-all
 
-                  hover:-translate-y-0.5
                   hover:bg-[#0B1756]
-                  hover:shadow-[0_12px_26px_rgba(23,70,147,0.22)]
                 "
               >
                 <Check size={17} />
-
                 OK
               </button>
             </div>
@@ -1835,13 +1893,12 @@ function Etapa({
           rounded-xl
           text-sm
           font-bold
-          transition-all
 
           ${
             concluida
               ? "bg-emerald-500 text-white"
               : ativa
-                ? "bg-[#174693] text-white shadow-[0_6px_18px_rgba(23,70,147,0.20)]"
+                ? "bg-[#174693] text-white"
                 : "bg-[#EAF3F7] text-[#174693]"
           }
         `}
@@ -1854,53 +1911,18 @@ function Etapa({
       </div>
 
       <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p
-            className="
-              text-sm
-              font-bold
-              text-[#0B1756]
-            "
-          >
-            {titulo}
-          </p>
-
-          {ativa && !concluida && (
-            <span
-              className="
-                rounded-full
-                bg-[#EAF3F7]
-                px-2
-                py-0.5
-                text-[9px]
-                font-semibold
-                text-[#174693]
-              "
-            >
-              Atual
-            </span>
-          )}
-
-          {concluida && (
-            <span
-              className="
-                rounded-full
-                bg-emerald-50
-                px-2
-                py-0.5
-                text-[9px]
-                font-semibold
-                text-emerald-600
-              "
-            >
-              Concluído
-            </span>
-          )}
-        </div>
+        <p
+          className="
+            text-sm
+            font-bold
+            text-[#0B1756]
+          "
+        >
+          {titulo}
+        </p>
 
         <p
           className="
-            mt-0.5
             truncate
             text-xs
             text-slate-400
@@ -1926,7 +1948,6 @@ function TituloSecao({
           flex
           h-12
           w-12
-          shrink-0
           items-center
           justify-center
           rounded-2xl
@@ -1974,42 +1995,81 @@ function TituloSecao({
   );
 }
 
-function DadoPaciente({
-  label,
-  valor,
+function PacienteSelecionado({
+  paciente,
+  onTrocar,
 }) {
   return (
     <div
       className="
-        rounded-lg
+        mt-5
+        flex
+        flex-col
+        gap-4
+        rounded-[22px]
         border
-        border-slate-100
-        bg-white
-        px-3
-        py-2
+        border-[#D8E6F2]
+        bg-[#F8FBFE]
+        p-5
+        md:flex-row
+        md:items-center
       "
     >
-      <p
+      <div
         className="
-          text-[9px]
-          uppercase
-          tracking-wide
-          text-slate-400
+          flex
+          h-16
+          w-16
+          items-center
+          justify-center
+          rounded-2xl
+          bg-[#174693]
+          text-xl
+          font-bold
+          text-white
         "
       >
-        {label}
-      </p>
+        {iniciais(paciente.nome)}
+      </div>
 
-      <p
+      <div className="flex-1">
+        <h3
+          className="
+            font-bold
+            text-[#0B1756]
+          "
+        >
+          {paciente.nome}
+        </h3>
+
+        <p
+          className="
+            mt-1
+            text-xs
+            text-slate-500
+          "
+        >
+          CPF: {paciente.cpf} • {paciente.idade} anos
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onTrocar}
         className="
-          mt-0.5
+          rounded-xl
+          border
+          border-slate-200
+          bg-white
+          px-4
+          py-2
           text-xs
           font-semibold
-          text-[#0B1756]
+          text-slate-500
         "
       >
-        {valor}
-      </p>
+        Trocar paciente
+      </button>
     </div>
   );
 }
@@ -2051,24 +2111,11 @@ function Bloqueado({
         {icon}
       </div>
 
-      <p
-        className="
-          mt-3
-          text-sm
-          font-semibold
-          text-slate-500
-        "
-      >
+      <p className="mt-3 text-sm font-semibold text-slate-500">
         {titulo}
       </p>
 
-      <p
-        className="
-          mt-1
-          text-xs
-          text-slate-400
-        "
-      >
+      <p className="mt-1 text-xs text-slate-400">
         {texto}
       </p>
     </div>
@@ -2121,7 +2168,6 @@ function Resumo({
           flex
           h-9
           w-9
-          shrink-0
           items-center
           justify-center
           rounded-lg
@@ -2132,26 +2178,12 @@ function Resumo({
         {icon}
       </div>
 
-      <div className="min-w-0">
-        <p
-          className="
-            text-[9px]
-            uppercase
-            tracking-wide
-            text-slate-400
-          "
-        >
+      <div>
+        <p className="text-[9px] uppercase text-slate-400">
           {label}
         </p>
 
-        <p
-          className="
-            truncate
-            text-xs
-            font-semibold
-            text-[#0B1756]
-          "
-        >
+        <p className="text-xs font-semibold text-[#0B1756]">
           {valor}
         </p>
       </div>
@@ -2167,29 +2199,20 @@ function LinhaResumo({
     <div
       className="
         flex
-        items-start
         justify-between
         gap-4
         border-b
         border-slate-100
         py-3
-        first:pt-0
         last:border-0
-        last:pb-0
       "
     >
-      <span
-        className="
-          text-xs
-          text-slate-400
-        "
-      >
+      <span className="text-xs text-slate-400">
         {label}
       </span>
 
       <span
         className="
-          max-w-[260px]
           text-right
           text-sm
           font-semibold
