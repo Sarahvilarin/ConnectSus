@@ -220,7 +220,7 @@ export default function Home() {
               SUS digital
             </div>
 
-            <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl md:text-5xl">
               Menos filas
               <br />
               para um SUS
