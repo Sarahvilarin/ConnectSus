@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS especialidades (
 );
 
 -- Cadastro dos médicos
+
 CREATE TABLE IF NOT EXISTS medicos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome_completo VARCHAR(150) NOT NULL,
@@ -72,16 +73,28 @@ CREATE TABLE IF NOT EXISTS medicos (
     crm VARCHAR(20) NOT NULL,
     uf_crm CHAR(2) NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
-    unidade_id INT NOT NULL,
-    setor_id INT NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    UNIQUE (crm, uf_crm),
+    UNIQUE (crm, uf_crm)
+);
+
+
+CREATE TABLE IF NOT EXISTS medico_unidade_setores (
+    medico_id INT NOT NULL,
+    unidade_id INT NOT NULL,
+    setor_id INT NOT NULL,
+
+    PRIMARY KEY (medico_id, unidade_id, setor_id),
+
+    FOREIGN KEY (medico_id)
+        REFERENCES medicos(id)
+        ON DELETE CASCADE,
 
     FOREIGN KEY (unidade_id, setor_id)
         REFERENCES unidade_setores(unidade_id, setor_id)
 );
+
 
 -- Um médico pode possuir várias especialidades
 CREATE TABLE IF NOT EXISTS medico_especialidades (
@@ -136,3 +149,16 @@ INSERT IGNORE INTO especialidades (nome) VALUES
 ('Oncologia'),
 ('Cirurgia Geral'),
 ('Cirurgia Vascular');
+
+
+-- Administradores do sistema UneSUS
+CREATE TABLE IF NOT EXISTS administradores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+

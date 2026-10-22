@@ -19,6 +19,7 @@ services:
     expose:
       - "3306"
 
+  
   backend:
     build:
       context: ./backend
@@ -35,6 +36,11 @@ services:
       DB_USER: ${DB_USER:-app_user}
       DB_PASSWORD: ${DB_PASSWORD:-app_password}
       DB_NAME: ${DB_NAME:-app_db}
+      ADMIN_NOME: ${ADMIN_NOME:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_SENHA: ${ADMIN_SENHA:-}
+      JWT_SECRET: ${JWT_SECRET:?Configure JWT_SECRET no arquivo .env}
+
 
   frontend:
     build:
@@ -51,3 +57,4 @@ services:
 
 volumes:
   mysql-data:
+  
