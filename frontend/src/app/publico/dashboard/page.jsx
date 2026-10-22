@@ -267,9 +267,9 @@ export default function Home() {
 
         {/* DESTAQUES */}
         <div
-          id="unidades"
-          className="mt-12 grid gap-5 rounded-2xl bg-white/70 p-5 shadow-sm sm:p-6 md:grid-cols-3 md:gap-0 md:px-7 md:py-8"
-        >
+  id="unidades"
+  className="mt-20 grid gap-5 rounded-2xl bg-white/70 p-5 shadow-sm sm:p-6 md:grid-cols-3 md:gap-0 md:px-7 md:py-8"
+>
           <div className="flex items-center gap-4 md:border-r md:border-[#3563A7]/30 md:px-4 lg:px-7">
             <div className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A] sm:h-[68px] sm:w-[68px]">
               <Icone tipo="users" className="h-8 w-8 sm:h-9 sm:w-9" />
@@ -334,7 +334,7 @@ export default function Home() {
       </span>
 
       <h2 className="mt-5 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
-        Sobre o <span className="text-[#023E8A]">ConectaSUS</span>
+        Sobre o <span className="text-[#023E8A]">UneSUS</span>
       </h2>
 
       <p className="mt-6 text-base leading-relaxed text-[#0B1756]/75 sm:text-lg">
@@ -343,7 +343,7 @@ export default function Home() {
       </p>
 
       <p className="mt-5 text-base leading-relaxed text-[#0B1756]/75 sm:text-lg">
-        Por isso, o ConectaSUS propõe aproximar a tecnologia da
+        Por isso, o UneSUS propõe aproximar a tecnologia da
         saúde pública, ajudando a organizar filas, facilitar o
         acesso às informações e tornar o acompanhamento dos
         atendimentos mais simples.
@@ -406,7 +406,7 @@ export default function Home() {
             
 
             <h2 className="mt-5 max-w-2xl text-3xl font-extrabold sm:text-4xl">
-              Por que escolher o ConectaSUS?
+              Por que escolher o UneSUS?
             </h2>
 
             <p className="mt-4 max-w-2xl leading-relaxed text-white/75">

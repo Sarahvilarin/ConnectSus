@@ -42,7 +42,7 @@ export default function Header() {
     publico: [
       {
         nome: "Home",
-        href: "/",
+        href: "/publico/dashboard",
       },
       {
         nome: "Unidades",
