@@ -6,6 +6,10 @@ import helmet from "helmet";
 import unidadeRoutes from "./routes/unidadeRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import authRoutes from "./routes/authRoutes.js";
+import especialidadeRoutes from "./routes/especialidadeRoutes.js";
+import setorRoutes from "./routes/setorRoutes.js";
+import medicoRoutes from "./routes/medicoRoutes.js";
 
 const app = express();
 
@@ -22,6 +26,10 @@ app.use(express.json());
 // Rotas da API
 app.use("/api/health", healthRoutes);
 app.use("/api/unidades", unidadeRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/especialidades", especialidadeRoutes);
+app.use("/api/setores", setorRoutes);
+app.use("/api/medicos", medicoRoutes);
 
 // Rota inexistente
 app.use((req, res) => {

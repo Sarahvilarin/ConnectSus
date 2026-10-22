@@ -6,22 +6,22 @@ import {
   buscarUnidade,
   criarUnidade,
   atualizarUnidade,
-  excluirUnidade
+  excluirUnidade,
+  listarEspecialidadesPorUnidade
 } from "../controllers/unidadeController.js";
+
+import { autenticarAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// Consultar
+// Rotas públicas
 router.get("/", listarUnidades);
 router.get("/:id", buscarUnidade);
 
-// Cadastrar
-router.post("/", criarUnidade);
-
-// Atualizar
-router.put("/:id", atualizarUnidade);
-
-// Desativar
-router.delete("/:id", excluirUnidade);
+// Rotas exclusivas para administradores
+router.post("/", autenticarAdmin, criarUnidade);
+router.put("/:id", autenticarAdmin, atualizarUnidade);
+router.delete("/:id", autenticarAdmin, excluirUnidade);
+router.get("/:id/especialidades", listarEspecialidadesPorUnidade);
 
 export default router;

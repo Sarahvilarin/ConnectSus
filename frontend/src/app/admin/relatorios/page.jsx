@@ -147,82 +147,35 @@ export default function RelatoriosPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-gradient-to-br from-[#EDF9FF] via-[#F7FCFF] to-[#E8F4FF] text-[#0B1756]">
       {/* Banner principal */}
-      <section className="relative overflow-hidden border-b border-[#D8ECFF] bg-gradient-to-r from-[#EAF8FF] via-[#E5F5FF] to-[#CDE8FF]">
-        <div className="pointer-events-none absolute -right-20 -top-36 h-[400px] w-[400px] rounded-full border-[55px] border-white/30" />
-        <div className="mx-auto grid min-h-[260px] max-w-[1600px] items-center gap-5 px-5 py-8 sm:px-8 md:grid-cols-[0.95fr_1.05fr] lg:px-10">
-          <div className="relative z-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#D5ECFF] px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-[#0752B7]">
-              <ClipboardList size={15} />
-              Administração
-            </div>
-            <h1 className="text-3xl font-extrabold leading-[1.04] tracking-tight text-[#103D8D] sm:text-4xl lg:text-5xl">
-              Relatórios
-              <span className="block text-[#2475D1]">
-                Dados e estatísticas
-              </span>
-              <span className="block">dos atendimentos</span>
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#2768B6] sm:text-base">
-              Acompanhe os principais dados e indicadores de atendimentos da
-              rede pública de saúde. Aqui você encontra informações sobre filas,
-              exames, visitas e muito mais, de forma simples, segura e
-              atualizada.
-            </p>
-          </div>
 
-          <div className="relative flex min-h-[180px] items-center justify-center md:min-h-[250px]">
-            <div className="absolute h-52 w-52 rounded-full bg-[#A9D8FF]/70 blur-2xl sm:h-64 sm:w-64" />
-            <div className="relative w-full max-w-[540px] rounded-[28px] bg-gradient-to-br from-[#D9EEFF]/70 to-[#B6DBFF]/40 p-4 sm:p-6">
-              <div className="absolute -left-3 bottom-5 h-24 w-24 rounded-full bg-[#3E8DE0]/70" />
-              <div className="absolute right-2 top-2 h-20 w-20 rounded-full bg-[#2E7DD0]/80" />
-              <div className="relative z-10 rotate-[-3deg] rounded-2xl border-[7px] border-[#16447F] bg-white p-4 shadow-[0_18px_35px_rgba(18,69,133,0.22)] sm:p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="h-3 w-28 rounded-full bg-[#D8EBFC]" />
-                  <div className="h-3 w-12 rounded-full bg-[#E6F2FD]" />
-                </div>
-                <div className="grid grid-cols-[1.1fr_0.9fr] items-center gap-4">
-                  <div className="flex h-24 items-end gap-2 border-b border-[#D9EAF8] px-2 sm:h-32">
-                    {[35, 55, 45, 76, 94].map((altura, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-t-md bg-gradient-to-t from-[#2C70C8] to-[#78B9F5]"
-                        style={{ height: `${altura}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-[14px] border-[#2C70C8] border-r-[#B9DEFF] sm:h-24 sm:w-24">
-                      <div className="h-5 w-5 rounded-full bg-[#D9EDFF]" />
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <div className="h-2 flex-1 rounded-full bg-[#DCEEFF]" />
-                  <div className="h-2 w-1/4 rounded-full bg-[#B7DBFC]" />
-                </div>
-              </div>
-              <div className="absolute -bottom-2 right-0 z-20 rounded-xl border border-white bg-white/90 p-3 shadow-lg sm:right-2">
-                <Activity size={28} className="text-[#3285D8]" />
-              </div>
-              <div className="absolute -left-1 top-2 z-20 rounded-xl border border-white bg-white/90 p-3 shadow-lg">
-                <div className="h-2 w-12 rounded-full bg-[#8CC5FA]" />
-                <div className="mt-2 h-2 w-8 rounded-full bg-[#C3E3FF]" />
-              </div>
-            </div>
-          </div>
+    <section className="relative overflow-hidden border-b border-[#D8ECFF] bg-gradient-to-r from-[#EAF8FF] via-[#E5F5FF] to-[#D9EEFF]">
+      {/* Formas decorativas discretas */}
+      <div className="pointer-events-none absolute -right-24 -top-36 h-[380px] w-[380px] rounded-full border-[55px] border-white/25" />
+      <div className="pointer-events-none absolute -right-10 -bottom-40 h-[300px] w-[300px] rounded-full border-[45px] border-[#B8DFFF]/25" />
+      <div className="pointer-events-none absolute right-[25%] top-0 h-full w-px bg-white/20" />
+
+      <div className="relative mx-auto w-full max-w-[1400px] px-5 py-8 sm:px-8 sm:py-10 lg:px-0 lg:py-11">
+        <div className="relative z-10 max-w-4xl">
+
+
+          <h1 className="text-3xl font-extrabold leading-[1.04] tracking-tight text-[#103D8D] sm:text-4xl lg:text-5xl">
+            Relatórios
+            <span className="block text-[#2475D1]">
+              Dados e estatísticas
+            </span>
+            <span className="block">
+              dos atendimentos
+            </span>
+          </h1>
+          <div className="mt-5 h-1 w-16 rounded-full bg-[#438FE8]" />
         </div>
-      </section>
+      </div>
+    </section>
+
 
       {/* Conteúdo dos relatórios */}
-      <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-9">
+      <div className="mx-auto w-full max-w-[1400px] px-5 py-5 sm:px-8 lg:px-0">
         <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
-          <div className="flex items-center gap-3 rounded-lg border border-[#C5E2FF] bg-white/75 px-3 py-2.5 text-xs font-medium text-[#164A9B]">
-            <CalendarDays size={16} />
-            <span>01/05/2025</span>
-            <ArrowRight size={15} />
-            <span>31/05/2025</span>
-            <CalendarDays size={16} />
-          </div>
           <button
             type="button"
             onClick={() => window.print()}
@@ -396,10 +349,6 @@ export default function RelatoriosPage() {
             </div>
           </PainelCard>
         </div>
-
-        <footer className="mt-6 border-t border-[#D7EAFB] py-4 text-center text-xs text-[#6485B7]">
-          ConectaSUS © 2025. Dados fictícios para demonstração.
-        </footer>
       </div>
     </main>
   );
