@@ -7,6 +7,7 @@ import {
   Marker,
   useMap,
 } from "@vis.gl/react-google-maps";
+import { QRCodeSVG } from "qrcode.react";
 
 import {
   UsersRound,
@@ -21,7 +22,18 @@ import {
   Search,
   XCircle,
   Stethoscope,
+  QrCode,
 } from "lucide-react";
+
+// ======================================================
+// CONFIGURAÇÕES
+// ======================================================
+
+// Imagem fixa do card principal (arquivo em /public/sus.png)
+const FOTO_SUS = "/sus-filaOnline.png";
+
+// Quantidade máxima de unidades exibidas na lista
+const LIMITE_UNIDADES = 5;
 
 // ======================================================
 // UNIDADES DE SAÚDE
@@ -58,24 +70,142 @@ const unidades = [
 // ILUSTRAÇÃO DOS CARDS DAS UNIDADES
 // ======================================================
 
-function UnidadeIcon() {
+function UnidadeFoto({ unidade, destaque = false }) {
+  // No card de destaque (fila) a imagem é fixa, vinda de /public/sus.png
+  const [foto, setFoto] = useState(destaque ? FOTO_SUS : "");
+  const [atribuicao, setAtribuicao] = useState(null);
+
+  useEffect(() => {
+    // Card de destaque usa a imagem fixa, não busca no Google
+    if (destaque) return;
+
+    let cancelado = false;
+
+    async function buscarFoto() {
+      try {
+        if (!window.google?.maps?.importLibrary) return;
+
+        const { Place } = await window.google.maps.importLibrary("places");
+        const resposta = await Place.searchByText({
+          textQuery: `${unidade.nome}, ${unidade.endereco}, Brasil`,
+          fields: ["displayName", "formattedAddress", "photos"],
+          maxResultCount: 1,
+          language: "pt-BR",
+          region: "BR",
+        });
+
+        const local = resposta.places?.[0];
+        const fotoGoogle = local?.photos?.[0];
+
+        if (!fotoGoogle || cancelado) return;
+
+        const urlFoto = fotoGoogle.getURI({ maxWidth: 500, maxHeight: 350 });
+        const autores = fotoGoogle.authorAttributions || [];
+        const autor = autores[0];
+
+        if (!cancelado && urlFoto) {
+          setFoto(urlFoto);
+          setAtribuicao(
+            autor
+              ? {
+                  nome: autor.displayName || "Google Maps",
+                  url: autor.uri || "",
+                }
+              : { nome: "Google Maps", url: "" }
+          );
+        }
+      } catch (erro) {
+        console.warn(`Não foi possível buscar foto de ${unidade.nome}:`, erro);
+      }
+    }
+
+    buscarFoto();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [unidade.nome, unidade.endereco, destaque]);
+
+  if (destaque) {
+    return (
+      <div className="relative isolate flex min-h-[170px] overflow-hidden rounded-2xl bg-[#EAF3FF]">
+        {foto && (
+          <img
+            src={foto}
+            alt={`Foto da unidade ${unidade.nome}`}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+          />
+        )}
+        <div className="absolute inset-0 z-0" style={{ background: "linear-gradient(90deg, #EDF5FF 0%, #EDF5FF 25%, rgba(237,245,255,0.98) 34%, rgba(237,245,255,0.92) 42%, rgba(237,245,255,0.78) 51%, rgba(237,245,255,0.58) 60%, rgba(237,245,255,0.34) 70%, rgba(237,245,255,0.14) 82%, rgba(237,245,255,0.03) 94%, transparent 100%)" }} />
+        <div className="relative z-10 flex w-full items-center gap-4 px-5 py-5 sm:gap-6 sm:px-6 sm:py-6">
+          <div className="max-w-[620px] min-w-0">
+            <span className="inline-flex rounded-full bg-[#D6E9FF] px-3.5 py-1.5 text-sm font-semibold text-[#1264B5]">
+              Você está na fila da
+            </span>
+            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-[#123C7D] sm:text-[30px]">
+              {unidade.nome}
+            </h2>
+            <p className="mt-1 flex items-start text-sm leading-6 text-[#24558F] sm:text-base">
+              <span>{unidade.endereco}</span>
+            </p>
+            {foto && atribuicao && (
+              <p className="mt-1 text-[9px] text-[#496A91]">
+                Foto: {atribuicao.url ? (
+                  <a href={atribuicao.url} target="_blank" rel="noopener noreferrer" className="underline">{atribuicao.nome}</a>
+                ) : atribuicao.nome}
+              </p>
+            )}
+          </div>
+        </div>
+        {!foto && <div className="absolute right-5 top-5 hidden h-20 w-24 rounded-xl bg-[#DDEBFF]/70 sm:block" />}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-[68px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#D5E5F8]">
-      <svg
-        viewBox="0 0 76 68"
-        className="h-full w-full"
-        aria-hidden="true"
-      >
-        <rect x="0" y="49" width="76" height="19" fill="#9FB5A1" />
-        <rect x="9" y="17" width="58" height="38" rx="2" fill="#F8FCFF" />
-        <rect x="9" y="17" width="58" height="9" fill="#2D91AC" />
-        <rect x="17" y="32" width="10" height="15" fill="#6CA6DF" />
-        <rect x="33" y="32" width="10" height="15" fill="#6CA6DF" />
-        <rect x="49" y="32" width="10" height="15" fill="#6CA6DF" />
-      </svg>
+    <div className="w-[76px] shrink-0">
+      <div className="flex h-[68px] w-[76px] items-center justify-center overflow-hidden rounded-lg bg-[#D5E5F8]">
+        {foto ? (
+          <img
+            src={foto}
+            alt={`Foto da unidade ${unidade.nome}`}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <svg viewBox="0 0 76 68" className="h-full w-full" aria-hidden="true">
+            <rect x="0" y="49" width="76" height="19" fill="#9FB5A1" />
+            <rect x="9" y="17" width="58" height="38" rx="2" fill="#F8FCFF" />
+            <rect x="9" y="17" width="58" height="9" fill="#2D91AC" />
+            <rect x="17" y="32" width="10" height="15" fill="#6CA6DF" />
+            <rect x="33" y="32" width="10" height="15" fill="#6CA6DF" />
+            <rect x="49" y="32" width="10" height="15" fill="#6CA6DF" />
+          </svg>
+        )}
+      </div>
+      {foto && atribuicao && (
+        <p className="mt-1 max-w-[76px] truncate text-[8px] leading-3 text-[#60769C]" title={`Foto: ${atribuicao.nome}`}>
+          Foto:{" "}
+          {atribuicao.url ? (
+            <a
+              href={atribuicao.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              {atribuicao.nome}
+            </a>
+          ) : (
+            atribuicao.nome
+          )}
+        </p>
+      )}
     </div>
   );
 }
+
+
 
 // ======================================================
 // MARCADORES DO GOOGLE MAPS
@@ -210,7 +340,7 @@ function MapaUnidades({ unidades, onSelecionar }) {
 
   if (!apiKey) {
     return (
-      <div className="flex h-[320px] items-center justify-center rounded-xl border border-[#D8E5F8] bg-[#F4F8FF] p-6 text-center">
+      <div className="absolute inset-0 flex items-center justify-center rounded-xl border border-[#D8E5F8] bg-[#F4F8FF] p-6 text-center">
         <div>
           <MapPin
             size={32}
@@ -231,13 +361,8 @@ function MapaUnidades({ unidades, onSelecionar }) {
   }
 
   return (
-    <div className="relative h-[320px] overflow-hidden rounded-xl border border-[#D8E5F8]">
-      <APIProvider
-        apiKey={apiKey}
-        language="pt-BR"
-        region="BR"
-      >
-        <Map
+    <div className="absolute inset-0 overflow-hidden rounded-xl border border-[#D8E5F8]">
+      <Map
           defaultCenter={{
             lat: -23.6229,
             lng: -46.5511,
@@ -255,8 +380,7 @@ function MapaUnidades({ unidades, onSelecionar }) {
             unidades={unidades}
             onSelecionar={onSelecionar}
           />
-        </Map>
-      </APIProvider>
+      </Map>
     </div>
   );
 }
@@ -265,13 +389,18 @@ function MapaUnidades({ unidades, onSelecionar }) {
 // PÁGINA FILA ONLINE
 // ======================================================
 
-export default function FilaOnlinePage() {
+function FilaOnlineConteudo() {
   const [unidadeSelecionada, setUnidadeSelecionada] = useState(null);
 
   const [unidadeParaConfirmar, setUnidadeParaConfirmar] =
     useState(null);
 
   const [entrouNaFila, setEntrouNaFila] = useState(false);
+
+  const [mostrarConfirmacaoSaida, setMostrarConfirmacaoSaida] = useState(false);
+
+  // Modal do QR Code de check-in
+  const [mostrarQr, setMostrarQr] = useState(false);
 
   const [ordenacao, setOrdenacao] = useState("proxima");
 
@@ -300,6 +429,9 @@ export default function FilaOnlinePage() {
 
     return a.id - b.id;
   });
+
+  // Exibe no máximo LIMITE_UNIDADES na lista (a busca considera todas)
+  const unidadesExibidas = unidadesOrdenadas.slice(0, LIMITE_UNIDADES);
 
   const unidadeAtual = unidades.find(
     (unidade) => unidade.id === unidadeSelecionada
@@ -335,10 +467,14 @@ export default function FilaOnlinePage() {
   }
 
   function sairDaFila() {
-    if (confirm("Tem certeza que deseja sair da fila online?")) {
-      setUnidadeSelecionada(null);
-      setEspecialidadeConfirmada("");
-    }
+    setMostrarConfirmacaoSaida(true);
+  }
+
+  function confirmarSaidaDaFila() {
+    setUnidadeSelecionada(null);
+    setEspecialidadeConfirmada("");
+    setMostrarQr(false);
+    setMostrarConfirmacaoSaida(false);
   }
 
   return (
@@ -353,91 +489,92 @@ export default function FilaOnlinePage() {
       <main className="relative z-10 mx-auto max-w-[1520px] px-5 pb-12 pt-8 sm:px-8 lg:px-10">
         {/* TÍTULO */}
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-[#142F68] sm:text-[34px]">
-            Fila Online
-          </h1>
-
-          <p className="mt-1 text-sm leading-6 text-[#304A7D] sm:text-base">
-            Escolha a unidade mais próxima ou a que tiver menor
-            tempo de espera. Acompanhe sua posição em tempo real.
-          </p>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#123C7D] sm:text-[40px]">
+                Fila Online
+              </h1>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#496A91] sm:text-lg">
+                Acompanhe sua posição em tempo real e tenha mais praticidade no seu atendimento.
+              </p>
+            </div>
+          </div>
+          {unidadeAtual && (
+            <button
+              onClick={sairDaFila}
+              className="inline-flex shrink-0 items-center justify-center self-start rounded-full bg-[#14539B] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0E4383] sm:self-center sm:px-8"
+            >
+              Sair da fila
+            </button>
+          )}
         </div>
 
         {/* POSIÇÃO NA FILA / DETALHES COMPLETOS QUANDO SELECIONADO */}
 
-        <section className="mb-6 rounded-2xl border border-[#D9E6F8] bg-white p-5 shadow-[0_8px_25px_rgba(31,65,119,0.06)] sm:p-7 lg:px-9 lg:py-7">
+        <section className="mb-6 rounded-2xl border border-[#D9E6F8] bg-white px-4 py-4 shadow-[0_8px_25px_rgba(31,65,119,0.06)] sm:px-5 sm:py-5 lg:px-6 lg:py-5">
           {unidadeAtual ? (
-            /* DETALHES DA FILA COMPLETA QUANDO ESTÁ NA FILA */
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#E5EDF9]">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">
-                      Você está na Fila
-                    </span>
-                    <h2 className="text-2xl font-bold text-[#142F68] mt-1">{unidadeAtual.nome}</h2>
+            <div className="space-y-2.5">
+              {/* DESTAQUE DA UNIDADE COM IMAGEM FIXA (sus.png) */}
+              <UnidadeFoto unidade={unidadeAtual} destaque />
+
+              {/* POSIÇÃO, TEMPO DE ESPERA E SENHA NO CARD AZUL */}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.9fr_1fr]">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1D5FA8] to-[#246DB5] px-4 py-6 text-white sm:px-5 sm:py-6">
+                  <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-64 rotate-12 rounded-full bg-white/5" />
+                  <div className="pointer-events-none absolute -bottom-24 right-0 h-52 w-64 -rotate-12 rounded-full bg-white/5" />
+                  <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-0">
+                    <div className="sm:border-r sm:border-white/40 sm:pr-4">
+                      <p className="text-base font-semibold text-white/95">Sua posição na fila</p>
+                      <div className="mt-2 flex items-baseline justify-center gap-3 sm:justify-start">
+                        <span className="text-5xl font-bold leading-none sm:text-6xl">4º</span>
+                        <span className="text-base sm:text-lg">da fila</span>
+                      </div>
+                    </div>
+                    <div className="sm:border-r sm:border-white/40 sm:px-4">
+                      <p className="text-base font-semibold text-white/95">Tempo estimado de espera</p>
+                      <p className="mt-2 text-center text-3xl font-bold sm:text-left">
+                        {unidadeAtual.espera} min
+                      </p>
+                      <p className="mt-1 text-center text-xs text-white/90 sm:text-left">
+                        Sujeito à triagem médica
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center sm:pl-4">
+                      <p className="text-base font-semibold text-white/95">Sua senha</p>
+                      <span className="mt-2 rounded-lg bg-white/15 px-4 py-1 text-3xl font-bold tracking-wide text-white ring-1 ring-inset ring-white/25">
+                        A-084
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={sairDaFila}
-                  className="flex items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-4 py-2.5 rounded-xl transition"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Sair da fila
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-[#F0F5FD] border border-[#DCE7F7] rounded-xl p-4 flex flex-col justify-between">
-                  <span className="text-xs font-bold text-[#023E8A] uppercase tracking-wider">Sua Posição</span>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-[#142F68]">4º</span>
-                    <span className="text-xs text-[#304A7D] font-medium">da fila</span>
+                <div className="grid grid-cols-1 divide-y divide-[#D6E7FF] overflow-hidden rounded-2xl border border-[#D6E7FF] bg-[#F5F9FF] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                  {/* ESPECIALIDADE */}
+                  <div className="flex items-center justify-center px-4 py-3 text-center sm:px-5 sm:py-3.5">
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold text-[#32629C]">Especialidade</p>
+                      <p className="mt-1 text-xl font-bold leading-tight text-[#123C7D] sm:text-2xl">
+                        {especialidadeConfirmada}
+                      </p>
+                      <span className="mt-3 inline-flex rounded-full bg-[#D9EBFF] px-3 py-1.5 text-xs font-semibold text-[#1264B5]">
+                        Atendimento presencial
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-[#304A7D] mt-2">Senha: <strong>A-084</strong></span>
-                </div>
 
-                <div className="bg-[#F0F5FD] border border-[#DCE7F7] rounded-xl p-4 flex flex-col justify-between">
-                  <span className="text-xs font-bold text-[#023E8A] uppercase tracking-wider flex items-center gap-1">
-                    <Clock className="w-4 h-4" /> Tempo Estimado
-                  </span>
-                  <div className="mt-2">
-                    <span className="text-3xl font-bold text-[#142F68]">~{unidadeAtual.espera} min</span>
-                  </div>
-                  <span className="text-xs text-[#304A7D] mt-2">Sujeito a triagem médica</span>
-                </div>
-
-                <div className="bg-[#F0F5FD] border border-[#DCE7F7] rounded-xl p-4 flex flex-col justify-between">
-                  <span className="text-xs font-bold text-[#023E8A] uppercase tracking-wider flex items-center gap-1">
-                    <Stethoscope className="w-4 h-4" /> Especialidade
-                  </span>
-                  <div className="mt-2">
-                    <p className="text-base font-bold text-[#142F68]">{especialidadeConfirmada}</p>
-                    <p className="text-xs text-[#304A7D]">Atendimento Presencial</p>
-                  </div>
-                  <span className="text-xs text-[#304A7D] mt-2">Profissional em plantão</span>
-                </div>
-
-                <div className="bg-[#F0F5FD] border border-[#DCE7F7] rounded-xl p-4 flex flex-col justify-between">
-                  <span className="text-xs font-bold text-[#023E8A] uppercase tracking-wider flex items-center gap-1">
-                    <MapPin className="w-4 h-4" /> Endereço da Unidade
-                  </span>
-                  <p className="text-xs font-medium text-[#142F68] mt-2 line-clamp-2">
-                    {unidadeAtual.endereco}
-                  </p>
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(unidadeAtual.endereco)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#023E8A] hover:underline mt-2"
+                  {/* QR CODE DE CHECK-IN (clique para gerar) */}
+                  <button
+                    type="button"
+                    onClick={() => setMostrarQr(true)}
+                    className="flex flex-col items-center justify-center gap-2 px-4 py-3 text-center transition hover:bg-[#E8F1FF] sm:px-5 sm:py-3.5"
                   >
-                    <Navigation className="w-3.5 h-3.5" /> Ver rotas no mapa
-                  </a>
+                    <QrCode size={40} strokeWidth={1.6} className="text-[#14539B]" />
+                    <p className="text-base font-semibold text-[#32629C]">Check-in</p>
+                    <span className="text-sm font-semibold leading-snug text-[#14539B]">
+                      Clique para gerar o QR Code de check-in
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -465,49 +602,23 @@ export default function FilaOnlinePage() {
                   <p className="mt-1 text-base text-[#304A7D]">
                     Veja as opções disponíveis na sua região
                   </p>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {["Clínico geral", "Pediatria", "Ginecologia"].map((servico) => (
-                      <span
-                        key={servico}
-                        className="rounded-full bg-[#E8F0FD] px-3 py-1.5 text-xs font-medium text-[#214A96]"
-                      >
-                        {servico}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 divide-y divide-[#DCE7F7] rounded-xl bg-[#F0F5FD] px-5 sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:px-4 lg:grid-cols-1 lg:divide-x-0 lg:divide-y">
                 <div className="flex items-center gap-4 py-4 sm:pr-3 lg:py-3">
                   <Clock size={32} className="shrink-0 text-[#023E8A]" />
-
                   <div>
-                    <p className="text-sm text-[#304A7D]">
-                      Tempo estimado
-                    </p>
-
-                    <p className="text-3xl font-bold text-[#142F68] leading-tight">
-                      —
-                    </p>
+                    <p className="text-sm text-[#304A7D]">Tempo estimado</p>
+                    <p className="text-3xl font-bold text-[#142F68] leading-tight">—</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 py-4 sm:pl-4 lg:py-3 lg:pl-0">
-                  <UsersRound
-                    size={32}
-                    className="shrink-0 text-[#023E8A]"
-                  />
-
+                  <UsersRound size={32} className="shrink-0 text-[#023E8A]" />
                   <div>
-                    <p className="text-sm text-[#304A7D]">
-                      Sua posição
-                    </p>
-
-                    <p className="text-xl font-bold text-[#142F68] leading-tight">
-                      Não está na fila
-                    </p>
+                    <p className="text-sm text-[#304A7D]">Sua posição</p>
+                    <p className="text-xl font-bold text-[#142F68] leading-tight">Não está na fila</p>
                   </div>
                 </div>
               </div>
@@ -517,7 +628,7 @@ export default function FilaOnlinePage() {
 
         {/* LISTA DE UNIDADES E MAPA */}
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.65fr_1fr]">
+        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[1.65fr_1fr]">
           <section className="min-w-0 rounded-2xl border border-[#D9E6F8] bg-white p-5 shadow-[0_8px_25px_rgba(31,65,119,0.05)] sm:p-7">
             <div className="mb-4 flex flex-col gap-3 border-b border-[#E5EDF9] pb-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -548,8 +659,8 @@ export default function FilaOnlinePage() {
             </div>
 
             <div className="divide-y divide-[#E4ECF9]">
-              {unidadesOrdenadas.length > 0 ? (
-                unidadesOrdenadas.map((unidade) => {
+              {unidadesExibidas.length > 0 ? (
+                unidadesExibidas.map((unidade) => {
                   const selecionada =
                     unidade.id === unidadeSelecionada;
 
@@ -562,7 +673,7 @@ export default function FilaOnlinePage() {
                           : ""
                       }`}
                     >
-                      <UnidadeIcon />
+                      <UnidadeFoto unidade={unidade} />
 
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-[#142F68]">
@@ -589,15 +700,6 @@ export default function FilaOnlinePage() {
 
                       <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-center sm:gap-1">
                         <div className="flex items-center gap-2">
-                          <Clock
-                            size={20}
-                            className={
-                              unidade.tipo === "rapida"
-                                ? "text-green-600"
-                                : "text-amber-700"
-                            }
-                          />
-
                           <div>
                             <p className="text-[11px] text-[#304A7D]">
                               Tempo de espera
@@ -606,8 +708,8 @@ export default function FilaOnlinePage() {
                             <p
                               className={`text-xl font-bold leading-tight ${
                                 unidade.tipo === "rapida"
-                                  ? "text-green-700"
-                                  : "text-amber-700"
+                                  ? "text-[#17418E]"
+                                  : "text-[#17418E]"
                               }`}
                             >
                               {unidade.espera} min
@@ -616,8 +718,8 @@ export default function FilaOnlinePage() {
                             <span
                               className={`mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-medium ${
                                 unidade.tipo === "rapida"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-orange-100 text-orange-800"
+                                  ? "bg-green-100 text-[#17418E]"
+                                  : "bg-[#E8F0FD] text-[#17418E]"
                               }`}
                             >
                               Fila{" "}
@@ -657,20 +759,77 @@ export default function FilaOnlinePage() {
 
           {/* MAPA REAL */}
 
-          <section className="rounded-2xl border border-[#D9E6F8] bg-white p-5 shadow-[0_8px_25px_rgba(31,65,119,0.05)] sm:p-6">
+          <section className="flex flex-col rounded-2xl border border-[#D9E6F8] bg-white p-5 shadow-[0_8px_25px_rgba(31,65,119,0.05)] sm:p-6">
             <h2 className="mb-4 flex items-center gap-3 text-lg font-bold text-[#142F68]">
               <MapPin size={22} className="text-[#023E8A]" />
 
               Unidades no seu bairro
             </h2>
 
-            <MapaUnidades
-              unidades={unidades}
-              onSelecionar={abrirConfirmacao}
-            />
+            <div className="relative min-h-[320px] flex-1">
+              <MapaUnidades
+                unidades={unidades}
+                onSelecionar={abrirConfirmacao}
+              />
+            </div>
           </section>
         </div>
       </main>
+
+      {/* NOTIFICAÇÃO PERSONALIZADA PARA SAIR DA FILA */}
+      {mostrarConfirmacaoSaida && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#071638]/55 p-4 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setMostrarConfirmacaoSaida(false);
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="titulo-sair-fila"
+            aria-describedby="descricao-sair-fila"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#D9E6F8] bg-white shadow-2xl"
+          >
+            <div className="flex items-start gap-4 p-6 sm:p-7">
+              <div className="min-w-0 flex-1">
+                <h2 id="titulo-sair-fila" className="text-xl font-bold text-[#142F68]">
+                  Deseja sair da fila?
+                </h2>
+                <p id="descricao-sair-fila" className="mt-2 text-sm leading-6 text-[#526987]">
+                  Se você sair agora, sua posição atual será encerrada. Para acompanhar o atendimento novamente, será necessário entrar na fila outra vez.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacaoSaida(false)}
+                aria-label="Fechar confirmação"
+                className="-mr-2 -mt-2 rounded-lg p-2 text-[#7183A0] transition hover:bg-[#F1F6FD] hover:text-[#142F68]"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex flex-col-reverse gap-3 border-t border-[#E6EDF7] bg-[#F8FAFE] p-5 sm:flex-row sm:justify-end sm:px-7">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacaoSaida(false)}
+                className="rounded-xl border border-[#C9D7EA] bg-white px-5 py-3 text-sm font-semibold text-[#24466F] transition hover:bg-[#EDF4FD]"
+              >
+                Continuar na fila
+              </button>
+              <button
+                type="button"
+                onClick={confirmarSaidaDaFila}
+                className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002B66] focus:outline-none focus:ring-4 focus:ring-[#023E8A]/20"
+              >
+                Sim, sair da fila
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL DE CONFIRMAÇÃO */}
 
@@ -909,6 +1068,69 @@ export default function FilaOnlinePage() {
           </div>
         </div>
       )}
+
+      {/* MODAL DO QR CODE DE CHECK-IN */}
+
+      {mostrarQr && unidadeAtual && (
+        <div
+          className="fixed inset-0 z-[55] flex items-center justify-center bg-[#071638]/55 p-4 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setMostrarQr(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl"
+          >
+            <div className="flex items-start justify-between">
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#023E8A]">
+                Check-in
+              </span>
+              <button
+                type="button"
+                onClick={() => setMostrarQr(false)}
+                aria-label="Fechar"
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <h2 className="mt-3 text-xl font-bold text-[#142F68]">Seu QR Code</h2>
+            <p className="mt-1 text-sm text-[#60769C]">
+              Apresente na recepção de {unidadeAtual.nome}
+            </p>
+
+            <div className="mx-auto mt-5 w-fit rounded-2xl border border-[#D5E5FF] bg-white p-4">
+              <QRCodeSVG
+                value={`fila-online|unidade:${unidadeAtual.id}|senha:A-084`}
+                size={200}
+                level="M"
+              />
+            </div>
+
+            <p className="mt-4 text-sm text-[#60769C]">Sua senha</p>
+            <span className="mt-1 inline-block rounded-xl bg-[#DFEAFF] px-4 py-1.5 text-2xl font-bold tracking-wide text-[#1752B5]">
+              A-084
+            </span>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function FilaOnlinePage() {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    return <FilaOnlineConteudo />;
+  }
+
+  return (
+    <APIProvider apiKey={apiKey} language="pt-BR" region="BR">
+      <FilaOnlineConteudo />
+    </APIProvider>
   );
 }
