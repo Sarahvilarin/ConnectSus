@@ -5,7 +5,9 @@ import {
   listarSetores,
   listarSetoresPorUnidade,
   vincularSetor,
-  desvincularSetor
+  desvincularSetor,
+  criarSetor,
+  atualizarSetor
 } from "../controllers/setorController.js";
 
 import { autenticarAdmin } from "../middlewares/authMiddleware.js";
@@ -28,5 +30,9 @@ router.delete(
   autenticarAdmin,
   desvincularSetor
 );
+
+router.put("/:id", autenticarAdmin, atualizarSetor);
+
+router.post("/", autenticarAdmin, criarSetor);
 
 export default router;

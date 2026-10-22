@@ -151,3 +151,100 @@ export async function desvincularSetor(req, res, next) {
     next(error);
   }
 }
+
+
+export async function criarSetor(req, res, next) {
+  try {
+    const { nome } = req.body ?? {};
+
+    if (
+      typeof nome !== "string" ||
+      nome.trim().length < 3 ||
+      nome.trim().length > 100
+    ) {
+      return res.status(400).json({
+        mensagem: "O nome deve ter entre 3 e 100 caracteres."
+      });
+    }
+
+    const [resultado] = await pool.query(
+      "INSERT INTO setores (nome) VALUES (?)",
+      [nome.trim()]
+    );
+
+    return res.status(201).json({
+      mensagem: "Setor cadastrado com sucesso!",
+      setor: {
+        id: resultado.insertId,
+        nome: nome.trim()
+      }
+    });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        mensagem: "Já existe um setor com esse nome."
+      });
+    }
+
+    next(error);
+  }
+}
+
+
+// ATUALIZAR SETOR
+export async function atualizarSetor(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { nome } = req.body ?? {};
+
+    // Validar ID
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        mensagem: "ID do setor inválido."
+      });
+    }
+
+    // Validar nome
+    if (
+      typeof nome !== "string" ||
+      nome.trim().length < 3 ||
+      nome.trim().length > 100
+    ) {
+      return res.status(400).json({
+        mensagem: "O nome deve ter entre 3 e 100 caracteres."
+      });
+    }
+
+    // Atualizar no MySQL
+    const [resultado] = await pool.query(
+      `UPDATE setores
+       SET nome = ?
+       WHERE id = ?`,
+      [nome.trim(), id]
+    );
+
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({
+        mensagem: "Setor não encontrado."
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: "Setor atualizado com sucesso!",
+      setor: {
+        id: Number(id),
+        nome: nome.trim()
+      }
+    });
+
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        mensagem: "Já existe um setor com esse nome."
+      });
+    }
+
+    next(error);
+  }
+}
+
