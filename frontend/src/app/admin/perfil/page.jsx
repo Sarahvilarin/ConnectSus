@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRef, useState } from "react";
@@ -215,7 +214,7 @@ export default function PerfilAdminPage() {
                   </div>
                 </div>
 
-                <div className="flex min-w-0 items-center gap-3 sm:border-l sm:border-[#BDD2F5] sm:pl-5">
+                <div className="flex min-w-0 items-center gap-3 sm:pl-5">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
                     <Mail size={24} />
                   </div>

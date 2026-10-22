@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
   Mail,
@@ -15,28 +15,216 @@ import {
   CheckCircle2,
   X,
   KeyRound,
+  Stethoscope,
   Building2,
   BadgeCheck,
+  BriefcaseMedical,
+  MapPin,
+  Clock3,
+  ClipboardList,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 
-export default function PerfilAdminPage() {
-  const [nome, setNome] = useState("Administrador ConectaSUS");
+/* Seletor personalizado com menu arredondado e rolagem */
+function SelectPersonalizado({
+  id,
+  value,
+  onChange,
+  options,
+  required = false,
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [foco, setFoco] = useState(0);
+  const containerRef = useRef(null);
+  const opcoesRef = useRef(null);
+
+  useEffect(() => {
+    function fecharFora(event) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setAberto(false);
+      }
+    }
+
+    document.addEventListener("mousedown", fecharFora);
+    document.addEventListener("touchstart", fecharFora);
+
+    return () => {
+      document.removeEventListener("mousedown", fecharFora);
+      document.removeEventListener("touchstart", fecharFora);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (aberto && opcoesRef.current) {
+      const selecionada = opcoesRef.current.querySelector(
+        `[data-index="${foco}"]`
+      );
+
+      selecionada?.scrollIntoView({ block: "nearest" });
+    }
+  }, [aberto, foco]);
+
+  function selecionar(opcao) {
+    onChange(opcao);
+    setAberto(false);
+  }
+
+  function navegar(event) {
+    if (event.key === "Escape") {
+      setAberto(false);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+
+      if (!aberto) {
+        setAberto(true);
+        setFoco(Math.max(0, options.findIndex((item) => item === value)));
+      } else {
+        setFoco((atual) => Math.min(atual + 1, options.length - 1));
+      }
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+
+      if (!aberto) {
+        setAberto(true);
+        setFoco(Math.max(0, options.findIndex((item) => item === value)));
+      } else {
+        setFoco((atual) => Math.max(atual - 1, 0));
+      }
+    }
+
+    if (event.key === "Enter" && aberto) {
+      event.preventDefault();
+      selecionar(options[foco]);
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        aria-required={required}
+        onClick={() => {
+          if (!aberto) {
+            setFoco(Math.max(0, options.findIndex((item) => item === value)));
+          }
+          setAberto(!aberto);
+        }}
+        onKeyDown={navegar}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-[#F7FAFF] px-5 py-4 pr-5 text-left text-sm font-medium text-[#0B1756] outline-none transition ${
+          aberto
+            ? "border-[#3563A7] ring-4 ring-[#3563A7]/10"
+            : "border-[#CFE0FF] hover:border-[#8EB5ED] focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
+        }`}
+      >
+        <span className="min-w-0 flex-1 truncate">{value}</span>
+        <ChevronDown
+          size={19}
+          className={`mr-1 shrink-0 text-[#3563A7] transition-transform ${
+            aberto ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {aberto && (
+        <div
+          ref={opcoesRef}
+          role="listbox"
+          aria-labelledby={id}
+          className="absolute left-0 top-[calc(100%+8px)] z-50 max-h-60 w-full overflow-y-auto rounded-2xl border border-[#CFE0FF] bg-white p-2 shadow-[0_12px_30px_rgba(11,23,86,0.16)] [scrollbar-color:#9AB9E5_#F0F6FF] [scrollbar-width:thin]"
+        >
+          {options.map((opcao, index) => (
+            <button
+              key={opcao}
+              type="button"
+              role="option"
+              aria-selected={value === opcao}
+              data-index={index}
+              onMouseEnter={() => setFoco(index)}
+              onClick={() => selecionar(opcao)}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${
+                value === opcao
+                  ? "bg-[#E7F1FF] font-semibold text-[#174D9B]"
+                  : foco === index
+                    ? "bg-[#F0F6FF] text-[#174D9B]"
+                    : "text-[#254A88] hover:bg-[#F0F6FF]"
+              }`}
+            >
+              <span>{opcao}</span>
+              {value === opcao && (
+                <Check size={17} className="shrink-0 text-[#3563A7]" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PerfilMedicoPage() {
+  const [nome, setNome] = useState("Dr. Gabriel Henrique Martins");
   const [telefone, setTelefone] = useState("(11) 98765-4321");
-  const [email, setEmail] = useState("admin@conectasus.com.br");
+  const [email, setEmail] = useState("gabriel.martins@conectasus.com");
   const [foto, setFoto] = useState("");
+
+  const [especialidade, setEspecialidade] = useState("Cardiologia");
+  const [crm, setCrm] = useState("123456");
+  const [uf, setUf] = useState("SP");
+  const [rqe, setRqe] = useState("45678");
+  const [unidade, setUnidade] = useState("UBS Centro");
+  const [experiencia, setExperiencia] = useState("10 anos");
+  const [tipoAtendimento, setTipoAtendimento] = useState(
+    "Presencial e teleconsulta"
+  );
+
   const [modal, setModal] = useState("");
   const [mensagem, setMensagem] = useState("");
-
-  const [nomeEditado, setNomeEditado] = useState(nome);
-  const [telefoneEditado, setTelefoneEditado] = useState(telefone);
-  const [novoEmail, setNovoEmail] = useState(email);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [novoEmail, setNovoEmail] = useState(email);
+
+  const [nomeEditado, setNomeEditado] = useState(nome);
+  const [telefoneEditado, setTelefoneEditado] = useState(telefone);
+  const [especialidadeEditada, setEspecialidadeEditada] =
+    useState(especialidade);
+  const [crmEditado, setCrmEditado] = useState(crm);
+  const [ufEditada, setUfEditada] = useState(uf);
+  const [rqeEditado, setRqeEditado] = useState(rqe);
+  const [unidadeEditada, setUnidadeEditada] = useState(unidade);
+  const [experienciaEditada, setExperienciaEditada] =
+    useState(experiencia);
+  const [tipoAtendimentoEditado, setTipoAtendimentoEditado] =
+    useState(tipoAtendimento);
 
   const inputFoto = useRef(null);
+
+  const estados = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES",
+    "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR",
+    "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+    "SP", "SE", "TO",
+  ];
+
+  const tiposAtendimento = [
+    "Presencial",
+    "Teleconsulta",
+    "Presencial e teleconsulta",
+  ];
 
   function mostrarMensagem(texto) {
     setMensagem(texto);
@@ -47,14 +235,26 @@ export default function PerfilAdminPage() {
     e.preventDefault();
 
     if (!nomeEditado.trim()) {
-      mostrarMensagem("Informe o nome do administrador.");
+      mostrarMensagem("Informe seu nome completo.");
+      return;
+    }
+
+    if (!especialidadeEditada.trim() || !crmEditado.trim() || !ufEditada) {
+      mostrarMensagem("Preencha a especialidade e os dados do CRM.");
       return;
     }
 
     setNome(nomeEditado.trim());
     setTelefone(telefoneEditado);
+    setEspecialidade(especialidadeEditada);
+    setCrm(crmEditado.trim());
+    setUf(ufEditada);
+    setRqe(rqeEditado.trim());
+    setUnidade(unidadeEditada);
+    setExperiencia(experienciaEditada);
+    setTipoAtendimento(tipoAtendimentoEditado);
 
-    mostrarMensagem("Dados do administrador atualizados!");
+    mostrarMensagem("Perfil profissional atualizado com sucesso!");
   }
 
   function selecionarFoto(e) {
@@ -63,7 +263,7 @@ export default function PerfilAdminPage() {
     if (!arquivo) return;
 
     if (!arquivo.type.startsWith("image/")) {
-      mostrarMensagem("Selecione uma imagem válida.");
+      mostrarMensagem("Selecione um arquivo de imagem válido.");
       return;
     }
 
@@ -74,31 +274,19 @@ export default function PerfilAdminPage() {
 
     setFoto(URL.createObjectURL(arquivo));
     mostrarMensagem("Foto de perfil atualizada!");
-  }
-
-  function alterarEmail(e) {
-    e.preventDefault();
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail.trim())) {
-      mostrarMensagem("Informe um e-mail válido.");
-      return;
-    }
-
-    setEmail(novoEmail.trim());
-    setModal("");
-    mostrarMensagem("E-mail atualizado na demonstração!");
+    e.target.value = "";
   }
 
   function alterarSenha(e) {
     e.preventDefault();
 
     if (!senhaAtual || !novaSenha || !confirmarSenha) {
-      mostrarMensagem("Preencha todos os campos.");
+      mostrarMensagem("Preencha todos os campos de senha.");
       return;
     }
 
     if (novaSenha.length < 8) {
-      mostrarMensagem("A senha deve ter pelo menos 8 caracteres.");
+      mostrarMensagem("A nova senha deve ter pelo menos 8 caracteres.");
       return;
     }
 
@@ -107,66 +295,95 @@ export default function PerfilAdminPage() {
       return;
     }
 
+    mostrarMensagem("Demonstração: senha validada com sucesso!");
     setSenhaAtual("");
     setNovaSenha("");
     setConfirmarSenha("");
     setModal("");
-
-    mostrarMensagem("Validação demonstrativa concluída!");
   }
+
+  function alterarEmail(e) {
+    e.preventDefault();
+
+    if (
+      !novoEmail.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)
+    ) {
+      mostrarMensagem("Informe um endereço de e-mail válido.");
+      return;
+    }
+
+    setEmail(novoEmail.trim());
+    setModal("");
+    mostrarMensagem("E-mail atualizado na demonstração!");
+  }
+
+  const camposProfissionais = [
+    {
+      id: "especialidade",
+      label: "Especialidade médica",
+      value: especialidadeEditada,
+      setValue: setEspecialidadeEditada,
+      placeholder: "Ex.: Cardiologia",
+      icon: Stethoscope,
+      required: true,
+    },
+    {
+      id: "crm",
+      label: "Número do CRM",
+      value: crmEditado,
+      setValue: setCrmEditado,
+      placeholder: "Digite o número do CRM",
+      icon: BadgeCheck,
+      required: true,
+    },
+    {
+      id: "rqe",
+      label: "RQE (se aplicável)",
+      value: rqeEditado,
+      setValue: setRqeEditado,
+      placeholder: "Digite o número do RQE",
+      icon: ClipboardList,
+      required: false,
+    },
+  ];
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7] text-[#0B1756]">
-      {/* Elementos decorativos */}
       <div className="pointer-events-none absolute -right-28 -top-36 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/50" />
+      <div className="pointer-events-none absolute -right-12 -top-20 h-[330px] w-[330px] rounded-full border-[65px] border-white/35" />
       <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
       <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
-      <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
-      {/* Conteúdo principal com espaçamento superior reduzido */}
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-10 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
-        {/* Cabeçalho */}
-
-        {/* Cabeçalho alinhado à esquerda */}
+      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-12 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
         <header className="mb-6 text-left sm:mb-7">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-            Gerenciar seu{" "}
-            <span className="text-[#3563A7]">Perfil</span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl md:text-5xl">
+            Gerenciar seu <span className="text-[#3563A7]">Perfil</span>
           </h1>
-
-          <p className="mt-3 max-w-2xl text-base leading-relaxed text-[#647EAE]">
-            Gerencie suas informações e mantenha sua conta administrativa segura no UneSUS.
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-[#647EAE] sm:text-lg">
+            Mantenha seus dados pessoais e profissionais atualizados no UneSUS.
           </p>
         </header>
 
-        {/* Resumo do administrador */}
-        <section className="mb-8 rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8 lg:px-12 lg:py-7">
-          <div className="flex flex-col items-center gap-7 md:flex-row md:gap-10">
+        {/* Resumo do médico */}
+        <section className="mb-7 rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8 lg:px-10">
+          <div className="flex flex-col items-center gap-6 md:flex-row md:gap-8">
             <div className="relative shrink-0">
-              <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full bg-[#DCEAFF] ring-8 ring-[#F4F8FF] sm:h-44 sm:w-44">
+              <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-[#DCEAFF] ring-8 ring-[#F4F8FF] sm:h-36 sm:w-36">
                 {foto ? (
-                  <img
-                    src={foto}
-                    alt="Foto do administrador"
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={foto} alt={`Foto de ${nome}`} className="h-full w-full object-cover" />
                 ) : (
-                  <UserRound
-                    size={105}
-                    strokeWidth={1.4}
-                    className="mt-5 text-[#3563A7]"
-                    fill="#3563A7"
-                  />
+                  <UserRound size={88} strokeWidth={1.4} className="mt-4 text-[#3563A7]" fill="#3563A7" />
                 )}
               </div>
 
               <button
                 type="button"
                 onClick={() => inputFoto.current?.click()}
-                aria-label="Alterar foto"
-                className="absolute bottom-0 right-0 flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-[#0B286F] text-white shadow-lg transition hover:scale-105 hover:bg-[#3563A7]"
+                aria-label="Alterar foto de perfil"
+                className="absolute bottom-0 right-0 flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-[#0B286F] text-white shadow-lg transition hover:scale-105 hover:bg-[#3563A7]"
               >
-                <Pencil size={19} />
+                <Pencil size={18} />
               </button>
 
               <input
@@ -178,55 +395,50 @@ export default function PerfilAdminPage() {
               />
             </div>
 
-            <div className="hidden h-36 w-px bg-[#BDD2F5] md:block" />
+            <div className="hidden h-32 w-px bg-[#BDD2F5] md:block" />
 
             <div className="min-w-0 flex-1 text-center md:text-left">
-              <div className="mb-2 flex flex-wrap items-center justify-center gap-2 md:justify-start">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-semibold text-[#3563A7]">
-                  <BadgeCheck size={15} />
-                  Administrador
-                </span>
-
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Conta ativa
-                </span>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#E7F4FF] px-3 py-1.5 text-xs font-semibold text-[#3563A7]">
+                <ShieldCheck size={15} />
+                Perfil profissional
               </div>
 
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Olá, {nome.split(" ")[0]}!
+                Olá, {nome.split(" ")[1] || nome.split(" ")[0]}!
               </h2>
 
               <p className="mt-2 text-sm text-[#647EAE] sm:text-base">
-                Gerencie seus dados de acesso e informações administrativas.
+                {especialidade} · CRM {crm}/{uf}
               </p>
 
-              <div className="mt-6 grid gap-5 sm:grid-cols-2 sm:gap-6">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
-                    <UserRound size={24} />
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
+                    <Stethoscope size={22} />
                   </div>
-
                   <div className="min-w-0">
-                    <p className="text-sm text-[#6B84B3]">Nome completo</p>
-                    <p className="mt-1 break-words text-sm font-medium text-[#3563A7]">
-                      {nome}
-                    </p>
+                    <p className="text-xs text-[#6B84B3]">Especialidade</p>
+                    <p className="mt-1 break-words text-sm font-semibold text-[#3563A7]">{especialidade}</p>
                   </div>
                 </div>
 
-                <div className="flex min-w-0 items-center gap-3 sm:border-l sm:border-[#BDD2F5] sm:pl-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
-                    <Mail size={24} />
+                <div className="flex items-center gap-3 text-left">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
+                    <Building2 size={22} />
                   </div>
-
                   <div className="min-w-0">
-                    <p className="text-sm text-[#6B84B3]">
-                      E-mail administrativo
-                    </p>
-                    <p className="mt-1 break-all text-sm font-medium text-[#3563A7]">
-                      {email}
-                    </p>
+                    <p className="text-xs text-[#6B84B3]">Unidade de saúde</p>
+                    <p className="mt-1 break-words text-sm font-semibold text-[#3563A7]">{unidade}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 text-left sm:col-span-2 lg:col-span-1">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
+                    <Mail size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-[#6B84B3]">E-mail profissional</p>
+                    <p className="mt-1 break-all text-sm font-semibold text-[#3563A7]">{email}</p>
                   </div>
                 </div>
               </div>
@@ -234,174 +446,215 @@ export default function PerfilAdminPage() {
           </div>
         </section>
 
-        {/* Cartões principais */}
-        <div className="grid items-stretch gap-6 lg:grid-cols-2">
-          {/* Dados pessoais */}
-          <section className="rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8">
-            <div className="mb-7 flex items-center gap-4">
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
-                <UserRound size={35} />
+        <form onSubmit={salvarDados}>
+          <div className="grid items-stretch gap-6 lg:grid-cols-2">
+            {/* Dados pessoais */}
+            <section className="rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8">
+              <div className="mb-7 flex items-center gap-4">
+                <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
+                  <UserRound size={31} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Dados pessoais</h2>
+                  <p className="mt-1 text-sm text-[#647EAE]">Informações básicas da sua conta.</p>
+                </div>
               </div>
 
-              <div>
-                <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-                  Dados do administrador
-                </h2>
-                <p className="mt-1 text-sm text-[#647EAE]">
-                  Atualize suas informações de contato.
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={salvarDados} className="space-y-5">
-              <div>
-                <label
-                  htmlFor="nome-admin"
-                  className="mb-2 block text-sm font-semibold text-[#254A88]"
-                >
-                  Nome completo
-                </label>
-
-                <input
-                  id="nome-admin"
-                  type="text"
-                  value={nomeEditado}
-                  onChange={(e) => setNomeEditado(e.target.value)}
-                  required
-                  className="w-full rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-5 py-4 text-sm font-medium outline-none transition focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
-                  placeholder="Digite seu nome completo"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="telefone-admin"
-                  className="mb-2 block text-sm font-semibold text-[#254A88]"
-                >
-                  Telefone (opcional)
-                </label>
-
-                <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-5 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
-                  <Phone size={21} className="shrink-0 text-[#3563A7]" />
-
+              <div className="space-y-5">
+                <div>
+                  <label htmlFor="nome-medico" className="mb-2 block text-sm font-semibold text-[#254A88]">Nome completo</label>
                   <input
-                    id="telefone-admin"
-                    type="tel"
-                    value={telefoneEditado}
-                    onChange={(e) => setTelefoneEditado(e.target.value)}
-                    placeholder="(11) 99999-9999"
-                    className="min-w-0 flex-1 bg-transparent py-4 text-sm font-medium outline-none"
+                    id="nome-medico"
+                    type="text"
+                    value={nomeEditado}
+                    onChange={(e) => setNomeEditado(e.target.value)}
+                    required
+                    placeholder="Digite seu nome completo"
+                    className="w-full rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-5 py-4 text-sm font-medium outline-none transition placeholder:text-[#9AAED0] focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="telefone-medico" className="mb-2 block text-sm font-semibold text-[#254A88]">Telefone</label>
+                  <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-5 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
+                    <Phone size={20} className="shrink-0 text-[#3563A7]" />
+                    <input
+                      id="telefone-medico"
+                      type="tel"
+                      value={telefoneEditado}
+                      onChange={(e) => setTelefoneEditado(e.target.value)}
+                      placeholder="(11) 99999-9999"
+                      className="min-w-0 flex-1 bg-transparent py-4 text-sm font-medium outline-none placeholder:text-[#9AAED0]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-[#254A88]">E-mail cadastrado</label>
+                  <div className="flex items-center gap-3 rounded-2xl border border-[#E1EAF7] bg-slate-50 px-5 py-4">
+                    <Mail size={20} className="shrink-0 text-[#7894BC]" />
+                    <span className="min-w-0 break-all text-sm text-[#7189B3]">{email}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNovoEmail(email);
+                        setModal("email");
+                      }}
+                      className="ml-auto shrink-0 rounded-lg p-2 text-[#3563A7] transition hover:bg-[#E0ECFF]"
+                      aria-label="Editar e-mail"
+                    >
+                      <Pencil size={17} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Dados profissionais */}
+            <section className="rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8">
+              <div className="mb-7 flex items-center gap-4">
+                <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
+                  <BriefcaseMedical size={31} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Dados profissionais</h2>
+                  <p className="mt-1 text-sm text-[#647EAE]">Registro e atuação médica.</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {camposProfissionais.map((campo) => {
+                  const Icone = campo.icon;
+
+                  return (
+                    <div key={campo.id}>
+                      <label htmlFor={campo.id} className="mb-2 block text-sm font-semibold text-[#254A88]">{campo.label}</label>
+                      <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-4 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
+                        <Icone size={20} className="shrink-0 text-[#3563A7]" />
+                        <input
+                          id={campo.id}
+                          type="text"
+                          value={campo.value}
+                          onChange={(e) => campo.setValue(e.target.value)}
+                          placeholder={campo.placeholder}
+                          required={campo.required}
+                          className="min-w-0 flex-1 bg-transparent py-4 text-sm font-medium outline-none placeholder:text-[#9AAED0]"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div>
+                  <label htmlFor="uf-medico" className="mb-2 block text-sm font-semibold text-[#254A88]">UF do CRM</label>
+                  <SelectPersonalizado
+                    id="uf-medico"
+                    value={ufEditada}
+                    onChange={setUfEditada}
+                    options={estados}
+                    required
                   />
                 </div>
               </div>
+            </section>
 
-              <div className="rounded-2xl border border-[#E1EAF7] bg-[#F8FBFF] p-4">
-                <div className="flex items-start gap-3">
-                  <Building2 size={21} className="mt-0.5 shrink-0 text-[#3563A7]" />
-
-                  <div>
-                    <p className="text-sm font-semibold text-[#254A88]">
-                      Tipo de acesso
-                    </p>
-                    <p className="mt-1 text-sm text-[#647EAE]">
-                      Administrador do sistema ConectaSUS
-                    </p>
-                  </div>
+            {/* Vínculo profissional */}
+            <section className="rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8 lg:col-span-2">
+              <div className="mb-7 flex items-center gap-4">
+                <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
+                  <Building2 size={31} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Vínculo profissional</h2>
+                  <p className="mt-1 text-sm text-[#647EAE]">Informações sobre sua atuação na rede de saúde.</p>
                 </div>
               </div>
 
-              <div className="flex justify-center pt-2 sm:pt-4">
-                <button
-                  type="submit"
-                  className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#3563A7] to-[#1760C5] px-6 py-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(53,99,167,0.20)] transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#3563A7]/20 sm:max-w-[260px]"
-                >
-                  <Save size={21} />
-                  Salvar alterações
-                </button>
-              </div>
-            </form>
-          </section>
-
-          {/* Segurança */}
-          <section className="rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8">
-            <div className="mb-7 flex items-center gap-4">
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
-                <ShieldCheck size={37} />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-                  Segurança da conta
-                </h2>
-                <p className="mt-1 text-sm text-[#647EAE]">
-                  Proteja seu acesso administrativo.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col gap-4 rounded-[22px] border border-[#E3EDFF] bg-[#F1F6FF] p-5 sm:p-6 xl:flex-row xl:items-center">
-                <div className="flex min-w-0 flex-1 items-center gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFEAFF] text-[#3563A7]">
-                    <LockKeyhole size={29} />
+              <div className="grid gap-5 md:grid-cols-3">
+                <div>
+                  <label htmlFor="unidade-medico" className="mb-2 block text-sm font-semibold text-[#254A88]">Unidade de saúde</label>
+                  <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-4 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
+                    <MapPin size={20} className="shrink-0 text-[#3563A7]" />
+                    <input
+                      id="unidade-medico"
+                      value={unidadeEditada}
+                      onChange={(e) => setUnidadeEditada(e.target.value)}
+                      required
+                      placeholder="Nome da unidade"
+                      className="min-w-0 flex-1 bg-transparent py-4 text-sm font-medium outline-none placeholder:text-[#9AAED0]"
+                    />
                   </div>
+                </div>
 
+                <div>
+                  <label htmlFor="experiencia-medico" className="mb-2 block text-sm font-semibold text-[#254A88]">Tempo de experiência</label>
+                  <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-4 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
+                    <Clock3 size={20} className="shrink-0 text-[#3563A7]" />
+                    <input
+                      id="experiencia-medico"
+                      value={experienciaEditada}
+                      onChange={(e) => setExperienciaEditada(e.target.value)}
+                      placeholder="Ex.: 5 anos"
+                      className="min-w-0 flex-1 bg-transparent py-4 text-sm font-medium outline-none placeholder:text-[#9AAED0]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="tipo-atendimento" className="mb-2 block text-sm font-semibold text-[#254A88]">Tipo de atendimento</label>
+                  <SelectPersonalizado
+                    id="tipo-atendimento"
+                    value={tipoAtendimentoEditado}
+                    onChange={setTipoAtendimentoEditado}
+                    options={tiposAtendimento}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Segurança */}
+            <section className="rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8 lg:col-span-2">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
+                    <ShieldCheck size={31} />
+                  </div>
                   <div>
-                    <h3 className="font-bold">Alterar senha</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-[#647EAE]">
-                      Atualize sua senha de acesso.
-                    </p>
+                    <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Segurança da conta</h2>
+                    <p className="mt-1 text-sm text-[#647EAE]">Proteja seus dados de acesso.</p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setModal("senha")}
-                  className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#3563A7] bg-white/60 px-5 py-3 text-sm font-semibold text-[#23559B] transition hover:bg-[#3563A7] hover:text-white"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#3563A7] bg-white px-5 py-3 text-sm font-semibold text-[#23559B] transition hover:bg-[#3563A7] hover:text-white"
                 >
-                  <LockKeyhole size={17} />
+                  <LockKeyhole size={18} />
                   Alterar senha
                 </button>
               </div>
 
-              <div className="flex flex-col gap-4 rounded-[22px] border border-[#E3EDFF] bg-[#F1F6FF] p-5 sm:p-6 xl:flex-row xl:items-center">
-                <div className="flex min-w-0 flex-1 items-center gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFEAFF] text-[#3563A7]">
-                    <Mail size={29} />
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold">Alterar e-mail</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-[#647EAE]">
-                      Atualize seu e-mail administrativo.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNovoEmail(email);
-                    setModal("email");
-                  }}
-                  className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#3563A7] bg-white/60 px-5 py-3 text-sm font-semibold text-[#23559B] transition hover:bg-[#3563A7] hover:text-white"
-                >
-                  <Mail size={18} />
-                  Alterar e-mail
-                </button>
+              <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#DDEBFA] bg-[#F8FBFF] p-4">
+                <ShieldCheck size={21} className="mt-0.5 shrink-0 text-[#3563A7]" />
+                <p className="text-xs leading-relaxed text-[#647EAE]">
+                  Mantenha suas informações profissionais atualizadas. Nunca compartilhe sua senha.
+                  Os dados exibidos nesta página são demonstrativos e não estão conectados a um sistema real.
+                </p>
               </div>
-            </div>
+            </section>
+          </div>
 
-            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#DDEBFA] bg-[#F8FBFF] p-4">
-              <ShieldCheck size={21} className="mt-0.5 shrink-0 text-[#3563A7]" />
-
-              <p className="text-xs leading-relaxed text-[#647EAE]">
-                O acesso administrativo deve ser protegido. Não compartilhe
-                suas credenciais com outras pessoas.
-              </p>
-            </div>
-          </section>
-        </div>
+          <div className="mt-7 flex justify-end">
+            <button
+              type="submit"
+              className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#3563A7] to-[#1760C5] px-7 py-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(53,99,167,0.20)] transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#3563A7]/20 sm:w-auto"
+            >
+              <Save size={21} />
+              Salvar alterações
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Notificação */}
@@ -411,9 +664,7 @@ export default function PerfilAdminPage() {
           className="fixed right-4 top-4 z-[60] flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-[#D3E5D9] bg-white px-5 py-4 text-sm font-medium text-[#245D43] shadow-xl sm:right-6 sm:top-6"
         >
           <CheckCircle2 size={22} className="shrink-0 text-emerald-600" />
-
           <span>{mensagem}</span>
-
           <button
             type="button"
             onClick={() => setMensagem("")}
@@ -425,7 +676,7 @@ export default function PerfilAdminPage() {
         </div>
       )}
 
-      {/* Janelas de alteração */}
+      {/* Modais de segurança e e-mail */}
       {modal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#071638]/50 p-4 backdrop-blur-sm"
@@ -442,21 +693,13 @@ export default function PerfilAdminPage() {
             <div className="mb-6 flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#3563A7]">
-                  {modal === "senha" ? (
-                    <KeyRound size={25} />
-                  ) : (
-                    <Mail size={25} />
-                  )}
+                  {modal === "senha" ? <KeyRound size={25} /> : <Mail size={25} />}
                 </div>
-
                 <div>
                   <h2 id="modal-title" className="text-xl font-bold">
                     {modal === "senha" ? "Alterar senha" : "Alterar e-mail"}
                   </h2>
-
-                  <p className="mt-1 text-sm text-[#7189B3]">
-                    Atualize seus dados de acesso.
-                  </p>
+                  <p className="mt-1 text-sm text-[#7189B3]">Atualize seus dados de acesso.</p>
                 </div>
               </div>
 
@@ -474,65 +717,55 @@ export default function PerfilAdminPage() {
               <form onSubmit={alterarSenha} className="space-y-4">
                 {[
                   {
-                    id: "senha-atual-admin",
+                    id: "senha-atual",
                     label: "Senha atual",
                     value: senhaAtual,
                     setValue: setSenhaAtual,
+                    autoComplete: "current-password",
                   },
                   {
-                    id: "nova-senha-admin",
+                    id: "nova-senha",
                     label: "Nova senha",
                     value: novaSenha,
                     setValue: setNovaSenha,
+                    autoComplete: "new-password",
                   },
                   {
-                    id: "confirmar-senha-admin",
+                    id: "confirmar-senha",
                     label: "Confirmar nova senha",
                     value: confirmarSenha,
                     setValue: setConfirmarSenha,
+                    autoComplete: "new-password",
                   },
                 ].map((campo) => (
                   <div key={campo.id}>
-                    <label
-                      htmlFor={campo.id}
-                      className="mb-2 block text-sm font-semibold text-[#254A88]"
-                    >
+                    <label htmlFor={campo.id} className="mb-2 block text-sm font-semibold text-[#254A88]">
                       {campo.label}
                     </label>
-
                     <div className="flex items-center rounded-xl border border-[#CFE0FF] bg-[#F7FAFF] pr-3 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                       <input
                         id={campo.id}
                         type={mostrarSenha ? "text" : "password"}
                         value={campo.value}
                         onChange={(e) => campo.setValue(e.target.value)}
-                        autoComplete="new-password"
+                        autoComplete={campo.autoComplete}
                         className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm outline-none"
                         placeholder="Digite sua senha"
                         required
                       />
-
                       <button
                         type="button"
                         onClick={() => setMostrarSenha(!mostrarSenha)}
-                        aria-label={
-                          mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"
-                        }
+                        aria-label={mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"}
                         className="rounded-lg p-1 text-[#647EAE] hover:text-[#0B1756]"
                       >
-                        {mostrarSenha ? (
-                          <EyeOff size={19} />
-                        ) : (
-                          <Eye size={19} />
-                        )}
+                        {mostrarSenha ? <EyeOff size={19} /> : <Eye size={19} />}
                       </button>
                     </div>
                   </div>
                 ))}
 
-                <p className="text-xs text-[#7189B3]">
-                  Utilize pelo menos 8 caracteres na nova senha.
-                </p>
+                <p className="text-xs text-[#7189B3]">Utilize pelo menos 8 caracteres para a nova senha.</p>
 
                 <button
                   type="submit"
@@ -545,15 +778,9 @@ export default function PerfilAdminPage() {
             ) : (
               <form onSubmit={alterarEmail} className="space-y-5">
                 <div>
-                  <label
-                    htmlFor="email-atual-admin"
-                    className="mb-2 block text-sm font-semibold text-[#254A88]"
-                  >
-                    E-mail atual
-                  </label>
-
+                  <label htmlFor="email-atual" className="mb-2 block text-sm font-semibold text-[#254A88]">E-mail atual</label>
                   <input
-                    id="email-atual-admin"
+                    id="email-atual"
                     value={email}
                     readOnly
                     className="w-full rounded-xl border border-[#E1EAF7] bg-slate-50 px-4 py-3 text-sm text-[#7189B3] outline-none"
@@ -561,27 +788,20 @@ export default function PerfilAdminPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="novo-email-admin"
-                    className="mb-2 block text-sm font-semibold text-[#254A88]"
-                  >
-                    Novo e-mail
-                  </label>
-
+                  <label htmlFor="novo-email" className="mb-2 block text-sm font-semibold text-[#254A88]">Novo e-mail</label>
                   <input
-                    id="novo-email-admin"
+                    id="novo-email"
                     type="email"
                     value={novoEmail}
                     onChange={(e) => setNovoEmail(e.target.value)}
-                    placeholder="admin@exemplo.com"
+                    placeholder="seuemail@exemplo.com"
                     required
                     className="w-full rounded-xl border border-[#CFE0FF] bg-[#F7FAFF] px-4 py-3 text-sm outline-none transition focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
                   />
                 </div>
 
                 <div className="rounded-xl bg-[#EAF3F7] p-4 text-xs leading-relaxed text-[#536F9D]">
-                  Em um sistema real, a alteração do e-mail precisará de uma
-                  verificação de segurança.
+                  Em um sistema real, a alteração deverá ser confirmada por meio de uma verificação de segurança.
                 </div>
 
                 <button
