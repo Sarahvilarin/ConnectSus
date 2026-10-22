@@ -1,26 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
+
 import {
-  Search,
-  MapPin,
-  Phone,
-  Clock,
-  Map,
-  Hospital,
-  Stethoscope,
+  ArrowRight,
   Building2,
-  Navigation,
+  ChevronDown,
+  Clock3,
+  Filter,
   HeartPulse,
+  Hospital,
+  MapPin,
+  Navigation,
+  Phone,
+  Search,
+  Stethoscope,
   X,
-  ChevronRight,
-  ExternalLink,
 } from "lucide-react";
-
-
-// ============================================================
-// DADOS DAS UNIDADES
-// ============================================================
 
 const UNIDADES = [
   {
@@ -28,126 +25,104 @@ const UNIDADES = [
     nome: "UBS Santo Antônio",
     tipo: "UBS",
     bairro: "Santo Antônio",
-    endereco: "Rua Joaquim Nabuco, 215",
-    telefone: "(11) 4223-5479",
+    endereco: "São Caetano do Sul - SP",
+    telefone: "(11) 0000-0000",
     horario: "Segunda a sexta, das 7h às 17h",
-    aberto: true,
-    atendimento24h: false,
     descricao:
-      "Unidade de atenção básica voltada a consultas, prevenção e acompanhamento da saúde da população.",
+      "Atendimento de atenção básica, vacinação, acompanhamento e serviços de saúde da família.",
     servicos: [
       "Clínica geral",
-      "Enfermagem",
       "Vacinação",
-      "Acompanhamento de saúde",
+      "Enfermagem",
+      "Saúde da família",
     ],
   },
-
   {
     id: 2,
     nome: "UBS Dr. Ivanhoé Esposito",
     tipo: "UBS",
-    bairro: "Barcelona",
-    endereco: "Rua Flórida, 295",
-    telefone: "(11) 4233-7542",
+    bairro: "Olímpico",
+    endereco: "São Caetano do Sul - SP",
+    telefone: "(11) 0000-0000",
     horario: "Segunda a sexta, das 7h às 17h",
-    aberto: true,
-    atendimento24h: false,
     descricao:
-      "Unidade de atenção primária com atendimento clínico, vacinação e acompanhamento de pacientes.",
+      "Unidade de atenção básica com acompanhamento clínico e serviços preventivos.",
     servicos: [
-      "Clínica geral",
+      "Consultas",
       "Vacinação",
-      "Enfermagem",
-      "Prevenção",
+      "Curativos",
+      "Acompanhamento",
     ],
   },
-
   {
     id: 3,
     nome: "UBS Maria Corbeta Segato",
     tipo: "UBS",
     bairro: "Prosperidade",
-    endereco: "Avenida Prosperidade, 671",
-    telefone: "(11) 4233-7543",
-    horario: "Segunda a sexta, das 7h às 21h",
-    aberto: true,
-    atendimento24h: false,
+    endereco: "São Caetano do Sul - SP",
+    telefone: "(11) 0000-0000",
+    horario: "Segunda a sexta, das 7h às 17h",
     descricao:
-      "Unidade básica com horário ampliado para facilitar o acesso da população aos serviços públicos de saúde.",
+      "Atendimento básico e acompanhamento da população da região.",
     servicos: [
-      "Consultas",
-      "Vacinação",
+      "Clínica geral",
       "Enfermagem",
-      "Acompanhamento",
+      "Vacinação",
+      "Prevenção",
     ],
   },
-
   {
     id: 4,
     nome: "Hospital Municipal de Emergências Albert Sabin",
     tipo: "Urgência e Emergência",
     bairro: "Santa Paula",
-    endereco: "Rua Aurélia, 101",
-    telefone: "(11) 4233-7500",
+    endereco: "São Caetano do Sul - SP",
+    telefone: "(11) 0000-0000",
     horario: "Atendimento 24 horas",
-    aberto: true,
-    atendimento24h: true,
     descricao:
-      "Unidade municipal destinada ao atendimento de situações de urgência e emergência.",
+      "Atendimento destinado a situações de urgência e emergência.",
     servicos: [
-      "Urgência",
+      "Pronto atendimento",
       "Emergência",
-      "Atendimento médico",
-      "Atendimento 24h",
+      "Exames",
+      "Observação",
     ],
   },
-
   {
     id: 5,
     nome: "Hospital Municipal Maria Braido",
     tipo: "Hospital Municipal",
     bairro: "Santa Paula",
-    endereco: "Rua São Paulo, 1840",
-    telefone: "(11) 4233-7525",
-    horario: "Atendimento 24 horas",
-    aberto: true,
-    atendimento24h: true,
+    endereco: "São Caetano do Sul - SP",
+    telefone: "(11) 0000-0000",
+    horario: "Atendimento conforme serviço",
     descricao:
-      "Hospital municipal com serviços hospitalares, internação e atendimentos especializados.",
+      "Hospital municipal com serviços hospitalares e atendimento especializado.",
     servicos: [
       "Internação",
-      "Cirurgias",
       "Especialidades",
-      "Atendimento hospitalar",
+      "Exames",
+      "Procedimentos",
     ],
   },
-
   {
     id: 6,
     nome: "Atende Fácil Saúde Pedro Kassab",
     tipo: "Especialidades",
-    bairro: "Santo Antônio",
-    endereco: "Av. Senador Roberto Simonsen, 282",
-    telefone: "(11) 4233-8115",
-    horario: "Segunda a sexta, das 7h às 19h",
-    aberto: true,
-    atendimento24h: false,
+    bairro: "Centro",
+    endereco: "São Caetano do Sul - SP",
+    telefone: "(11) 0000-0000",
+    horario: "Segunda a sexta",
     descricao:
-      "Unidade pública destinada a consultas especializadas, exames e serviços de apoio à saúde.",
+      "Atendimento especializado e serviços complementares da rede municipal.",
     servicos: [
       "Especialidades",
       "Exames",
-      "Diagnóstico",
-      "Atendimento ambulatorial",
+      "Avaliações",
+      "Atendimento agendado",
     ],
   },
 ];
-
-
-// ============================================================
-// TIPOS
-// ============================================================
 
 const TIPOS = [
   "Todos",
@@ -157,352 +132,240 @@ const TIPOS = [
   "Especialidades",
 ];
 
-
-// ============================================================
-// CATEGORIAS
-// ============================================================
-
-const CATEGORIAS = [
-  "UBS",
-  "Urgência e Emergência",
-  "Hospital Municipal",
-  "Especialidades",
-];
-
-
-// ============================================================
-// NORMALIZA TEXTO
-// ============================================================
-
-function normalizarTexto(texto) {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-
-// ============================================================
-// PÁGINA
-// ============================================================
-
 export default function UnidadesPage() {
-  const [pesquisa, setPesquisa] = useState("");
-
+  const [busca, setBusca] = useState("");
+  const [bairro, setBairro] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
 
-  const [bairro, setBairro] = useState("Todos");
+  const [bairroAberto, setBairroAberto] =
+    useState(false);
 
-  const [unidadeSelecionada, setUnidadeSelecionada] =
+  const [unidadeAberta, setUnidadeAberta] =
     useState(null);
 
-  const [categoriasAbertas, setCategoriasAbertas] =
-    useState([]);
-
-
-  // ==========================================================
-  // BAIRROS
-  // ==========================================================
-
   const bairros = useMemo(() => {
+    const lista = [
+      ...new Set(
+        UNIDADES.map(
+          (unidade) => unidade.bairro
+        )
+      ),
+    ];
+
     return [
       "Todos",
-      ...new Set(
-        UNIDADES
-          .map((unidade) => unidade.bairro)
-          .sort((a, b) => a.localeCompare(b))
-      ),
+      ...lista.sort(),
     ];
   }, []);
 
-
-  // ==========================================================
-  // FILTROS
-  // ==========================================================
-
   const unidadesFiltradas = useMemo(() => {
-    const texto = normalizarTexto(pesquisa);
+    return UNIDADES.filter(
+      (unidade) => {
+        const texto =
+          busca.toLowerCase();
 
-    return UNIDADES.filter((unidade) => {
-      const conteudoPesquisa = normalizarTexto(
-        `
-        ${unidade.nome}
-        ${unidade.tipo}
-        ${unidade.bairro}
-        ${unidade.endereco}
-        ${unidade.servicos.join(" ")}
-        `
-      );
+        const correspondeBusca =
+          unidade.nome
+            .toLowerCase()
+            .includes(texto) ||
+          unidade.bairro
+            .toLowerCase()
+            .includes(texto) ||
+          unidade.tipo
+            .toLowerCase()
+            .includes(texto);
 
-      const correspondePesquisa =
-        conteudoPesquisa.includes(texto);
+        const correspondeBairro =
+          bairro === "Todos" ||
+          unidade.bairro === bairro;
 
-      const correspondeTipo =
-        tipo === "Todos" ||
-        unidade.tipo === tipo;
+        const correspondeTipo =
+          tipo === "Todos" ||
+          unidade.tipo === tipo;
 
-      const correspondeBairro =
-        bairro === "Todos" ||
-        unidade.bairro === bairro;
-
-      return (
-        correspondePesquisa &&
-        correspondeTipo &&
-        correspondeBairro
-      );
-    });
-  }, [pesquisa, tipo, bairro]);
-
-
-  // ==========================================================
-  // ABRIR / FECHAR CATEGORIA
-  // ==========================================================
-
-  function alternarCategoria(categoria) {
-    setCategoriasAbertas((anteriores) => {
-      if (anteriores.includes(categoria)) {
-        return anteriores.filter(
-          (item) => item !== categoria
+        return (
+          correspondeBusca &&
+          correspondeBairro &&
+          correspondeTipo
         );
       }
-
-      return [
-        ...anteriores,
-        categoria,
-      ];
-    });
-  }
-
-
-  // ==========================================================
-  // MAPA INDIVIDUAL
-  // ==========================================================
-
-  function abrirMapa(unidade) {
-    const enderecoCompleto =
-      `${unidade.nome}, ${unidade.endereco}, ` +
-      `${unidade.bairro}, São Caetano do Sul - SP`;
-
-    const url =
-      `https://www.google.com/maps/search/?api=1&query=` +
-      encodeURIComponent(enderecoCompleto);
-
-    window.open(
-      url,
-      "_blank",
-      "noopener,noreferrer"
     );
+  }, [busca, bairro, tipo]);
+
+  function limparFiltros() {
+    setBusca("");
+    setBairro("Todos");
+    setTipo("Todos");
+    setBairroAberto(false);
   }
-
-
-  // ==========================================================
-  // MAPA GERAL
-  // ==========================================================
-
-  function abrirMapaGeral() {
-    const url =
-      "https://www.google.com/maps/search/" +
-      "?api=1&query=rede+publica+de+saude+São+Caetano+do+Sul";
-
-    window.open(
-      url,
-      "_blank",
-      "noopener,noreferrer"
-    );
-  }
-
-
-  // ==========================================================
-  // ÍCONE DA UNIDADE
-  // ==========================================================
-
-  function iconeTipo(tipoUnidade) {
-    if (tipoUnidade === "UBS") {
-      return <Stethoscope size={20} />;
-    }
-
-    if (
-      tipoUnidade === "Hospital Municipal" ||
-      tipoUnidade === "Urgência e Emergência"
-    ) {
-      return <Hospital size={20} />;
-    }
-
-    return <Building2 size={20} />;
-  }
-
-
-  // ==========================================================
-  // QUANTIDADE POR TIPO
-  // ==========================================================
-
-  function quantidadeTipo(tipoUnidade) {
-    if (tipoUnidade === "Todos") {
-      return UNIDADES.length;
-    }
-
-    return UNIDADES.filter(
-      (unidade) =>
-        unidade.tipo === tipoUnidade
-    ).length;
-  }
-
-
-  // ==========================================================
-  // RETORNO
-  // ==========================================================
 
   return (
-    <main
-      className="
-        relative
-        min-h-screen
-        overflow-hidden
-        bg-[#EAF3F7]
-      "
-    >
-
+    <main className="min-h-screen bg-[#F5F9FC]">
       {/* =====================================================
-          FUNDO COM CÍRCULOS
+          HERO
       ====================================================== */}
 
-      <div className="pointer-events-none absolute -right-28 -top-36 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/50" />
+      <section className="relative overflow-hidden bg-[#023E8A]">
 
-      <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
+        {/* IMAGEM ÚNICA */}
 
-      <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
+        <div className="absolute inset-0">
+          <Image
+            src="/unidades-hero.jpg"
+            alt="Unidade de saúde"
+            fill
+            priority
+            className="object-cover"
+          />
 
-      <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
-
-
-      {/* =====================================================
-          CONTEÚDO
-      ====================================================== */}
-
-      <div
-        className="
-          relative
-          z-10
-          mx-auto
-          max-w-[1400px]
-          px-5
-          py-6
-          md:px-6
-        "
-      >
-
-        {/* =================================================
-            CABEÇALHO
-        ================================================== */}
-
-        <section className="mb-5">
           <div
             className="
-              flex
-              flex-col
-              gap-4
-              lg:flex-row
-              lg:items-end
-              lg:justify-between
+              absolute
+              inset-0
+              bg-gradient-to-r
+              from-[#06194E]/95
+              via-[#023E8A]/80
+              to-[#023E8A]/20
             "
-          >
+          />
+        </div>
 
-            <div>
+        {/* CONTEÚDO */}
 
-              
-              <h1
-                className="
-                  mt-2
-                  text-3xl
-                  font-bold
-                  text-[#0B1756]
-                  lg:text-4xl
-                "
-              >
-                Encontre uma unidade de saúde
-              </h1>
-
-              <p
-                className="
-                  mt-1
-                  text-sm
-                  text-slate-500
-                  md:text-base
-                "
-              >
-                Consulte UBSs, hospitais, urgência e serviços especializados da rede pública.
-              </p>
-
-            </div>
-
+        <div
+          className="
+            relative
+            z-10
+            mx-auto
+            flex
+            min-h-[340px]
+            max-w-[1300px]
+            items-center
+            px-4
+            py-12
+            sm:px-6
+            lg:px-8
+          "
+        >
+          <div className="max-w-2xl">
 
             <div
               className="
+                flex
                 w-fit
-                rounded-xl
+                items-center
+                gap-2
+                rounded-full
                 border
-                border-white
-                bg-white/80
+                border-white/20
+                bg-white/10
                 px-4
                 py-2
-                shadow-sm
+                text-xs
+                font-semibold
+                text-white
                 backdrop-blur
               "
             >
-              <span
-                className="
-                  text-lg
-                  font-bold
-                  text-[#023E8A]
-                "
-              >
-                {UNIDADES.length}
-              </span>
+              <MapPin size={15} />
 
-              <span
-                className="
-                  ml-1
-                  text-sm
-                  text-slate-500
-                "
-              >
-                unidades cadastradas
-              </span>
+              Rede pública de saúde
+            </div>
+
+            <h1
+              className="
+                mt-5
+                text-4xl
+                font-bold
+                leading-tight
+                text-white
+                sm:text-5xl
+              "
+            >
+              Encontre a unidade certa para você.
+            </h1>
+
+            <p
+              className="
+                mt-4
+                max-w-xl
+                text-sm
+                leading-6
+                text-blue-100
+                sm:text-base
+              "
+            >
+              Consulte unidades, serviços disponíveis,
+              horários e informações para encontrar o
+              atendimento mais adequado.
+            </p>
+
+            <div
+              className="
+                mt-6
+                flex
+                flex-wrap
+                gap-3
+              "
+            >
+              <InfoHero
+                icon={
+                  <Hospital size={17} />
+                }
+                texto={`${UNIDADES.length} unidades cadastradas`}
+              />
+
+              <InfoHero
+                icon={
+                  <HeartPulse size={17} />
+                }
+                texto="Rede pública municipal"
+              />
             </div>
 
           </div>
-        </section>
+        </div>
+      </section>
 
+      {/* =====================================================
+          FILTROS
+      ====================================================== */}
 
-        {/* =================================================
-            PESQUISA PRINCIPAL
-        ================================================== */}
-
-        <section
+      <section
+        className="
+          relative
+          z-30
+          mx-auto
+          -mt-9
+          max-w-[1300px]
+          px-4
+          sm:px-6
+          lg:px-8
+        "
+      >
+        <div
           className="
-            rounded-2xl
+            rounded-[26px]
             border
-            border-white/80
-            bg-white/90
+            border-white
+            bg-white
             p-4
-            shadow-[0_8px_30px_rgba(2,62,138,0.06)]
-            backdrop-blur
+            shadow-[0_15px_50px_rgba(2,62,138,0.10)]
+            sm:p-5
           "
         >
+          {/* BUSCA + BAIRRO + LIMPAR */}
 
           <div
             className="
-              flex
-              flex-col
+              grid
               gap-3
-              lg:flex-row
-              lg:items-center
+              lg:grid-cols-[1fr_300px_auto]
             "
           >
+            {/* BUSCA */}
 
-            {/* PESQUISA */}
-
-            <div className="relative flex-1">
+            <div className="relative">
 
               <Search
                 size={19}
@@ -516,26 +379,29 @@ export default function UnidadesPage() {
               />
 
               <input
-                type="search"
-                value={pesquisa}
-                onChange={(e) =>
-                  setPesquisa(e.target.value)
+                type="text"
+                value={busca}
+                onChange={(event) =>
+                  setBusca(
+                    event.target.value
+                  )
                 }
-                placeholder="Pesquise por unidade, bairro, endereço ou serviço..."
+                placeholder="Busque por unidade, bairro ou tipo de atendimento..."
                 className="
-                  h-11
+                  h-12
                   w-full
-                  rounded-xl
+                  rounded-full
                   border
                   border-slate-200
                   bg-[#F8FAFD]
-                  pl-11
-                  pr-10
+                  pl-12
+                  pr-5
                   text-sm
                   text-[#0B1756]
                   outline-none
                   transition
                   placeholder:text-slate-400
+
                   focus:border-[#3563A7]
                   focus:bg-white
                   focus:ring-4
@@ -543,90 +409,239 @@ export default function UnidadesPage() {
                 "
               />
 
-              {pesquisa && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPesquisa("")
+            </div>
+
+            {/* =================================================
+                SELECT CUSTOMIZADO DE BAIRRO
+            ================================================== */}
+
+            <div className="relative">
+
+              {/* BOTÃO */}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setBairroAberto(
+                    !bairroAberto
+                  )
+                }
+                className={`
+                  flex
+                  h-12
+                  w-full
+                  items-center
+                  rounded-full
+                  border
+                  bg-[#F8FAFD]
+                  px-4
+                  text-left
+                  text-sm
+                  font-medium
+                  text-[#0B1756]
+                  outline-none
+                  transition-all
+                  duration-200
+
+                  ${
+                    bairroAberto
+                      ? `
+                        border-[#3563A7]
+                        bg-white
+                        ring-4
+                        ring-[#3563A7]/10
+                      `
+                      : `
+                        border-slate-200
+                        hover:border-[#B5CCE5]
+                        hover:bg-white
+                      `
                   }
+                `}
+              >
+                <MapPin
+                  size={18}
                   className="
-                    absolute
-                    right-3
-                    top-1/2
-                    -translate-y-1/2
-                    text-slate-400
-                    hover:text-[#023E8A]
+                    mr-3
+                    shrink-0
+                    text-[#023E8A]
+                  "
+                />
+
+                <span
+                  className="
+                    flex-1
+                    truncate
                   "
                 >
-                  <X size={17} />
-                </button>
+                  {bairro === "Todos"
+                    ? "Todos os bairros"
+                    : bairro}
+                </span>
+
+                <ChevronDown
+                  size={18}
+                  className={`
+                    shrink-0
+                    text-[#023E8A]
+                    transition-transform
+                    duration-200
+
+                    ${
+                      bairroAberto
+                        ? "rotate-180"
+                        : ""
+                    }
+                  `}
+                />
+              </button>
+
+              {/* DROPDOWN */}
+
+              {bairroAberto && (
+                <div
+                  className="
+                    absolute
+                    left-0
+                    right-0
+                    top-[56px]
+                    z-[80]
+                    overflow-hidden
+                    rounded-[20px]
+                    border
+                    border-slate-200
+                    bg-white
+                    p-1.5
+                    shadow-[0_18px_50px_rgba(2,62,138,0.18)]
+                  "
+                >
+                  <div
+                    className="
+                      max-h-[270px]
+                      overflow-y-auto
+                    "
+                  >
+                    {bairros.map(
+                      (item) => {
+                        const ativo =
+                          bairro === item;
+
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => {
+                              setBairro(
+                                item
+                              );
+
+                              setBairroAberto(
+                                false
+                              );
+                            }}
+                            className={`
+                              flex
+                              w-full
+                              items-center
+                              gap-3
+                              rounded-xl
+                              px-4
+                              py-2.5
+                              text-left
+                              text-sm
+                              transition-all
+                              duration-150
+
+                              ${
+                                ativo
+                                  ? `
+                                    bg-[#023E8A]
+                                    font-semibold
+                                    text-white
+                                  `
+                                  : `
+                                    text-[#0B1756]
+                                    hover:bg-[#EAF3F7]
+                                    hover:text-[#023E8A]
+                                  `
+                              }
+                            `}
+                          >
+                            <div
+                              className={`
+                                flex
+                                h-7
+                                w-7
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-lg
+
+                                ${
+                                  ativo
+                                    ? "bg-white/15"
+                                    : "bg-[#EAF3F7]"
+                                }
+                              `}
+                            >
+                              <MapPin
+                                size={14}
+                                className={
+                                  ativo
+                                    ? "text-white"
+                                    : "text-[#023E8A]"
+                                }
+                              />
+                            </div>
+
+                            <span>
+                              {item ===
+                              "Todos"
+                                ? "Todos os bairros"
+                                : item}
+                            </span>
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
               )}
 
             </div>
 
-
-            {/* BAIRRO */}
-
-            <select
-              value={bairro}
-              onChange={(e) =>
-                setBairro(e.target.value)
-              }
-              className="
-                h-11
-                min-w-[190px]
-                rounded-xl
-                border
-                border-slate-200
-                bg-white
-                px-4
-                text-sm
-                text-[#0B1756]
-                outline-none
-                focus:border-[#3563A7]
-              "
-            >
-              {bairros.map((item) => (
-                <option
-                  key={item}
-                  value={item}
-                >
-                  {item === "Todos"
-                    ? "Todos os bairros"
-                    : item}
-                </option>
-              ))}
-            </select>
-
-
-            {/* MAPA */}
+            {/* LIMPAR */}
 
             <button
               type="button"
-              onClick={abrirMapaGeral}
+              onClick={limparFiltros}
               className="
                 flex
-                h-11
+                h-12
                 items-center
                 justify-center
                 gap-2
-                rounded-xl
-                bg-[#023E8A]
+                rounded-full
+                border
+                border-slate-200
+                bg-white
                 px-5
                 text-sm
                 font-semibold
-                text-white
+                text-slate-500
                 transition
-                hover:bg-[#0B1756]
+
+                hover:border-[#023E8A]
+                hover:bg-[#EAF3F7]
+                hover:text-[#023E8A]
               "
             >
-              <Map size={17} />
+              <X size={16} />
 
-              Ver mapa
+              Limpar
             </button>
 
           </div>
-
 
           {/* =================================================
               TIPOS
@@ -634,16 +649,16 @@ export default function UnidadesPage() {
 
           <div
             className="
-              mt-3
+              mt-4
               flex
-              flex-wrap
               gap-2
+              overflow-x-auto
+              pb-1
             "
           >
             {TIPOS.map((item) => {
-
-              const quantidade =
-                quantidadeTipo(item);
+              const ativo =
+                tipo === item;
 
               return (
                 <button
@@ -653,15 +668,19 @@ export default function UnidadesPage() {
                     setTipo(item)
                   }
                   className={`
-                    rounded-lg
+                    flex
+                    shrink-0
+                    items-center
+                    gap-2
+                    rounded-full
                     px-4
                     py-2
-                    text-sm
-                    font-medium
-                    transition
+                    text-xs
+                    font-semibold
+                    transition-all
 
                     ${
-                      tipo === item
+                      ativo
                         ? `
                           bg-[#023E8A]
                           text-white
@@ -670,523 +689,138 @@ export default function UnidadesPage() {
                         : `
                           border
                           border-slate-200
-                          bg-white
-                          text-slate-600
-                          hover:border-[#3563A7]
+                          bg-[#F8FAFD]
+                          text-slate-500
+
+                          hover:border-[#C5D8EB]
+                          hover:bg-[#EAF3F7]
                           hover:text-[#023E8A]
                         `
                     }
                   `}
                 >
-                  {item === "Todos"
-                    ? "Todas"
-                    : item}
+                  {item ===
+                  "Todos" ? (
+                    <Filter
+                      size={14}
+                    />
+                  ) : (
+                    iconeTipo(
+                      item,
+                      14
+                    )
+                  )}
 
-                  <span className="ml-2 opacity-70">
-                    {quantidade}
-                  </span>
+                  {item}
                 </button>
               );
-
             })}
           </div>
 
-        </section>
+        </div>
+      </section>
 
+      {/* =====================================================
+          RESULTADOS
+      ====================================================== */}
 
-        {/* =================================================
-            RESULTADOS
-        ================================================== */}
-
+      <section
+        className="
+          mx-auto
+          max-w-[1300px]
+          px-4
+          py-8
+          sm:px-6
+          lg:px-8
+        "
+      >
         <div
           className="
-            mt-5
+            mb-5
             flex
-            items-center
+            items-end
             justify-between
+            gap-4
           "
         >
-
-          <p
-            className="
-              text-sm
-              font-medium
-              text-slate-500
-            "
-          >
-            <span
+          <div>
+            <p
               className="
+                text-sm
+                font-semibold
+                text-[#023E8A]
+              "
+            >
+              Unidades encontradas
+            </p>
+
+            <h2
+              className="
+                mt-1
+                text-2xl
                 font-bold
                 text-[#0B1756]
               "
             >
-              {unidadesFiltradas.length}
-            </span>
-
-            {" "}
-
-            {unidadesFiltradas.length === 1
-              ? "unidade encontrada"
-              : "unidades encontradas"}
-          </p>
-
+              {
+                unidadesFiltradas.length
+              }{" "}
+              {unidadesFiltradas.length ===
+              1
+                ? "resultado"
+                : "resultados"}
+            </h2>
+          </div>
         </div>
 
+        {/* CARDS */}
 
-        {/* =================================================
-            CATEGORIAS
-        ================================================== */}
-
-        <div className="mt-5 space-y-8">
-
-          {CATEGORIAS.map((categoria) => {
-
-            const unidadesCategoria =
-              unidadesFiltradas.filter(
-                (unidade) =>
-                  unidade.tipo === categoria
-              );
-
-            if (
-              unidadesCategoria.length === 0
-            ) {
-              return null;
-            }
-
-            const expandida =
-              categoriasAbertas.includes(
-                categoria
-              );
-
-            const unidadesVisiveis =
-              expandida
-                ? unidadesCategoria
-                : unidadesCategoria.slice(
-                    0,
-                    3
-                  );
-
-
-            return (
-              <section key={categoria}>
-
-                {/* =========================================
-                    CABEÇALHO DA CATEGORIA
-                ========================================= */}
-
-                <div
-                  className="
-                    mb-3
-                    flex
-                    items-end
-                    justify-between
-                    gap-4
-                  "
-                >
-
-                  <div>
-
-                    <h2
-                      className="
-                        text-xl
-                        font-bold
-                        text-[#0B1756]
-                      "
-                    >
-                      {categoria}
-                    </h2>
-
-                    <p
-                      className="
-                        mt-0.5
-                        text-xs
-                        text-slate-500
-                      "
-                    >
-                      {unidadesCategoria.length}
-
-                      {" "}
-
-                      {unidadesCategoria.length === 1
-                        ? "unidade"
-                        : "unidades"}
-                    </p>
-
-                  </div>
-
-
-                  {unidadesCategoria.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        alternarCategoria(
-                          categoria
-                        )
-                      }
-                      className="
-                        flex
-                        items-center
-                        gap-1
-                        text-sm
-                        font-semibold
-                        text-[#023E8A]
-                        transition
-                        hover:text-[#0B1756]
-                      "
-                    >
-                      {expandida
-                        ? "Mostrar menos"
-                        : "Ver todas"}
-
-                      <ChevronRight
-                        size={16}
-                        className={
-                          expandida
-                            ? "rotate-90 transition"
-                            : "transition"
-                        }
-                      />
-                    </button>
-                  )}
-
-                </div>
-
-
-                {/* =========================================
-                    CARDS
-                ========================================= */}
-
-                <div
-                  className="
-                    grid
-                    gap-4
-                    md:grid-cols-2
-                    xl:grid-cols-3
-                  "
-                >
-
-                  {unidadesVisiveis.map(
-                    (unidade) => (
-
-                      <article
-                        key={unidade.id}
-                        className="
-                          group
-                          rounded-2xl
-                          border
-                          border-white/80
-                          bg-white/90
-                          p-4
-                          shadow-[0_6px_25px_rgba(2,62,138,0.05)]
-                          backdrop-blur
-                          transition-all
-                          duration-300
-                          hover:-translate-y-0.5
-                          hover:shadow-[0_12px_35px_rgba(2,62,138,0.10)]
-                        "
-                      >
-
-                        {/* ===============================
-                            TOPO
-                        =============================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            justify-between
-                            gap-3
-                          "
-                        >
-
-                          <div
-                            className="
-                              flex
-                              min-w-0
-                              gap-3
-                            "
-                          >
-
-                            <div
-                              className="
-                                flex
-                                h-10
-                                w-10
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-xl
-                                bg-[#EAF3F7]
-                                text-[#023E8A]
-                                transition
-                                group-hover:bg-[#023E8A]
-                                group-hover:text-white
-                              "
-                            >
-                              {iconeTipo(
-                                unidade.tipo
-                              )}
-                            </div>
-
-
-                            <div className="min-w-0">
-
-                              <span
-                                className="
-                                  text-[10px]
-                                  font-bold
-                                  uppercase
-                                  tracking-wider
-                                  text-[#3563A7]
-                                "
-                              >
-                                {unidade.tipo}
-                              </span>
-
-                              <h3
-                                className="
-                                  mt-1
-                                  line-clamp-2
-                                  text-base
-                                  font-bold
-                                  leading-snug
-                                  text-[#0B1756]
-                                "
-                              >
-                                {unidade.nome}
-                              </h3>
-
-                            </div>
-
-                          </div>
-
-
-                          {/* STATUS */}
-
-                          {unidade.atendimento24h && (
-                            <span
-                              className="
-                                shrink-0
-                                rounded-full
-                                bg-emerald-50
-                                px-2.5
-                                py-1
-                                text-[10px]
-                                font-semibold
-                                text-emerald-700
-                              "
-                            >
-                              24h
-                            </span>
-                          )}
-
-                        </div>
-
-
-                        {/* ===============================
-                            INFORMAÇÕES
-                        =============================== */}
-
-                        <div
-                          className="
-                            mt-4
-                            space-y-2
-                            text-sm
-                            text-slate-500
-                          "
-                        >
-
-                          <div
-                            className="
-                              flex
-                              items-center
-                              gap-2
-                            "
-                          >
-                            <MapPin
-                              size={15}
-                              className="
-                                shrink-0
-                                text-[#3563A7]
-                              "
-                            />
-
-                            <span>
-                              {unidade.bairro}
-                            </span>
-                          </div>
-
-
-                          <div
-                            className="
-                              flex
-                              items-start
-                              gap-2
-                            "
-                          >
-                            <Clock
-                              size={15}
-                              className="
-                                mt-0.5
-                                shrink-0
-                                text-[#3563A7]
-                              "
-                            />
-
-                            <span>
-                              {unidade.horario}
-                            </span>
-                          </div>
-
-                        </div>
-
-
-                        {/* ===============================
-                            SERVIÇOS
-                        =============================== */}
-
-                        <div
-                          className="
-                            mt-4
-                            flex
-                            flex-wrap
-                            gap-1.5
-                          "
-                        >
-
-                          {unidade.servicos
-                            .slice(0, 3)
-                            .map(
-                              (servico) => (
-
-                                <span
-                                  key={servico}
-                                  className="
-                                    rounded-md
-                                    bg-[#EAF3F7]
-                                    px-2
-                                    py-1
-                                    text-[11px]
-                                    font-medium
-                                    text-[#023E8A]
-                                  "
-                                >
-                                  {servico}
-                                </span>
-
-                              )
-                            )}
-
-                        </div>
-
-
-                        {/* ===============================
-                            BOTÕES
-                        =============================== */}
-
-                        <div
-                          className="
-                            mt-4
-                            flex
-                            gap-2
-                          "
-                        >
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setUnidadeSelecionada(
-                                unidade
-                              )
-                            }
-                            className="
-                              flex
-                              flex-1
-                              items-center
-                              justify-center
-                              gap-1
-                              rounded-lg
-                              bg-[#023E8A]
-                              px-3
-                              py-2
-                              text-sm
-                              font-semibold
-                              text-white
-                              transition
-                              hover:bg-[#0B1756]
-                            "
-                          >
-                            Detalhes
-
-                            <ChevronRight
-                              size={15}
-                            />
-                          </button>
-
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              abrirMapa(
-                                unidade
-                              )
-                            }
-                            title="Como chegar"
-                            className="
-                              flex
-                              items-center
-                              justify-center
-                              rounded-lg
-                              border
-                              border-[#023E8A]
-                              px-3
-                              text-[#023E8A]
-                              transition
-                              hover:bg-[#EAF3F7]
-                            "
-                          >
-                            <Navigation
-                              size={16}
-                            />
-                          </button>
-
-                        </div>
-
-                      </article>
-
-                    )
-                  )}
-
-                </div>
-
-              </section>
-            );
-
-          })}
-
-        </div>
-
-
-        {/* =================================================
-            SEM RESULTADOS
-        ================================================== */}
-
-        {unidadesFiltradas.length === 0 && (
+        {unidadesFiltradas.length >
+        0 ? (
           <div
             className="
-              mt-8
-              rounded-2xl
-              bg-white/90
-              px-6
-              py-12
-              text-center
-              shadow-sm
+              grid
+              gap-5
+              md:grid-cols-2
+              xl:grid-cols-3
             "
           >
-
+            {unidadesFiltradas.map(
+              (unidade) => (
+                <UnidadeCard
+                  key={
+                    unidade.id
+                  }
+                  unidade={
+                    unidade
+                  }
+                  onAbrir={() =>
+                    setUnidadeAberta(
+                      unidade
+                    )
+                  }
+                />
+              )
+            )}
+          </div>
+        ) : (
+          <div
+            className="
+              flex
+              min-h-[280px]
+              flex-col
+              items-center
+              justify-center
+              rounded-[24px]
+              border
+              border-dashed
+              border-slate-300
+              bg-white
+              text-center
+            "
+          >
             <div
               className="
-                mx-auto
                 flex
                 h-14
                 w-14
@@ -1194,25 +828,23 @@ export default function UnidadesPage() {
                 justify-center
                 rounded-2xl
                 bg-[#EAF3F7]
+                text-[#023E8A]
               "
             >
               <Search
-                size={26}
-                className="
-                  text-[#3563A7]
-                "
+                size={24}
               />
             </div>
 
             <h3
               className="
                 mt-4
-                text-lg
-                font-bold
+                font-semibold
                 text-[#0B1756]
               "
             >
-              Nenhuma unidade encontrada
+              Nenhuma unidade
+              encontrada
             </h3>
 
             <p
@@ -1222,509 +854,638 @@ export default function UnidadesPage() {
                 text-slate-500
               "
             >
-              Tente pesquisar outro nome, bairro ou serviço.
+              Tente alterar os
+              filtros ou sua busca.
             </p>
 
+            <button
+              type="button"
+              onClick={
+                limparFiltros
+              }
+              className="
+                mt-4
+                rounded-full
+                bg-[#023E8A]
+                px-5
+                py-2.5
+                text-sm
+                font-semibold
+                text-white
+                transition
+                hover:bg-[#0B1756]
+              "
+            >
+              Limpar filtros
+            </button>
           </div>
         )}
-
-      </div>
-
+      </section>
 
       {/* =====================================================
           MODAL
       ====================================================== */}
 
-      {unidadeSelecionada && (
-
+      {unidadeAberta && (
         <div
           className="
             fixed
             inset-0
-            z-50
+            z-[100]
             flex
             items-center
             justify-center
-            bg-[#07143C]/45
+            bg-[#06194E]/60
             p-4
             backdrop-blur-sm
           "
           onClick={() =>
-            setUnidadeSelecionada(null)
+            setUnidadeAberta(
+              null
+            )
           }
         >
-
           <div
-            role="dialog"
-            aria-modal="true"
-            onClick={(event) =>
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
             className="
-              relative
               max-h-[90vh]
               w-full
               max-w-2xl
               overflow-y-auto
               rounded-[28px]
               bg-white
-              p-6
               shadow-2xl
-              md:p-8
             "
           >
-
-            {/* FECHAR */}
-
-            <button
-              type="button"
-              onClick={() =>
-                setUnidadeSelecionada(null)
-              }
-              className="
-                absolute
-                right-5
-                top-5
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                bg-slate-100
-                text-slate-500
-                transition
-                hover:bg-slate-200
-              "
-            >
-              <X size={20} />
-            </button>
-
-
-            {/* ÍCONE */}
+            {/* CABEÇALHO MODAL */}
 
             <div
               className="
                 flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-xl
-                bg-[#EAF3F7]
-                text-[#023E8A]
+                items-start
+                justify-between
+                border-b
+                border-slate-100
+                p-6
               "
             >
-              {iconeTipo(
-                unidadeSelecionada.tipo
-              )}
-            </div>
-
-
-            {/* TIPO */}
-
-            <p
-              className="
-                mt-4
-                text-xs
-                font-bold
-                uppercase
-                tracking-wider
-                text-[#3563A7]
-              "
-            >
-              {unidadeSelecionada.tipo}
-            </p>
-
-
-            {/* NOME */}
-
-            <h2
-              className="
-                mt-1
-                pr-12
-                text-2xl
-                font-bold
-                text-[#0B1756]
-              "
-            >
-              {unidadeSelecionada.nome}
-            </h2>
-
-
-            {/* DESCRIÇÃO */}
-
-            <p
-              className="
-                mt-3
-                text-sm
-                leading-relaxed
-                text-slate-600
-              "
-            >
-              {unidadeSelecionada.descricao}
-            </p>
-
-
-            {/* =================================================
-                INFORMAÇÕES
-            ================================================== */}
-
-            <div
-              className="
-                mt-6
-                grid
-                gap-4
-                rounded-2xl
-                bg-[#F8FAFD]
-                p-5
-                md:grid-cols-2
-              "
-            >
-
-              {/* ENDEREÇO */}
-
-              <div
-                className="
-                  flex
-                  gap-3
-                "
-              >
-                <MapPin
-                  size={18}
+              <div>
+                <div
                   className="
-                    mt-0.5
-                    shrink-0
+                    mb-2
+                    flex
+                    w-fit
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#EAF3F7]
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
                     text-[#023E8A]
                   "
-                />
+                >
+                  {iconeTipo(
+                    unidadeAberta.tipo,
+                    14
+                  )}
 
-                <div>
-
-                  <p
-                    className="
-                      text-xs
-                      font-semibold
-                      uppercase
-                      tracking-wide
-                      text-slate-400
-                    "
-                  >
-                    Endereço
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      text-[#0B1756]
-                    "
-                  >
-                    {unidadeSelecionada.endereco}
-                  </p>
-
-                  <p
-                    className="
-                      text-sm
-                      text-slate-500
-                    "
-                  >
-                    {unidadeSelecionada.bairro}
-                  </p>
-
+                  {
+                    unidadeAberta.tipo
+                  }
                 </div>
-              </div>
 
-
-              {/* HORÁRIO */}
-
-              <div
-                className="
-                  flex
-                  gap-3
-                "
-              >
-                <Clock
-                  size={18}
+                <h2
                   className="
-                    mt-0.5
-                    shrink-0
-                    text-[#023E8A]
+                    text-2xl
+                    font-bold
+                    text-[#0B1756]
                   "
-                />
-
-                <div>
-
-                  <p
-                    className="
-                      text-xs
-                      font-semibold
-                      uppercase
-                      tracking-wide
-                      text-slate-400
-                    "
-                  >
-                    Funcionamento
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      text-[#0B1756]
-                    "
-                  >
-                    {unidadeSelecionada.horario}
-                  </p>
-
-                </div>
+                >
+                  {
+                    unidadeAberta.nome
+                  }
+                </h2>
               </div>
-
-
-              {/* TELEFONE */}
-
-              <div
-                className="
-                  flex
-                  gap-3
-                "
-              >
-                <Phone
-                  size={18}
-                  className="
-                    mt-0.5
-                    shrink-0
-                    text-[#023E8A]
-                  "
-                />
-
-                <div>
-
-                  <p
-                    className="
-                      text-xs
-                      font-semibold
-                      uppercase
-                      tracking-wide
-                      text-slate-400
-                    "
-                  >
-                    Telefone
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      text-[#0B1756]
-                    "
-                  >
-                    {unidadeSelecionada.telefone}
-                  </p>
-
-                </div>
-              </div>
-
-
-              {/* STATUS */}
-
-              <div
-                className="
-                  flex
-                  gap-3
-                "
-              >
-                <Hospital
-                  size={18}
-                  className="
-                    mt-0.5
-                    shrink-0
-                    text-[#023E8A]
-                  "
-                />
-
-                <div>
-
-                  <p
-                    className="
-                      text-xs
-                      font-semibold
-                      uppercase
-                      tracking-wide
-                      text-slate-400
-                    "
-                  >
-                    Atendimento
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      font-medium
-                      text-emerald-700
-                    "
-                  >
-                    {unidadeSelecionada.atendimento24h
-                      ? "Atendimento 24 horas"
-                      : "Em funcionamento"}
-                  </p>
-
-                </div>
-              </div>
-
-            </div>
-
-
-            {/* =================================================
-                SERVIÇOS
-            ================================================== */}
-
-            <div className="mt-6">
-
-              <h3
-                className="
-                  font-bold
-                  text-[#0B1756]
-                "
-              >
-                Serviços disponíveis
-              </h3>
-
-              <div
-                className="
-                  mt-3
-                  flex
-                  flex-wrap
-                  gap-2
-                "
-              >
-                {unidadeSelecionada.servicos.map(
-                  (servico) => (
-
-                    <span
-                      key={servico}
-                      className="
-                        rounded-lg
-                        bg-[#EAF3F7]
-                        px-3
-                        py-1.5
-                        text-sm
-                        font-medium
-                        text-[#023E8A]
-                      "
-                    >
-                      {servico}
-                    </span>
-
-                  )
-                )}
-              </div>
-
-            </div>
-
-
-            {/* =================================================
-                BOTÕES
-            ================================================== */}
-
-            <div
-              className="
-                mt-7
-                flex
-                flex-col
-                gap-3
-                sm:flex-row
-              "
-            >
 
               <button
                 type="button"
                 onClick={() =>
-                  abrirMapa(
-                    unidadeSelecionada
+                  setUnidadeAberta(
+                    null
                   )
                 }
                 className="
                   flex
-                  flex-1
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-[#F3F7FC]
+                  text-[#0B1756]
+                  transition
+                  hover:bg-[#EAF3F7]
+                "
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            {/* CONTEÚDO MODAL */}
+
+            <div className="p-6">
+
+              <p
+                className="
+                  text-sm
+                  leading-6
+                  text-slate-500
+                "
+              >
+                {
+                  unidadeAberta.descricao
+                }
+              </p>
+
+              <div
+                className="
+                  mt-5
+                  grid
+                  gap-3
+                  sm:grid-cols-2
+                "
+              >
+                <Detalhe
+                  icon={
+                    <MapPin
+                      size={18}
+                    />
+                  }
+                  titulo="Localização"
+                  texto={`${unidadeAberta.bairro} • ${unidadeAberta.endereco}`}
+                />
+
+                <Detalhe
+                  icon={
+                    <Clock3
+                      size={18}
+                    />
+                  }
+                  titulo="Horário"
+                  texto={
+                    unidadeAberta.horario
+                  }
+                />
+
+                <Detalhe
+                  icon={
+                    <Phone
+                      size={18}
+                    />
+                  }
+                  titulo="Telefone"
+                  texto={
+                    unidadeAberta.telefone
+                  }
+                />
+
+                <Detalhe
+                  icon={
+                    <Building2
+                      size={18}
+                    />
+                  }
+                  titulo="Tipo"
+                  texto={
+                    unidadeAberta.tipo
+                  }
+                />
+              </div>
+
+              {/* SERVIÇOS */}
+
+              <div className="mt-6">
+
+                <h3
+                  className="
+                    font-semibold
+                    text-[#0B1756]
+                  "
+                >
+                  Principais serviços
+                </h3>
+
+                <div
+                  className="
+                    mt-3
+                    flex
+                    flex-wrap
+                    gap-2
+                  "
+                >
+                  {unidadeAberta.servicos.map(
+                    (
+                      servico
+                    ) => (
+                      <span
+                        key={
+                          servico
+                        }
+                        className="
+                          rounded-full
+                          bg-[#EAF3F7]
+                          px-3
+                          py-1.5
+                          text-xs
+                          font-semibold
+                          text-[#023E8A]
+                        "
+                      >
+                        {
+                          servico
+                        }
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="
+                  mt-6
+                  flex
+                  h-12
+                  w-full
                   items-center
                   justify-center
                   gap-2
                   rounded-xl
                   bg-[#023E8A]
-                  py-3
+                  text-sm
                   font-semibold
                   text-white
                   transition
                   hover:bg-[#0B1756]
                 "
               >
-                <Navigation size={18} />
+                <Navigation
+                  size={17}
+                />
 
-                Como chegar
-              </button>
-
-
-              <a
-                href={`tel:${unidadeSelecionada.telefone.replace(
-                  /\D/g,
-                  ""
-                )}`}
-                className="
-                  flex
-                  flex-1
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-[#023E8A]
-                  py-3
-                  font-semibold
-                  text-[#023E8A]
-                  transition
-                  hover:bg-[#EAF3F7]
-                "
-              >
-                <Phone size={18} />
-
-                Ligar
-              </a>
-
-
-              <button
-                type="button"
-                onClick={abrirMapaGeral}
-                className="
-                  flex
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-slate-200
-                  px-4
-                  py-3
-                  font-medium
-                  text-slate-600
-                  transition
-                  hover:bg-slate-50
-                "
-              >
-                <ExternalLink size={18} />
-
-                Mapa geral
+                Ver localização
               </button>
 
             </div>
-
           </div>
-
         </div>
-
       )}
 
     </main>
+  );
+}
+
+/* ============================================================
+   CARD DA UNIDADE
+============================================================ */
+
+function UnidadeCard({
+  unidade,
+  onAbrir,
+}) {
+  return (
+    <article
+      className="
+        group
+        rounded-[22px]
+        border
+        border-slate-100
+        bg-white
+        p-5
+        shadow-sm
+        transition-all
+        duration-300
+
+        hover:-translate-y-1
+        hover:shadow-[0_15px_40px_rgba(2,62,138,0.12)]
+      "
+    >
+      {/* TIPO */}
+
+      <div
+        className="
+          flex
+          w-fit
+          items-center
+          gap-2
+          rounded-full
+          bg-[#EAF3F7]
+          px-3
+          py-1.5
+          text-xs
+          font-semibold
+          text-[#023E8A]
+        "
+      >
+        {iconeTipo(
+          unidade.tipo,
+          14
+        )}
+
+        {unidade.tipo}
+      </div>
+
+      {/* NOME */}
+
+      <h3
+        className="
+          mt-4
+          min-h-[48px]
+          text-lg
+          font-bold
+          leading-6
+          text-[#0B1756]
+        "
+      >
+        {unidade.nome}
+      </h3>
+
+      {/* BAIRRO */}
+
+      <div
+        className="
+          mt-3
+          flex
+          items-center
+          gap-2
+          text-sm
+          text-slate-500
+        "
+      >
+        <MapPin
+          size={16}
+          className="
+            shrink-0
+            text-[#023E8A]
+          "
+        />
+
+        {unidade.bairro}
+      </div>
+
+      {/* HORÁRIO */}
+
+      <div
+        className="
+          mt-2
+          flex
+          items-center
+          gap-2
+          text-sm
+          text-slate-500
+        "
+      >
+        <Clock3
+          size={16}
+          className="
+            shrink-0
+            text-[#023E8A]
+          "
+        />
+
+        <span className="line-clamp-1">
+          {unidade.horario}
+        </span>
+      </div>
+
+      {/* DESCRIÇÃO */}
+
+      <p
+        className="
+          mt-3
+          line-clamp-3
+          text-sm
+          leading-6
+          text-slate-500
+        "
+      >
+        {unidade.descricao}
+      </p>
+
+      {/* SERVIÇOS */}
+
+      <div
+        className="
+          mt-4
+          flex
+          flex-wrap
+          gap-1.5
+        "
+      >
+        {unidade.servicos
+          .slice(0, 3)
+          .map(
+            (servico) => (
+              <span
+                key={
+                  servico
+                }
+                className="
+                  rounded-full
+                  bg-[#F3F7FC]
+                  px-2.5
+                  py-1
+                  text-[11px]
+                  font-medium
+                  text-[#3563A7]
+                "
+              >
+                {
+                  servico
+                }
+              </span>
+            )
+          )}
+      </div>
+
+      {/* BOTÃO */}
+
+      <button
+        type="button"
+        onClick={onAbrir}
+        className="
+          mt-5
+          flex
+          w-full
+          items-center
+          justify-between
+          border-t
+          border-slate-100
+          pt-4
+          text-sm
+          font-semibold
+          text-[#023E8A]
+        "
+      >
+        Ver informações
+
+        <ArrowRight
+          size={16}
+          className="
+            transition-transform
+            group-hover:translate-x-1
+          "
+        />
+      </button>
+
+    </article>
+  );
+}
+
+/* ============================================================
+   INFO HERO
+============================================================ */
+
+function InfoHero({
+  icon,
+  texto,
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-center
+        gap-2
+        rounded-full
+        border
+        border-white/15
+        bg-white/10
+        px-3
+        py-2
+        text-xs
+        font-medium
+        text-white
+        backdrop-blur
+      "
+    >
+      {icon}
+
+      {texto}
+    </div>
+  );
+}
+
+/* ============================================================
+   DETALHE MODAL
+============================================================ */
+
+function Detalhe({
+  icon,
+  titulo,
+  texto,
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-start
+        gap-3
+        rounded-xl
+        bg-[#F8FAFD]
+        p-4
+      "
+    >
+      <div
+        className="
+          flex
+          h-9
+          w-9
+          shrink-0
+          items-center
+          justify-center
+          rounded-lg
+          bg-[#EAF3F7]
+          text-[#023E8A]
+        "
+      >
+        {icon}
+      </div>
+
+      <div>
+        <p
+          className="
+            text-xs
+            text-slate-400
+          "
+        >
+          {titulo}
+        </p>
+
+        <p
+          className="
+            mt-0.5
+            text-sm
+            font-semibold
+            text-[#0B1756]
+          "
+        >
+          {texto}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   ÍCONE POR TIPO
+============================================================ */
+
+function iconeTipo(
+  tipo,
+  tamanho = 16
+) {
+  if (
+    tipo === "UBS"
+  ) {
+    return (
+      <Stethoscope
+        size={tamanho}
+      />
+    );
+  }
+
+  if (
+    tipo ===
+    "Urgência e Emergência"
+  ) {
+    return (
+      <HeartPulse
+        size={tamanho}
+      />
+    );
+  }
+
+  if (
+    tipo ===
+    "Hospital Municipal"
+  ) {
+    return (
+      <Hospital
+        size={tamanho}
+      />
+    );
+  }
+
+  return (
+    <Building2
+      size={tamanho}
+    />
   );
 }

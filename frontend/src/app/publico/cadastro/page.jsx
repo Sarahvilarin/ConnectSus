@@ -8,30 +8,37 @@ import {
   Eye,
   EyeOff,
   FileText,
-  HeartPulse,
   LockKeyhole,
   Mail,
   Phone,
   ShieldCheck,
   UserRound,
-  Check,
 } from "lucide-react";
 
+import AuthShell from "../../components/auth/AuthShell";
+
 export default function CadastroPage() {
-  const [mostrarSenha, setMostrarSenha] =
-    useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
 
-  const [mostrarConfirmacao, setMostrarConfirmacao] =
-    useState(false);
-
-  const [cadastro, setCadastro] = useState({
+  const [dados, setDados] = useState({
     nome: "",
     cpf: "",
     email: "",
     telefone: "",
+    login: "",
     senha: "",
     confirmarSenha: "",
   });
+
+  function alterarCampo(event) {
+    const { name, value } = event.target;
+
+    setDados({
+      ...dados,
+      [name]: value,
+    });
+  }
 
   function formatarCPF(valor) {
     return valor
@@ -61,377 +68,381 @@ export default function CadastroPage() {
   function enviarCadastro(event) {
     event.preventDefault();
 
-    if (
-      cadastro.senha !==
-      cadastro.confirmarSenha
-    ) {
+    if (dados.senha !== dados.confirmarSenha) {
       alert("As senhas não coincidem.");
       return;
     }
 
-    console.log("CADASTRO:", cadastro);
+    console.log("CADASTRO:", dados);
   }
 
   return (
-    <main className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-[#EAF3F7]">
+    <AuthShell
+      titulo="Comece a cuidar da sua saúde de forma mais simples."
+      descricao="Crie sua conta e tenha acesso aos serviços digitais disponíveis no UneSUS."
+    >
+      <div className="w-full max-w-[530px]">
 
-      {/* FUNDO */}
+        {/* IDENTIFICAÇÃO */}
 
-      <div className="pointer-events-none absolute -right-32 -top-40 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/40" />
+        <div
+          className="
+            mb-4
+            flex
+            w-fit
+            items-center
+            gap-2
+            rounded-full
+            bg-[#EAF3F7]
+            px-3
+            py-1.5
+            text-xs
+            font-semibold
+            text-[#023E8A]
+          "
+        >
+          <ShieldCheck size={15} />
 
-      <div className="pointer-events-none absolute -left-40 bottom-[-120px] h-[320px] w-[320px] rounded-full border-[45px] border-white/45" />
+          Primeiro acesso
+        </div>
 
-      {/* CONTAINER */}
+        {/* TÍTULO */}
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-96px)] max-w-6xl items-center justify-center px-4 py-4 sm:px-6">
+        <h2 className="text-3xl font-bold text-[#0B1756]">
+          Crie sua conta
+        </h2>
 
-        <div className="grid w-full min-h-[545px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_20px_60px_rgba(2,62,138,0.10)] lg:grid-cols-[0.8fr_1.2fr]">
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Preencha seus dados para acessar o UneSUS.
+        </p>
 
-          {/* LADO ESQUERDO */}
+        {/* FORMULÁRIO */}
 
-          <aside className="relative hidden overflow-hidden bg-[#023E8A] p-8 text-white lg:flex lg:flex-col lg:justify-between xl:p-10">
+        <form
+          onSubmit={enviarCadastro}
+          className="
+            mt-5
+            grid
+            gap-x-4
+            gap-y-4
+            sm:grid-cols-2
+          "
+        >
+          {/* NOME */}
 
-            <div className="pointer-events-none absolute -right-32 -top-32 h-[340px] w-[340px] rounded-full bg-[#3563A7]/45" />
+          <Campo
+            label="Nome completo"
+            icon={<UserRound size={18} />}
+          >
+            <input
+              name="nome"
+              type="text"
+              value={dados.nome}
+              onChange={alterarCampo}
+              placeholder="Seu nome completo"
+              required
+              className={inputClass}
+            />
+          </Campo>
 
-            <div className="pointer-events-none absolute -bottom-32 -left-32 h-[300px] w-[300px] rounded-full border-[48px] border-white/10" />
+          {/* CPF */}
 
-            <div className="relative z-10">
+          <Campo
+            label="CPF"
+            icon={<FileText size={18} />}
+          >
+            <input
+              name="cpf"
+              type="text"
+              value={dados.cpf}
+              onChange={(event) =>
+                setDados({
+                  ...dados,
+                  cpf: formatarCPF(event.target.value),
+                })
+              }
+              placeholder="000.000.000-00"
+              maxLength={14}
+              required
+              className={inputClass}
+            />
+          </Campo>
 
-              <div className="flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">
-                <HeartPulse size={15} />
-                Primeiro acesso
-              </div>
+          {/* EMAIL */}
 
-              <h1 className="mt-6 max-w-sm text-3xl font-bold leading-tight xl:text-4xl">
-                Faça parte do UneSUS.
-              </h1>
+          <Campo
+            label="E-mail"
+            icon={<Mail size={18} />}
+          >
+            <input
+              name="email"
+              type="email"
+              value={dados.email}
+              onChange={alterarCampo}
+              placeholder="exemplo@email.com"
+              required
+              className={inputClass}
+            />
+          </Campo>
 
-              <p className="mt-3 max-w-sm text-sm leading-6 text-blue-100">
-                Crie sua conta e tenha acesso aos serviços digitais da
-                rede pública de saúde.
-              </p>
+          {/* TELEFONE */}
 
-              <div className="mt-7 grid gap-3">
+          <Campo
+            label="Telefone"
+            icon={<Phone size={18} />}
+          >
+            <input
+              name="telefone"
+              type="text"
+              value={dados.telefone}
+              onChange={(event) =>
+                setDados({
+                  ...dados,
+                  telefone: formatarTelefone(event.target.value),
+                })
+              }
+              placeholder="(11) 99999-9999"
+              maxLength={15}
+              required
+              className={inputClass}
+            />
+          </Campo>
 
-                <Recurso texto="Acesse suas consultas" />
+          {/* LOGIN */}
 
-                <Recurso texto="Acompanhe seus exames" />
-
-                <Recurso texto="Use a fila online" />
-
-                <Recurso texto="Realize sua triagem" />
-
-              </div>
-
-            </div>
-
-            <div className="relative z-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 mt-3">
-
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
-                <ShieldCheck size={19} />
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold">
-                  Cadastro seguro
-                </p>
-
-                <p className="mt-0.5 text-xs text-blue-100">
-                  Seus dados são protegidos e utilizados apenas
-                  para os serviços de saúde.
-                </p>
-              </div>
-
-            </div>
-
-          </aside>
-
-          {/* CADASTRO */}
-
-          <section className="flex items-center justify-center p-5 sm:p-7 lg:p-8 xl:px-12">
-
-            <form
-              onSubmit={enviarCadastro}
-              className="w-full max-w-[570px]"
+          <div className="sm:col-span-2">
+            <Campo
+              label="Login de acesso"
+              icon={<UserRound size={18} />}
             >
+              <input
+                name="login"
+                type="text"
+                value={dados.login}
+                onChange={alterarCampo}
+                placeholder="Ex.: pedro123"
+                required
+                autoComplete="username"
+                className={inputClass}
+              />
+            </Campo>
 
-              <div>
-                <p className="text-sm font-semibold text-[#023E8A]">
-                  Primeiro acesso
-                </p>
+            <p className="mt-1.5 text-xs text-slate-400">
+              Esse será o login utilizado para acessar sua conta.
+            </p>
+          </div>
 
-                <h2 className="mt-1 text-3xl font-bold text-[#0B1756]">
-                  Crie sua conta
-                </h2>
+          {/* SENHA */}
 
-                <p className="mt-2 text-sm text-slate-500">
-                  Preencha seus dados para começar a utilizar o UneSUS.
-                </p>
-              </div>
+          <Campo
+            label="Senha"
+            icon={<LockKeyhole size={18} />}
+          >
+            <input
+              name="senha"
+              type={mostrarSenha ? "text" : "password"}
+              value={dados.senha}
+              onChange={alterarCampo}
+              placeholder="Crie uma senha"
+              required
+              autoComplete="new-password"
+              className={`${inputClass} pr-12`}
+            />
 
-              {/* CAMPOS */}
+            <button
+              type="button"
+              onClick={() =>
+                setMostrarSenha(!mostrarSenha)
+              }
+              className={botaoOlho}
+            >
+              {mostrarSenha ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
+              )}
+            </button>
+          </Campo>
 
-              <div className="mt-6 grid gap-x-4 gap-y-4 sm:grid-cols-2">
+          {/* CONFIRMAR SENHA */}
 
-                <Campo
-                  label="Nome completo"
-                  icon={<UserRound size={17} />}
-                >
-                  <input
-                    type="text"
-                    value={cadastro.nome}
-                    onChange={(event) =>
-                      setCadastro({
-                        ...cadastro,
-                        nome: event.target.value,
-                      })
-                    }
-                    placeholder="Seu nome"
-                    required
-                    className={inputClass}
-                  />
-                </Campo>
+          <Campo
+            label="Confirmar senha"
+            icon={<LockKeyhole size={18} />}
+          >
+            <input
+              name="confirmarSenha"
+              type={
+                mostrarConfirmacao
+                  ? "text"
+                  : "password"
+              }
+              value={dados.confirmarSenha}
+              onChange={alterarCampo}
+              placeholder="Repita sua senha"
+              required
+              autoComplete="new-password"
+              className={`${inputClass} pr-12`}
+            />
 
-                <Campo
-                  label="CPF"
-                  icon={<FileText size={17} />}
-                >
-                  <input
-                    type="text"
-                    value={cadastro.cpf}
-                    onChange={(event) =>
-                      setCadastro({
-                        ...cadastro,
-                        cpf: formatarCPF(
-                          event.target.value
-                        ),
-                      })
-                    }
-                    placeholder="000.000.000-00"
-                    maxLength={14}
-                    required
-                    className={inputClass}
-                  />
-                </Campo>
+            <button
+              type="button"
+              onClick={() =>
+                setMostrarConfirmacao(
+                  !mostrarConfirmacao
+                )
+              }
+              className={botaoOlho}
+            >
+              {mostrarConfirmacao ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
+              )}
+            </button>
+          </Campo>
 
-                <Campo
-                  label="E-mail"
-                  icon={<Mail size={17} />}
-                >
-                  <input
-                    type="email"
-                    value={cadastro.email}
-                    onChange={(event) =>
-                      setCadastro({
-                        ...cadastro,
-                        email: event.target.value,
-                      })
-                    }
-                    placeholder="nome@email.com"
-                    required
-                    className={inputClass}
-                  />
-                </Campo>
+          {/* TERMOS */}
 
-                <Campo
-                  label="Telefone"
-                  icon={<Phone size={17} />}
-                >
-                  <input
-                    type="text"
-                    value={cadastro.telefone}
-                    onChange={(event) =>
-                      setCadastro({
-                        ...cadastro,
-                        telefone:
-                          formatarTelefone(
-                            event.target.value
-                          ),
-                      })
-                    }
-                    placeholder="(11) 99999-9999"
-                    maxLength={15}
-                    required
-                    className={inputClass}
-                  />
-                </Campo>
+          <label
+            className="
+              flex
+              cursor-pointer
+              items-start
+              gap-2.5
+              text-xs
+              leading-5
+              text-slate-500
+              sm:col-span-2
+            "
+          >
+            <input
+              type="checkbox"
+              required
+              className="
+                mt-0.5
+                h-4
+                w-4
+                shrink-0
+                cursor-pointer
+                accent-[#023E8A]
+              "
+            />
 
-                <Campo
-                  label="Senha"
-                  icon={<LockKeyhole size={17} />}
-                >
-                  <input
-                    type={
-                      mostrarSenha
-                        ? "text"
-                        : "password"
-                    }
-                    value={cadastro.senha}
-                    onChange={(event) =>
-                      setCadastro({
-                        ...cadastro,
-                        senha: event.target.value,
-                      })
-                    }
-                    placeholder="Crie uma senha"
-                    required
-                    className={`${inputClass} pr-10`}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMostrarSenha(!mostrarSenha)
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#023E8A]"
-                  >
-                    {mostrarSenha ? (
-                      <EyeOff size={17} />
-                    ) : (
-                      <Eye size={17} />
-                    )}
-                  </button>
-
-                </Campo>
-
-                <Campo
-                  label="Confirmar senha"
-                  icon={<LockKeyhole size={17} />}
-                >
-                  <input
-                    type={
-                      mostrarConfirmacao
-                        ? "text"
-                        : "password"
-                    }
-                    value={
-                      cadastro.confirmarSenha
-                    }
-                    onChange={(event) =>
-                      setCadastro({
-                        ...cadastro,
-                        confirmarSenha:
-                          event.target.value,
-                      })
-                    }
-                    placeholder="Repita a senha"
-                    required
-                    className={`${inputClass} pr-10`}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMostrarConfirmacao(
-                        !mostrarConfirmacao
-                      )
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#023E8A]"
-                  >
-                    {mostrarConfirmacao ? (
-                      <EyeOff size={17} />
-                    ) : (
-                      <Eye size={17} />
-                    )}
-                  </button>
-
-                </Campo>
-
-              </div>
-
-              {/* PRIVACIDADE */}
-
-              <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-xs leading-5 text-slate-500">
-
-                <input
-                  type="checkbox"
-                  required
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#023E8A]"
-                />
-
-                <span>
-                  Li e concordo com a{" "}
-                  <Link
-                    href="/publico/privacidade"
-                    className="font-semibold text-[#023E8A] hover:underline"
-                  >
-                    Política de Privacidade
-                  </Link>
-                  .
-                </span>
-
-              </label>
-
-              {/* BOTÃO */}
-
-              <button
-                type="submit"
+            <span>
+              Li e concordo com a{" "}
+              <Link
+                href="/publico/privacidade"
                 className="
-                  mt-5
-                  flex
-                  h-12
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  bg-[#023E8A]
-                  text-sm
                   font-semibold
-                  text-white
-                  shadow-sm
-                  transition-all
-                  hover:-translate-y-0.5
-                  hover:bg-[#0B1756]
-                  hover:shadow-md
+                  text-[#023E8A]
+                  hover:underline
                 "
               >
-                Criar minha conta
-                <ArrowRight size={17} />
-              </button>
+                Política de Privacidade
+              </Link>
+              .
+            </span>
+          </label>
 
-              {/* LOGIN */}
+          {/* BOTÃO */}
 
-              <p className="mt-5 text-center text-sm text-slate-500">
-                Já possui uma conta?
+          <button
+            type="submit"
+            className="
+              flex
+              h-12
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              bg-[#023E8A]
+              text-sm
+              font-semibold
+              text-white
+              shadow-sm
+              transition-all
+              duration-200
 
-                <Link
-                  href="/publico/login"
-                  className="ml-1 font-semibold text-[#023E8A] hover:underline"
-                >
-                  Entrar
-                </Link>
-              </p>
+              hover:-translate-y-0.5
+              hover:bg-[#0B1756]
+              hover:shadow-md
 
-            </form>
+              sm:col-span-2
+            "
+          >
+            Criar minha conta
 
-          </section>
+            <ArrowRight size={17} />
+          </button>
+        </form>
 
+        {/* LOGIN */}
+
+        <div
+          className="
+            mt-5
+            rounded-xl
+            border
+            border-[#DCEAF8]
+            bg-[#F8FBFE]
+            p-4
+            text-center
+          "
+        >
+          <p className="text-sm text-slate-500">
+            Já possui uma conta?
+          </p>
+
+          <Link
+            href="/publico/login"
+            className="
+              mt-1
+              inline-block
+              text-sm
+              font-semibold
+              text-[#023E8A]
+              hover:underline
+            "
+          >
+            Entrar na minha conta
+          </Link>
         </div>
 
       </div>
-
-    </main>
+    </AuthShell>
   );
 }
 
 const inputClass = `
-  h-11
+  h-12
   w-full
   rounded-xl
   border
   border-slate-200
   bg-[#F8FAFD]
-  pl-10
-  pr-3
+  pl-11
+  pr-4
   text-sm
   text-[#0B1756]
   outline-none
   transition
   placeholder:text-slate-400
+
   focus:border-[#3563A7]
+  focus:bg-white
   focus:ring-4
   focus:ring-[#3563A7]/10
+`;
+
+const botaoOlho = `
+  absolute
+  right-4
+  top-1/2
+  -translate-y-1/2
+  text-slate-400
+  transition
+  hover:text-[#023E8A]
 `;
 
 function Campo({
@@ -441,37 +452,35 @@ function Campo({
 }) {
   return (
     <div>
-
-      <label className="mb-1.5 block text-xs font-semibold text-[#0B1756]">
+      <label
+        className="
+          mb-1.5
+          block
+          text-sm
+          font-semibold
+          text-[#0B1756]
+        "
+      >
         {label}
       </label>
 
       <div className="relative">
-
-        <div className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+        <div
+          className="
+            pointer-events-none
+            absolute
+            left-4
+            top-1/2
+            z-10
+            -translate-y-1/2
+            text-slate-400
+          "
+        >
           {icon}
         </div>
 
         {children}
-
       </div>
-
-    </div>
-  );
-}
-
-function Recurso({ texto }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2.5">
-
-      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10">
-        <Check size={14} />
-      </div>
-
-      <span className="text-sm font-medium text-white">
-        {texto}
-      </span>
-
     </div>
   );
 }
