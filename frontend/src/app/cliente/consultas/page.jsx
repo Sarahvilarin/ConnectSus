@@ -8,6 +8,7 @@ import {
   Baby,
   Bone,
   Brain,
+  Building2,
   CalendarCheck,
   CalendarDays,
   CalendarPlus,
@@ -17,12 +18,12 @@ import {
   Clock,
   Eye,
   HeartPulse,
+  Hospital,
   Info,
   MapPin,
   RefreshCw,
   ShieldCheck,
   Stethoscope,
-  Video,
   X,
 } from "lucide-react";
 
@@ -42,14 +43,54 @@ const especialidades = [
   { nome: "Ortopedia", Icone: Bone },
 ];
 
-const profissionais = {
-  "Clínica geral": ["Dra. Helena Duarte", "Dr. Marcos Pereira"],
-  Cardiologia: ["Dr. Rafael Nogueira", "Dra. Beatriz Lemos"],
-  Neurologia: ["Dra. Camila Barros", "Dr. Henrique Salles"],
-  Oftalmologia: ["Dra. Júlia Andrade", "Dr. Paulo Viana"],
-  Pediatria: ["Dra. Letícia Moura", "Dr. André Castro"],
-  Ortopedia: ["Dr. Gustavo Ribeiro", "Dra. Renata Faria"],
-};
+const UNIDADES = [
+  {
+    id: 1,
+    nome: "Hospital Municipal de Emergências Albert Sabin",
+    bairro: "Santa Paula",
+    endereco: "São Caetano do Sul - SP",
+    horario: "Atendimento 24 horas",
+    distancia: "1,2 km",
+    km: 1.2,
+    especialidades: [
+      "Clínica geral",
+      "Cardiologia",
+      "Neurologia",
+      "Pediatria",
+      "Ortopedia",
+    ],
+  },
+  {
+    id: 2,
+    nome: "Hospital Municipal Maria Braido",
+    bairro: "Santa Paula",
+    endereco: "São Caetano do Sul - SP",
+    horario: "Conforme atendimento",
+    distancia: "2,4 km",
+    km: 2.4,
+    especialidades: [
+      "Clínica geral",
+      "Oftalmologia",
+      "Pediatria",
+      "Ortopedia",
+    ],
+  },
+  {
+    id: 3,
+    nome: "Atende Fácil Saúde Pedro Kassab",
+    bairro: "Centro",
+    endereco: "São Caetano do Sul - SP",
+    horario: "Segunda a sexta, das 7h às 17h",
+    distancia: "3,1 km",
+    km: 3.1,
+    especialidades: [
+      "Clínica geral",
+      "Cardiologia",
+      "Neurologia",
+      "Oftalmologia",
+    ],
+  },
+];
 
 const horarios = ["08:00", "09:00", "10:30", "14:00", "15:30", "17:00"];
 
@@ -59,7 +100,7 @@ const consultasIniciais = [
   {
     id: 1,
     especialidade: "Cardiologia",
-    profissional: "Dr. Rafael Nogueira",
+    unidade: "Hospital Municipal de Emergências Albert Sabin",
     data: "28 de out, 2026",
     horario: "09:00",
     modalidade: "Presencial",
@@ -68,16 +109,16 @@ const consultasIniciais = [
   {
     id: 2,
     especialidade: "Clínica geral",
-    profissional: "Dra. Helena Duarte",
+    unidade: "Atende Fácil Saúde Pedro Kassab",
     data: "05 de nov, 2026",
     horario: "14:00",
-    modalidade: "Online",
+    modalidade: "Presencial",
     status: "Agendada",
   },
   {
     id: 3,
     especialidade: "Oftalmologia",
-    profissional: "Dra. Júlia Andrade",
+    unidade: "Hospital Municipal Maria Braido",
     data: "02 de set, 2026",
     horario: "10:30",
     modalidade: "Presencial",
@@ -86,7 +127,7 @@ const consultasIniciais = [
   {
     id: 4,
     especialidade: "Ortopedia",
-    profissional: "Dr. Gustavo Ribeiro",
+    unidade: "Hospital Municipal de Emergências Albert Sabin",
     data: "15 de ago, 2026",
     horario: "17:00",
     modalidade: "Presencial",
@@ -106,8 +147,8 @@ export default function Consultas() {
   const [aba, setAba] = useState("agendar");
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [especialidade, setEspecialidade] = useState("");
-  const [profissional, setProfissional] = useState("");
-  const [modalidade, setModalidade] = useState("Presencial");
+  const [unidade, setUnidade] = useState(null);
+  const modalidade = "Presencial";
   const [dias, setDias] = useState([]);
   const [dia, setDia] = useState(null);
   const [horario, setHorario] = useState("");
@@ -147,21 +188,27 @@ export default function Consultas() {
     (c) => filtro === "Todas" || c.status === filtro
   );
 
+  const unidadesDisponiveis = especialidade
+    ? UNIDADES.filter((u) => u.especialidades.includes(especialidade)).sort(
+        (a, b) => a.km - b.km
+      )
+    : [];
+
   function topo() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function escolherEspecialidade(nome) {
     setEspecialidade(nome);
-    setProfissional("");
+    setUnidade(null);
   }
 
   function continuar(event) {
     event.preventDefault();
     setErro("");
 
-    if (!especialidade || !profissional) {
-      setErro("Escolha a especialidade e o profissional para continuar.");
+    if (!especialidade || !unidade) {
+      setErro("Escolha a especialidade e a unidade para continuar.");
       return;
     }
 
@@ -179,7 +226,7 @@ export default function Consultas() {
       {
         id: Date.now(),
         especialidade,
-        profissional,
+        unidade: unidade.nome,
         data: diaSelecionado.texto,
         horario,
         modalidade,
@@ -199,8 +246,7 @@ export default function Consultas() {
 
   function novoAgendamento(consulta) {
     setEspecialidade(consulta?.especialidade || "");
-    setProfissional(consulta?.profissional || "");
-    setModalidade(consulta?.modalidade || "Presencial");
+    setUnidade(UNIDADES.find((u) => u.nome === consulta?.unidade) || null);
     setDia(null);
     setHorario("");
     setMotivo("");
@@ -251,7 +297,7 @@ export default function Consultas() {
                 "Veja o status dos seus atendimentos, reagende ou cancele quando precisar."}
               {aba === "agendar" &&
                 etapaAtual === 1 &&
-                "Escolha a especialidade, o profissional e o melhor dia e horário para você."}
+                "Escolha a especialidade, a unidade mais próxima e o melhor dia e horário para você."}
               {aba === "agendar" &&
                 etapaAtual === 2 &&
                 "Confira os dados da consulta antes de confirmar."}
@@ -407,45 +453,116 @@ export default function Consultas() {
                       </div>
                     </fieldset>
 
-                    {/* PROFISSIONAL */}
+                    {/* UNIDADE */}
                     <fieldset className="mb-7">
-                      <legend className="mb-3 text-sm font-bold sm:text-base">
-                        Com qual profissional?
-                        <span className="ml-1 text-red-500">*</span>
-                      </legend>
+                      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <legend className="text-sm font-bold sm:text-base">
+                          Qual unidade mais próxima de você?
+                          <span className="ml-1 text-red-500">*</span>
+                        </legend>
 
-                      {especialidade ? (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          {profissionais[especialidade].map((nome) => {
-                            const selecionado = profissional === nome;
+                        {especialidade && (
+                          <span className="w-fit rounded-full bg-[#3563A7]/15 px-3 py-1.5 text-xs font-semibold">
+                            {unidadesDisponiveis.length} unidade
+                            {unidadesDisponiveis.length === 1 ? "" : "s"} disponíve
+                            {unidadesDisponiveis.length === 1 ? "l" : "is"}
+                          </span>
+                        )}
+                      </div>
+
+                      {!especialidade ? (
+                        <div className="flex flex-col items-center rounded-xl border border-dashed border-[#3563A7]/40 px-4 py-8 text-center">
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#3563A7]/10 text-[#023E8A]">
+                            <Hospital size={24} />
+                          </div>
+                          <p className="text-sm font-bold">
+                            Escolha a especialidade primeiro
+                          </p>
+                          <p className="mt-1 text-xs">
+                            As unidades disponíveis aparecerão automaticamente.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                          {unidadesDisponiveis.map((u, i) => {
+                            const selecionada = unidade?.id === u.id;
 
                             return (
                               <button
-                                key={nome}
+                                key={u.id}
                                 type="button"
-                                aria-pressed={selecionado}
-                                onClick={() => setProfissional(nome)}
-                                className={`flex min-h-[54px] items-center justify-between gap-2 rounded-lg border px-4 py-3 text-left text-sm font-medium transition ${
-                                  selecionado
-                                    ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]"
-                                    : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
+                                aria-pressed={selecionada}
+                                onClick={() => setUnidade(u)}
+                                className={`group relative overflow-hidden rounded-[22px] border p-5 text-left transition-all ${
+                                  selecionada
+                                    ? "border-[#023E8A] bg-[#3563A7]/15 shadow-[0_10px_28px_rgba(2,62,138,0.12)]"
+                                    : "border-blue-100 bg-[#fbfdff] hover:-translate-y-0.5 hover:border-[#3563A7] hover:bg-white hover:shadow-sm"
                                 }`}
                               >
-                                {nome}
-                                {selecionado && (
-                                  <Check
-                                    size={17}
-                                    className="shrink-0 text-[#023E8A]"
-                                  />
-                                )}
+                                <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#3563A7]/10" />
+
+                                <div className="relative z-10">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div
+                                      className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+                                        selecionada
+                                          ? "bg-[#023E8A] text-white"
+                                          : "bg-[#3563A7]/15 text-[#023E8A]"
+                                      }`}
+                                    >
+                                      <Hospital size={22} />
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      {i === 0 && (
+                                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold">
+                                          Mais próxima
+                                        </span>
+                                      )}
+
+                                      {selecionada && (
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#023E8A] text-white">
+                                          <Check size={14} />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <h3 className="mt-4 text-sm font-bold leading-5">
+                                    {u.nome}
+                                  </h3>
+
+                                  <div className="mt-4 space-y-2.5 text-sm">
+                                    <p className="flex items-center gap-2">
+                                      <MapPin size={15} className="shrink-0 text-[#3563A7]" />
+                                      {u.bairro}
+                                    </p>
+                                    <p className="flex items-center gap-2">
+                                      <Clock size={15} className="shrink-0 text-[#3563A7]" />
+                                      {u.horario}
+                                    </p>
+                                    <p className="flex items-center gap-2">
+                                      <Building2 size={15} className="shrink-0 text-[#3563A7]" />
+                                      {u.distancia} de distância
+                                    </p>
+                                  </div>
+
+                                  <div className="mt-4 flex items-center justify-between border-t border-blue-100 pt-4">
+                                    <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                                      <CheckCircle2 size={13} />
+                                      Atende {especialidade}
+                                    </span>
+
+                                    <ArrowRight
+                                      size={15}
+                                      className="text-[#023E8A] transition group-hover:translate-x-1"
+                                    />
+                                  </div>
+                                </div>
                               </button>
                             );
                           })}
                         </div>
-                      ) : (
-                        <p className="rounded-lg border border-dashed border-[#3563A7]/40 px-4 py-3 text-sm">
-                          Escolha uma especialidade para ver os profissionais.
-                        </p>
                       )}
                     </fieldset>
 
@@ -528,42 +645,9 @@ export default function Consultas() {
                           <h2 className="text-xl font-bold">
                             Informações adicionais
                           </h2>
-                          <p className="mt-1 text-sm">Como será o atendimento?</p>
+                          <p className="mt-1 text-sm">Conte um pouco mais.</p>
                         </div>
                       </div>
-
-                      {/* MODALIDADE */}
-                      <fieldset className="mb-7">
-                        <legend className="mb-3 text-sm font-bold leading-6">
-                          Modalidade da consulta
-                        </legend>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          {[
-                            { nome: "Presencial", Icone: MapPin },
-                            { nome: "Online", Icone: Video },
-                          ].map(({ nome, Icone }) => {
-                            const selecionado = modalidade === nome;
-
-                            return (
-                              <button
-                                key={nome}
-                                type="button"
-                                aria-pressed={selecionado}
-                                onClick={() => setModalidade(nome)}
-                                className={`flex min-h-[54px] items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-medium transition ${
-                                  selecionado
-                                    ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]"
-                                    : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
-                                }`}
-                              >
-                                <Icone size={17} />
-                                {nome}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </fieldset>
 
                       {/* MOTIVO */}
                       <div className="mb-7">
@@ -600,7 +684,7 @@ export default function Consultas() {
 
                         <p className="text-sm leading-6">
                           {especialidade || "Especialidade não escolhida"}
-                          {profissional && ` · ${profissional}`}
+                          {unidade && ` · ${unidade.nome}`}
                           <br />
                           {diaSelecionado
                             ? `${diaSelecionado.texto}${horario ? ` às ${horario}` : ""}`
@@ -610,16 +694,16 @@ export default function Consultas() {
                     </section>
 
                     {/* PRÓXIMOS PASSOS */}
-                    <section className={`${cardBase} h-full p-5 sm:p-6`}>
+                    <section className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}>
                       <h3 className="mb-6 mt-1 text-lg font-bold">
                         Próximos passos
                       </h3>
 
-                      <div className="flex flex-col gap-6">
+                      <div className="flex flex-1 flex-col justify-evenly gap-6 pb-4">
                         {[
                           {
-                            titulo: "Escolha profissional e horário",
-                            descricao: "Selecione quem vai atender e quando.",
+                            titulo: "Escolha unidade e horário",
+                            descricao: "Selecione onde será atendido e quando.",
                           },
                           {
                             titulo: "Revise o agendamento",
@@ -689,10 +773,9 @@ export default function Consultas() {
                 <div className="grid gap-4 md:grid-cols-2">
                   {[
                     ["Especialidade", especialidade],
-                    ["Profissional", profissional],
+                    ["Unidade", unidade?.nome],
                     ["Data", diaSelecionado?.texto],
                     ["Horário", horario],
-                    ["Modalidade", modalidade],
                   ].map(([rotulo, valor]) => (
                     <div
                       key={rotulo}
@@ -737,8 +820,8 @@ export default function Consultas() {
                 </h2>
 
                 <p className="mx-auto mt-4 max-w-xl text-sm leading-7 sm:text-base">
-                  Sua consulta de {especialidade} com {profissional} está marcada
-                  para {diaSelecionado?.texto} às {horario} ({modalidade}).
+                  Sua consulta de {especialidade} na {unidade?.nome} está marcada
+                  para {diaSelecionado?.texto} às {horario}.
                 </p>
 
                 <div className="mx-auto mt-7 max-w-xl rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-5 text-left">
@@ -842,11 +925,7 @@ export default function Consultas() {
                     >
                       <div className="flex items-start gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
-                          {c.modalidade === "Online" ? (
-                            <Video size={24} />
-                          ) : (
-                            <MapPin size={24} />
-                          )}
+                          <MapPin size={24} />
                         </div>
 
                         <div>
@@ -862,7 +941,7 @@ export default function Consultas() {
                             </span>
                           </div>
 
-                          <p className="mt-1 text-sm">{c.profissional}</p>
+                          <p className="mt-1 text-sm">{c.unidade}</p>
 
                           <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                             <span className="inline-flex items-center gap-1.5">
@@ -873,7 +952,6 @@ export default function Consultas() {
                               <Clock size={15} />
                               {c.horario}
                             </span>
-                            <span>{c.modalidade}</span>
                           </p>
                         </div>
                       </div>
