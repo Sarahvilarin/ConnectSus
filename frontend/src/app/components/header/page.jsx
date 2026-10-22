@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Menu,
   X,
   UserRound,
+  Stethoscope,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function Header() {
@@ -16,19 +18,25 @@ export default function Header() {
 
   const [menuAberto, setMenuAberto] = useState(false);
 
-  // =========================================================
-  // DESCOBRE AUTOMATICAMENTE A ÁREA
-  // =========================================================
+  /* ============================================================
+     ÁREA ATUAL
+  ============================================================ */
 
   const tipo = pathname.startsWith("/cliente")
-    ? "paciente"
-    : pathname.startsWith("/admin")
-      ? "gestao"
-      : "publico";
+    ? "cliente"
+    : pathname.startsWith("/medico")
+      ? "medico"
+      : pathname.startsWith("/admin")
+        ? "admin"
+        : "publico";
 
-  // =========================================================
-  // MENUS
-  // =========================================================
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [pathname]);
+
+  /* ============================================================
+     MENUS
+  ============================================================ */
 
   const menus = {
     publico: [
@@ -50,7 +58,7 @@ export default function Header() {
       },
     ],
 
-    paciente: [
+    cliente: [
       {
         nome: "Dashboard",
         href: "/cliente/dashboard",
@@ -77,7 +85,26 @@ export default function Header() {
       },
     ],
 
-    gestao: [
+    medico: [
+      {
+        nome: "Dashboard",
+        href: "/medico/dashboard",
+      },
+      {
+        nome: "Pacientes",
+        href: "/medico/pacientes",
+      },
+      {
+        nome: "Exames",
+        href: "/medico/gestaoexame",
+      },
+      {
+        nome: "Consultas",
+        href: "/medico/consultas",
+      },
+    ],
+
+    admin: [
       {
         nome: "Dashboard",
         href: "/admin/dashboard",
@@ -113,9 +140,9 @@ export default function Header() {
     ],
   };
 
-  // =========================================================
-  // PÁGINA ATUAL
-  // =========================================================
+  /* ============================================================
+     LINK ATIVO
+  ============================================================ */
 
   function estaAtivo(href) {
     if (href === "/") {
@@ -128,16 +155,48 @@ export default function Header() {
     );
   }
 
-  // =========================================================
-  // LINK INICIAL DA LOGO
-  // =========================================================
+  /* ============================================================
+     LINK DA LOGO
+  ============================================================ */
 
   const inicio =
-    tipo === "paciente"
+    tipo === "cliente"
       ? "/cliente/dashboard"
-      : tipo === "gestao"
-        ? "/admin/dashboard"
-        : "/";
+      : tipo === "medico"
+        ? "/medico/dashboard"
+        : tipo === "admin"
+          ? "/admin/dashboard"
+          : "/";
+
+  /* ============================================================
+     CONFIGURAÇÕES DA ÁREA
+  ============================================================ */
+
+  const area = {
+    publico: {
+      nome: "",
+      perfil: "",
+      icone: null,
+    },
+
+    cliente: {
+      nome: "Área do Paciente",
+      perfil: "/cliente/perfil",
+      icone: <UserRound size={17} />,
+    },
+
+    medico: {
+      nome: "Área Médica",
+      perfil: "/medico/perfil",
+      icone: <Stethoscope size={17} />,
+    },
+
+    admin: {
+      nome: "Área da Gestão",
+      perfil: "/admin/perfil",
+      icone: <ShieldCheck size={17} />,
+    },
+  };
 
   return (
     <header
@@ -153,123 +212,134 @@ export default function Header() {
       "
     >
       {/* =====================================================
-          HEADER DESKTOP
+          DESKTOP
       ====================================================== */}
 
       <div
         className="
           mx-auto
-          flex
+          hidden
           h-24
-          max-w-[1400px]
+          max-w-[1480px]
+          grid-cols-[220px_1fr_220px]
           items-center
-          justify-between
-          px-4
-          sm:px-6
-          lg:px-8
+          px-6
+          lg:grid
+          xl:px-8
         "
       >
         {/* =================================================
-            LOGO
+            ESQUERDA
         ================================================== */}
 
-        <Link
-          href={inicio}
-          className="
-            shrink-0
-            transition
-            duration-200
-            hover:scale-[1.02]
-          "
-        >
-          <Image
-            src="/logo.svg"
-            alt="UneSUS"
-            width={220}
-            height={80}
-            priority
+        <div className="flex items-center justify-start">
+          <Link
+            href={inicio}
             className="
-              h-auto
-              w-[175px]
-              sm:w-[190px]
-              xl:w-[210px]
+              inline-flex
+              items-center
+              transition
+              duration-200
+              hover:scale-[1.02]
             "
-          />
-        </Link>
+          >
+            <Image
+              src="/logo.svg"
+              alt="UneSUS"
+              width={205}
+              height={70}
+              priority
+              className="
+                h-auto
+                w-[185px]
+                xl:w-[200px]
+              "
+            />
+          </Link>
+        </div>
 
         {/* =================================================
-            MENU DESKTOP
-        ================================================== */}
-
-        <nav
-          className="
-            hidden
-            items-center
-            justify-center
-            gap-1
-            lg:flex
-          "
-        >
-          {menus[tipo].map((item) => {
-            const ativo = estaAtivo(item.href);
-
-            return (
-              <Link
-                key={item.nome}
-                href={item.href}
-                className={`
-                  relative
-                  whitespace-nowrap
-                  rounded-lg
-                  px-3
-                  py-2.5
-                  text-sm
-                  font-medium
-                  transition-all
-                  duration-200
-
-                  ${
-                    ativo
-                      ? `
-                        bg-[#EAF3F7]
-                        font-semibold
-                        text-[#023E8A]
-
-                        after:absolute
-                        after:-bottom-[18px]
-                        after:left-1/2
-                        after:h-[3px]
-                        after:w-8
-                        after:-translate-x-1/2
-                        after:rounded-full
-                        after:bg-[#023E8A]
-                      `
-                      : `
-                        text-[#0B1756]
-                        hover:bg-[#F3F7FC]
-                        hover:text-[#023E8A]
-                      `
-                  }
-                `}
-              >
-                {item.nome}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* =================================================
-            AÇÕES DESKTOP
+            CENTRO
         ================================================== */}
 
         <div
           className="
-            hidden
-            shrink-0
+            flex
+            min-w-0
+            items-center
+            justify-center
+          "
+        >
+          <nav
+            className="
+              flex
+              items-center
+              justify-center
+              gap-1
+            "
+          >
+            {menus[tipo].map((item) => {
+              const ativo = estaAtivo(item.href);
+
+              return (
+                <Link
+                  key={item.nome}
+                  href={item.href}
+                  className={`
+                    relative
+                    whitespace-nowrap
+                    rounded-xl
+                    px-2.5
+                    py-2.5
+                    text-[13px]
+                    font-medium
+                    transition-all
+                    duration-200
+
+                    xl:px-3
+                    xl:text-sm
+
+                    ${
+                      ativo
+                        ? `
+                            bg-[#EAF3F7]
+                            font-semibold
+                            text-[#023E8A]
+
+                            after:absolute
+                            after:-bottom-[17px]
+                            after:left-1/2
+                            after:h-[3px]
+                            after:w-7
+                            after:-translate-x-1/2
+                            after:rounded-full
+                            after:bg-[#023E8A]
+                          `
+                        : `
+                            text-[#0B1756]
+                            hover:bg-[#F3F7FC]
+                            hover:text-[#023E8A]
+                          `
+                    }
+                  `}
+                >
+                  {item.nome}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* =================================================
+            DIREITA
+        ================================================== */}
+
+        <div
+          className="
+            flex
             items-center
             justify-end
-            gap-3
-            lg:flex
+            gap-2
           "
         >
           {/* PÚBLICO */}
@@ -279,28 +349,27 @@ export default function Header() {
               <Link
                 href="/publico/login"
                 className={`
-                  rounded-lg
+                  rounded-xl
                   border
-                  px-5
+                  px-4
                   py-2.5
                   text-sm
                   font-semibold
                   transition-all
-                  duration-200
 
                   ${
                     estaAtivo("/publico/login")
                       ? `
-                        border-[#023E8A]
-                        bg-[#EAF3F7]
-                        text-[#023E8A]
-                      `
+                          border-[#023E8A]
+                          bg-[#EAF3F7]
+                          text-[#023E8A]
+                        `
                       : `
-                        border-[#023E8A]
-                        text-[#023E8A]
-                        hover:-translate-y-0.5
-                        hover:bg-[#EAF3F7]
-                      `
+                          border-[#023E8A]
+                          bg-white
+                          text-[#023E8A]
+                          hover:bg-[#EAF3F7]
+                        `
                   }
                 `}
               >
@@ -310,19 +379,17 @@ export default function Header() {
               <Link
                 href="/publico/cadastro"
                 className="
-                  rounded-lg
+                  rounded-xl
                   bg-[#023E8A]
-                  px-5
+                  px-4
                   py-2.5
                   text-sm
                   font-semibold
                   text-white
                   shadow-sm
                   transition-all
-                  duration-200
                   hover:-translate-y-0.5
                   hover:bg-[#0B1756]
-                  hover:shadow-md
                 "
               >
                 Cadastrar
@@ -330,70 +397,76 @@ export default function Header() {
             </>
           )}
 
-          {/* PACIENTE */}
+          {/* LOGADO */}
 
-          {tipo === "paciente" && (
+          {tipo !== "publico" && (
             <Link
-              href="/cliente/perfil"
+              href={area[tipo].perfil}
               className={`
                 flex
                 items-center
                 gap-2
-                rounded-lg
-                px-5
+                rounded-xl
+                px-4
                 py-2.5
                 text-sm
                 font-semibold
                 text-white
+                shadow-sm
                 transition-all
 
                 ${
-                  estaAtivo("/cliente/perfil")
+                  estaAtivo(area[tipo].perfil)
                     ? "bg-[#0B1756]"
-                    : "bg-[#023E8A] hover:bg-[#0B1756]"
+                    : "bg-[#023E8A] hover:-translate-y-0.5 hover:bg-[#0B1756]"
                 }
               `}
             >
-              <UserRound size={17} />
-
-              Perfil
-            </Link>
-          )}
-
-          {/* GESTÃO */}
-
-          {tipo === "gestao" && (
-            <Link
-              href="/admin/perfil"
-              className={`
-                flex
-                items-center
-                gap-2
-                rounded-lg
-                px-5
-                py-2.5
-                text-sm
-                font-semibold
-                text-white
-                transition-all
-
-                ${
-                  estaAtivo("/admin/perfil")
-                    ? "bg-[#0B1756]"
-                    : "bg-[#023E8A] hover:bg-[#0B1756]"
-                }
-              `}
-            >
-              <UserRound size={17} />
+              {area[tipo].icone}
 
               Perfil
             </Link>
           )}
         </div>
+      </div>
 
-        {/* =================================================
-            BOTÃO MOBILE
-        ================================================== */}
+      {/* =====================================================
+          MOBILE / TABLET
+      ====================================================== */}
+
+      <div
+        className="
+          mx-auto
+          flex
+          h-20
+          max-w-[1480px]
+          items-center
+          justify-between
+          px-4
+          sm:px-6
+          lg:hidden
+        "
+      >
+        <Link
+          href={inicio}
+          className="
+            inline-flex
+            items-center
+          "
+        >
+          <Image
+            src="/logo.svg"
+            alt="UneSUS"
+            width={190}
+            height={65}
+            priority
+            className="
+              h-auto
+              w-[165px]
+              sm:w-[180px]
+            "
+          />
+        </Link>
 
         <button
           type="button"
@@ -414,10 +487,11 @@ export default function Header() {
             rounded-xl
             border
             border-slate-200
+            bg-white
             text-[#0B1756]
             transition
             hover:bg-[#EAF3F7]
-            lg:hidden
+            hover:text-[#023E8A]
           "
         >
           {menuAberto ? (
@@ -441,14 +515,72 @@ export default function Header() {
             px-4
             pb-5
             pt-3
-            shadow-lg
+            shadow-[0_16px_35px_rgba(2,62,138,0.10)]
+            sm:px-6
             lg:hidden
           "
         >
-          <nav className="grid gap-1">
+          {/* ÁREA */}
 
+          {tipo !== "publico" && (
+            <div
+              className="
+                mb-3
+                flex
+                items-center
+                gap-3
+                rounded-2xl
+                bg-[#F4F8FC]
+                p-3
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-[#EAF3F7]
+                  text-[#023E8A]
+                "
+              >
+                {area[tipo].icone}
+              </div>
+
+              <div>
+                <p
+                  className="
+                    text-[10px]
+                    font-semibold
+                    uppercase
+                    tracking-[1.5px]
+                    text-slate-400
+                  "
+                >
+                  UneSUS
+                </p>
+
+                <p
+                  className="
+                    text-sm
+                    font-bold
+                    text-[#0B1756]
+                  "
+                >
+                  {area[tipo].nome}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* LINKS */}
+
+          <nav className="grid gap-1">
             {menus[tipo].map((item) => {
-              const ativo = estaAtivo(item.href);
+              const ativo =
+                estaAtivo(item.href);
 
               return (
                 <Link
@@ -458,9 +590,11 @@ export default function Header() {
                     setMenuAberto(false)
                   }
                   className={`
+                    flex
+                    h-11
+                    items-center
                     rounded-xl
                     px-4
-                    py-3
                     text-sm
                     font-medium
                     transition
@@ -468,14 +602,14 @@ export default function Header() {
                     ${
                       ativo
                         ? `
-                          bg-[#EAF3F7]
-                          font-semibold
-                          text-[#023E8A]
-                        `
+                            bg-[#EAF3F7]
+                            font-semibold
+                            text-[#023E8A]
+                          `
                         : `
-                          text-[#0B1756]
-                          hover:bg-[#F3F7FC]
-                        `
+                            text-[#0B1756]
+                            hover:bg-[#F3F7FC]
+                          `
                     }
                   `}
                 >
@@ -483,22 +617,28 @@ export default function Header() {
                 </Link>
               );
             })}
-
           </nav>
 
-          {/* AÇÕES MOBILE */}
+          {/* =================================================
+              AÇÕES
+          ================================================== */}
 
           <div
             className="
-              mt-3
+              mt-4
               border-t
               border-slate-100
               pt-4
             "
           >
-            {tipo === "publico" && (
-              <div className="grid grid-cols-2 gap-2">
-
+            {tipo === "publico" ? (
+              <div
+                className="
+                  grid
+                  grid-cols-2
+                  gap-2
+                "
+              >
                 <Link
                   href="/publico/login"
                   onClick={() =>
@@ -539,13 +679,10 @@ export default function Header() {
                 >
                   Cadastrar
                 </Link>
-
               </div>
-            )}
-
-            {tipo === "paciente" && (
+            ) : (
               <Link
-                href="/cliente/perfil"
+                href={area[tipo].perfil}
                 onClick={() =>
                   setMenuAberto(false)
                 }
@@ -561,35 +698,11 @@ export default function Header() {
                   text-sm
                   font-semibold
                   text-white
+                  transition
+                  hover:bg-[#0B1756]
                 "
               >
-                <UserRound size={17} />
-
-                Perfil
-              </Link>
-            )}
-
-            {tipo === "gestao" && (
-              <Link
-                href="/admin/perfil"
-                onClick={() =>
-                  setMenuAberto(false)
-                }
-                className="
-                  flex
-                  h-11
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  bg-[#023E8A]
-                  text-sm
-                  font-semibold
-                  text-white
-                "
-              >
-                <UserRound size={17} />
+                {area[tipo].icone}
 
                 Perfil
               </Link>
