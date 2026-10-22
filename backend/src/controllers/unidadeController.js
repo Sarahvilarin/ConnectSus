@@ -1,5 +1,6 @@
 
 import { pool } from "../config/database.js";
+import { validarUnidade } from "../validators/unidadeValidator.js";
 
 // LISTAR UNIDADES
 export async function listarUnidades(req, res, next) {
@@ -74,6 +75,16 @@ export async function buscarUnidade(req, res, next) {
 // CADASTRAR UNIDADE
 export async function criarUnidade(req, res, next) {
   try {
+
+    const erros = validarUnidade(req.body);
+
+    if (erros.length > 0) {
+      return res.status(400).json({
+        mensagem: "Dados inválidos.",
+        erros
+      });
+    }
+
     const {
       nome,
       cnes,
@@ -160,6 +171,16 @@ export async function criarUnidade(req, res, next) {
 // ATUALIZAR UNIDADE
 export async function atualizarUnidade(req, res, next) {
   try {
+
+    const erros = validarUnidade(req.body);
+
+    if (erros.length > 0) {
+      return res.status(400).json({
+        mensagem: "Dados inválidos.",
+        erros
+      });
+    }
+
     const { id } = req.params;
 
     if (!/^[1-9]\d*$/.test(id)) {
@@ -276,3 +297,54 @@ export async function excluirUnidade(req, res, next) {
     next(error);
   }
 }
+
+
+export async function listarEspecialidadesPorUnidade(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        mensagem: "ID da unidade inválido."
+      });
+    }
+
+    const [unidades] = await pool.query(
+      `SELECT id, nome
+       FROM unidades
+       WHERE id = ? AND ativo = TRUE`,
+      [id]
+    );
+
+    if (unidades.length === 0) {
+      return res.status(404).json({
+        mensagem: "Unidade não encontrada."
+      });
+    }
+
+    const [especialidades] = await pool.query(
+      `SELECT DISTINCT
+         e.id,
+         e.nome
+       FROM especialidades e
+       INNER JOIN medico_especialidades me
+         ON me.especialidade_id = e.id
+       INNER JOIN medicos m
+         ON m.id = me.medico_id
+       INNER JOIN medico_unidade_setores mus
+         ON mus.medico_id = m.id
+       WHERE mus.unidade_id = ?
+         AND m.ativo = TRUE
+       ORDER BY e.nome`,
+      [id]
+    );
+
+    return res.status(200).json({
+      unidade: unidades[0],
+      especialidades
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
