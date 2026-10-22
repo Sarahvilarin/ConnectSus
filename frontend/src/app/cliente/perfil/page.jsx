@@ -10,12 +10,10 @@ import {
   LockKeyhole,
   Pencil,
   Save,
-  Camera,
   Eye,
   EyeOff,
   CheckCircle2,
   X,
-  ArrowLeft,
   HeartPulse,
   KeyRound,
 } from "lucide-react";
@@ -101,7 +99,10 @@ export default function PerfilPage() {
   function alterarEmail(e) {
     e.preventDefault();
 
-    if (!novoEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)) {
+    if (
+      !novoEmail.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)
+    ) {
       mostrarMensagem("Informe um endereço de e-mail válido.");
       return;
     }
@@ -120,19 +121,18 @@ export default function PerfilPage() {
       <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute bottom-[-170px] right-[-100px] h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 py-10 sm:px-8 lg:px-12 lg:py-11">
-        <header className="mb-8 text-center sm:mb-9">
-    
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl md:text-5xl">
-            Gerenciar seu{" "}
-            <span className="text-[#3563A7]">Perfil</span>
-          </h1>
+      {/* CONTEÚDO PRINCIPAL — ESPAÇO SUPERIOR REDUZIDO */}
+      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-10 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
+      <header className="mb-6 text-left sm:mb-7">
+        <h1 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl md:text-5xl">
+          Gerenciar seu{" "}
+          <span className="text-[#3563A7]">Perfil</span>
+        </h1>
 
-          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-[#647EAE] sm:text-lg">
-            Mantenha seus dados atualizados para uma experiência
-            <br className="hidden sm:block" /> cada vez melhor no ConectaSUS.
-          </p>
-        </header>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-[#647EAE]">
+          Mantenha seus dados atualizados para uma experiência cada vez melhor no UneSUS.
+        </p>
+      </header>
 
         {/* Resumo do perfil */}
         <section className="mb-8 rounded-[26px] border border-[#D8E7FF] bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8 lg:px-12 lg:py-6">
@@ -179,9 +179,11 @@ export default function PerfilPage() {
               <p className="mb-1 text-sm font-medium text-[#6B84B3]">
                 Bem-vinda de volta!
               </p>
+
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 Olá, {nome.split(" ")[0]}!
               </h2>
+
               <p className="mt-2 text-sm text-[#647EAE] sm:text-base">
                 Aqui você pode atualizar suas informações pessoais e de acesso.
               </p>
@@ -191,6 +193,7 @@ export default function PerfilPage() {
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
                     <UserRound size={24} />
                   </div>
+
                   <div className="min-w-0">
                     <p className="text-sm text-[#6B84B3]">Nome completo</p>
                     <p className="mt-1 break-words text-sm font-medium text-[#3563A7]">
@@ -203,6 +206,7 @@ export default function PerfilPage() {
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F0F6FF] text-[#3563A7]">
                     <Mail size={24} />
                   </div>
+
                   <div className="min-w-0">
                     <p className="text-sm text-[#6B84B3]">E-mail</p>
                     <p className="mt-1 break-all text-sm font-medium text-[#3563A7]">
@@ -223,6 +227,7 @@ export default function PerfilPage() {
               <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
                 <UserRound size={35} />
               </div>
+
               <div>
                 <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
                   Seus dados pessoais
@@ -241,6 +246,7 @@ export default function PerfilPage() {
                 >
                   Nome completo
                 </label>
+
                 <input
                   id="nome"
                   type="text"
@@ -259,6 +265,7 @@ export default function PerfilPage() {
                 >
                   Telefone (opcional)
                 </label>
+
                 <div className="flex items-center gap-3 rounded-2xl border border-[#CFE0FF] bg-[#F7FAFF] px-5 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                   <Phone size={21} className="shrink-0 text-[#3563A7]" />
                   <input
@@ -290,6 +297,7 @@ export default function PerfilPage() {
               <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[#E0ECFF] text-[#3563A7]">
                 <ShieldCheck size={37} />
               </div>
+
               <div>
                 <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
                   Segurança da conta
@@ -307,6 +315,7 @@ export default function PerfilPage() {
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFEAFF] text-[#3563A7]">
                     <LockKeyhole size={29} />
                   </div>
+
                   <div>
                     <h3 className="font-bold">Alterar senha</h3>
                     <p className="mt-1 text-sm leading-relaxed text-[#647EAE]">
@@ -314,6 +323,7 @@ export default function PerfilPage() {
                     </p>
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => setModal("senha")}
@@ -324,11 +334,13 @@ export default function PerfilPage() {
                 </button>
               </div>
 
+              {/* Alterar e-mail */}
               <div className="flex flex-col gap-4 rounded-[22px] border border-[#E3EDFF] bg-[#F1F6FF] p-5 sm:p-6 xl:flex-row xl:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFEAFF] text-[#3563A7]">
                     <Mail size={29} />
                   </div>
+
                   <div>
                     <h3 className="font-bold">Alterar e-mail</h3>
                     <p className="mt-1 text-sm leading-relaxed text-[#647EAE]">
@@ -336,6 +348,7 @@ export default function PerfilPage() {
                     </p>
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -361,7 +374,7 @@ export default function PerfilPage() {
         </div>
       </div>
 
-
+      {/* Mensagem de confirmação */}
       {mensagem && (
         <div
           role="status"
@@ -403,6 +416,7 @@ export default function PerfilPage() {
                     <Mail size={25} />
                   )}
                 </div>
+
                 <div>
                   <h2 id="modal-title" className="text-xl font-bold">
                     {modal === "senha" ? "Alterar senha" : "Alterar e-mail"}
@@ -412,6 +426,7 @@ export default function PerfilPage() {
                   </p>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => setModal("")}
@@ -451,6 +466,7 @@ export default function PerfilPage() {
                     >
                       {campo.label}
                     </label>
+
                     <div className="flex items-center rounded-xl border border-[#CFE0FF] bg-[#F7FAFF] pr-3 focus-within:border-[#3563A7] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                       <input
                         id={campo.id}
@@ -462,6 +478,7 @@ export default function PerfilPage() {
                         placeholder="Digite sua senha"
                         required
                       />
+
                       <button
                         type="button"
                         onClick={() => setMostrarSenha(!mostrarSenha)}
@@ -495,6 +512,7 @@ export default function PerfilPage() {
                   >
                     E-mail atual
                   </label>
+
                   <input
                     id="email-atual"
                     value={email}
@@ -510,6 +528,7 @@ export default function PerfilPage() {
                   >
                     Novo e-mail
                   </label>
+
                   <input
                     id="novo-email"
                     type="email"
