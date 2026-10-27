@@ -123,7 +123,7 @@ export default function Header() {
       },
       {
         nome: "Visitas",
-        href: "/admin/visitas",
+        href: "/admin/gestaovisitas",
       },
       {
         nome: "Relatórios",

@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS medico_especialidades (
 );
 
 -- Cadastro dos pacientes
+
 CREATE TABLE IF NOT EXISTS pacientes (
     id INT NOT NULL AUTO_INCREMENT,
     nome_completo VARCHAR(150) NOT NULL,
@@ -118,6 +119,18 @@ CREATE TABLE IF NOT EXISTS pacientes (
     email VARCHAR(150) NOT NULL,
     telefone VARCHAR(20) DEFAULT NULL,
     senha_hash VARCHAR(255) NOT NULL,
+
+    cep VARCHAR(8) NOT NULL,
+    rua VARCHAR(150) NOT NULL,
+    numero VARCHAR(20) NOT NULL,
+    bairro VARCHAR(100) NOT NULL,
+    cidade VARCHAR(100) NOT NULL,
+    complemento VARCHAR(100) DEFAULT NULL,
+    sexo VARCHAR(30) NOT NULL,
+    cns VARCHAR(15) DEFAULT NULL,
+    nome_mae VARCHAR(150) DEFAULT NULL,
+    nome_social VARCHAR(150) DEFAULT NULL,
+
     ativo TINYINT(1) NOT NULL DEFAULT 1,
     criado_em TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
@@ -125,10 +138,12 @@ CREATE TABLE IF NOT EXISTS pacientes (
 
     PRIMARY KEY (id),
     UNIQUE KEY uk_pacientes_cpf (cpf),
-    UNIQUE KEY uk_pacientes_email (email)
+    UNIQUE KEY uk_pacientes_email (email),
+    UNIQUE KEY uk_pacientes_cns (cns)
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_0900_ai_ci;
+
 
 -- Administradores do sistema UneSUS
 CREATE TABLE IF NOT EXISTS administradores (
