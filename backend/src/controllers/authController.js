@@ -162,3 +162,77 @@ export async function loginMedico(req, res, next) {
   }
 }
 
+
+export async function loginPaciente(req, res, next) {
+  try {
+    const { email, senha } = req.body ?? {};
+
+    if (
+      typeof email !== "string" ||
+      typeof senha !== "string" ||
+      !email.trim() ||
+      !senha
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe o e-mail e a senha."
+      });
+    }
+
+    const emailLimpo = email.trim().toLowerCase();
+
+    const [pacientes] = await pool.query(
+      `SELECT id, nome_completo, cpf, email, senha_hash
+       FROM pacientes
+       WHERE email = ? AND ativo = TRUE
+       LIMIT 1`,
+      [emailLimpo]
+    );
+
+    if (pacientes.length === 0) {
+      return res.status(401).json({
+        mensagem: "E-mail ou senha incorretos."
+      });
+    }
+
+    const paciente = pacientes[0];
+
+    const senhaValida = await bcrypt.compare(
+      senha,
+      paciente.senha_hash
+    );
+
+    if (!senhaValida) {
+      return res.status(401).json({
+        mensagem: "E-mail ou senha incorretos."
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET não configurada.");
+    }
+
+    const token = jwt.sign(
+      { tipo: "paciente" },
+      process.env.JWT_SECRET,
+      {
+        subject: String(paciente.id),
+        expiresIn: "2h",
+        algorithm: "HS256"
+      }
+    );
+
+    return res.status(200).json({
+      mensagem: "Login realizado com sucesso!",
+      token,
+      paciente: {
+        id: paciente.id,
+        nome_completo: paciente.nome_completo,
+        cpf: paciente.cpf,
+        email: paciente.email
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

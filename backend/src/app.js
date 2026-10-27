@@ -10,6 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import especialidadeRoutes from "./routes/especialidadeRoutes.js";
 import setorRoutes from "./routes/setorRoutes.js";
 import medicoRoutes from "./routes/medicoRoutes.js";
+import pacienteRoutes from "./routes/pacienteRoutes.js";
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/especialidades", especialidadeRoutes);
 app.use("/api/setores", setorRoutes);
 app.use("/api/medicos", medicoRoutes);
+app.use("/api/pacientes", pacienteRoutes);
 
 // Rota inexistente
 app.use((req, res) => {

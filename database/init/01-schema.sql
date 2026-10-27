@@ -1,4 +1,4 @@
-
+```sql
 CREATE DATABASE IF NOT EXISTS app_db
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS especialidades (
 );
 
 -- Cadastro dos médicos
-
 CREATE TABLE IF NOT EXISTS medicos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome_completo VARCHAR(150) NOT NULL,
@@ -79,7 +78,7 @@ CREATE TABLE IF NOT EXISTS medicos (
     UNIQUE (crm, uf_crm)
 );
 
-
+-- Vínculo dos médicos com unidades e setores
 CREATE TABLE IF NOT EXISTS medico_unidade_setores (
     medico_id INT NOT NULL,
     unidade_id INT NOT NULL,
@@ -94,7 +93,6 @@ CREATE TABLE IF NOT EXISTS medico_unidade_setores (
     FOREIGN KEY (unidade_id, setor_id)
         REFERENCES unidade_setores(unidade_id, setor_id)
 );
-
 
 -- Um médico pode possuir várias especialidades
 CREATE TABLE IF NOT EXISTS medico_especialidades (
@@ -111,7 +109,38 @@ CREATE TABLE IF NOT EXISTS medico_especialidades (
         REFERENCES especialidades(id)
 );
 
--- Tipos de unidades
+-- Cadastro dos pacientes
+CREATE TABLE IF NOT EXISTS pacientes (
+    id INT NOT NULL AUTO_INCREMENT,
+    nome_completo VARCHAR(150) NOT NULL,
+    cpf VARCHAR(11) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    telefone VARCHAR(20) DEFAULT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    criado_em TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_pacientes_cpf (cpf),
+    UNIQUE KEY uk_pacientes_email (email)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_0900_ai_ci;
+
+-- Administradores do sistema UneSUS
+CREATE TABLE IF NOT EXISTS administradores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Dados iniciais: tipos de unidades
 INSERT IGNORE INTO tipos_unidade (nome) VALUES
 ('UBS'),
 ('UPA 24h'),
@@ -120,14 +149,14 @@ INSERT IGNORE INTO tipos_unidade (nome) VALUES
 ('Pronto Socorro'),
 ('Policlínica');
 
--- Setores
+-- Dados iniciais: setores
 INSERT IGNORE INTO setores (nome) VALUES
 ('Consulta'),
 ('Retorno'),
 ('Urgência'),
 ('Procedimentos');
 
--- Especialidades
+-- Dados iniciais: especialidades
 INSERT IGNORE INTO especialidades (nome) VALUES
 ('Clínica Médica'),
 ('Pediatria'),
@@ -149,16 +178,4 @@ INSERT IGNORE INTO especialidades (nome) VALUES
 ('Oncologia'),
 ('Cirurgia Geral'),
 ('Cirurgia Vascular');
-
-
--- Administradores do sistema UneSUS
-CREATE TABLE IF NOT EXISTS administradores (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255) NOT NULL,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-
+```
