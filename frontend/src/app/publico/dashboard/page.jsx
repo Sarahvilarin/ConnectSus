@@ -238,7 +238,7 @@ export default function Home() {
                 href="#etapas"
                 className="inline-flex items-center gap-3 rounded-xl bg-[#023E8A] px-5 py-4 font-bold text-white shadow-lg shadow-[#0B1756]/10 transition hover:bg-[#0B1756] sm:px-6"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#023E8A]">
+                <span className="flex h-5 w-6 items-center justify-center rounded-full bg-white text-[#023E8A]">
                   ▶
                 </span>
                 Ver como funciona
