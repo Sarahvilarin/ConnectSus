@@ -26,7 +26,7 @@ import {
   Check,
 } from "lucide-react";
 
-/* Seletor personalizado com menu arredondado e rolagem */
+
 function SelectPersonalizado({
   id,
   value,
@@ -103,7 +103,10 @@ function SelectPersonalizado({
 
     if (event.key === "Enter" && aberto) {
       event.preventDefault();
-      selecionar(options[foco]);
+
+      if (options[foco] !== undefined) {
+        selecionar(options[foco]);
+      }
     }
   }
 
@@ -119,6 +122,7 @@ function SelectPersonalizado({
           if (!aberto) {
             setFoco(Math.max(0, options.findIndex((item) => item === value)));
           }
+
           setAberto(!aberto);
         }}
         onKeyDown={navegar}
@@ -129,6 +133,7 @@ function SelectPersonalizado({
         }`}
       >
         <span className="min-w-0 flex-1 truncate">{value}</span>
+
         <ChevronDown
           size={19}
           className={`mr-1 shrink-0 text-[#3563A7] transition-transform ${
@@ -142,31 +147,37 @@ function SelectPersonalizado({
           ref={opcoesRef}
           role="listbox"
           aria-labelledby={id}
-          className="absolute left-0 top-[calc(100%+8px)] z-50 max-h-60 w-full overflow-y-auto rounded-2xl border border-[#CFE0FF] bg-white p-2 shadow-[0_12px_30px_rgba(11,23,86,0.16)] [scrollbar-color:#9AB9E5_#F0F6FF] [scrollbar-width:thin]"
+          className="absolute left-0 top-[calc(100%+8px)] z-50 max-h-60 w-full overflow-y-auto overscroll-contain rounded-2xl border border-[#CFE0FF] bg-white p-2 shadow-[0_12px_30px_rgba(11,23,86,0.16)] [scrollbar-color:#858585_#F1F1F1] [scrollbar-width:auto]"
         >
-          {options.map((opcao, index) => (
-            <button
-              key={opcao}
-              type="button"
-              role="option"
-              aria-selected={value === opcao}
-              data-index={index}
-              onMouseEnter={() => setFoco(index)}
-              onClick={() => selecionar(opcao)}
-              className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${
-                value === opcao
-                  ? "bg-[#E7F1FF] font-semibold text-[#174D9B]"
-                  : foco === index
-                    ? "bg-[#F0F6FF] text-[#174D9B]"
-                    : "text-[#254A88] hover:bg-[#F0F6FF]"
-              }`}
-            >
-              <span>{opcao}</span>
-              {value === opcao && (
-                <Check size={17} className="shrink-0 text-[#3563A7]" />
-              )}
-            </button>
-          ))}
+          {options.map((opcao, index) => {
+            const selecionada = value === opcao;
+            const emFoco = foco === index;
+
+            return (
+              <button
+                key={opcao}
+                type="button"
+                role="option"
+                aria-selected={selecionada}
+                data-index={index}
+                onMouseEnter={() => setFoco(index)}
+                onClick={() => selecionar(opcao)}
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${
+                  selecionada
+                    ? "bg-[#1D438D] font-semibold text-white"
+                    : emFoco
+                      ? "bg-[#F0F6FF] text-[#174D9B]"
+                      : "text-[#254A88] hover:bg-[#F0F6FF]"
+                }`}
+              >
+                <span>{opcao}</span>
+
+                {selecionada && (
+                  <Check size={17} className="shrink-0 text-white" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
