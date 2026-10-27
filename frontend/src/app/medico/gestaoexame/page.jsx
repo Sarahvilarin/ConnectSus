@@ -153,6 +153,7 @@ export default function GestaoExamePage() {
   const [observacoes, setObservacoes] = useState("");
   const [erroPaciente, setErroPaciente] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+  const [confirmacaoEmergencial, setConfirmacaoEmergencial] = useState(false);
 
   const unidadesDisponiveis = useMemo(() => {
     if (!exameSelecionado) return [];
@@ -189,6 +190,7 @@ export default function GestaoExamePage() {
 
     setExameSelecionado(null);
     setUnidadeSelecionada(null);
+    setConfirmacaoEmergencial(false);
   }
 
   function trocarPaciente() {
@@ -198,13 +200,15 @@ export default function GestaoExamePage() {
     setUnidadeSelecionada(null);
     setObservacoes("");
     setErroPaciente(false);
+    setConfirmacaoEmergencial(false);
   }
 
   function solicitarExame() {
     if (
       !paciente ||
       !exameSelecionado ||
-      !unidadeSelecionada
+      !unidadeSelecionada ||
+      !confirmacaoEmergencial
     ) {
       return;
     }
@@ -238,6 +242,7 @@ export default function GestaoExamePage() {
     setUnidadeSelecionada(null);
     setObservacoes("");
     setErroPaciente(false);
+    setConfirmacaoEmergencial(false);
   }
 
   return (
@@ -370,6 +375,31 @@ export default function GestaoExamePage() {
         "
       >
         {/* =====================================================
+            ALERTA FIXO DO FLUXO EMERGENCIAL
+        ====================================================== */}
+
+        <div
+          role="alert"
+          className="mb-4 flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-4 shadow-[0_8px_24px_rgba(146,64,14,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-5"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-900">
+            <AlertTriangle size={23} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-extrabold text-amber-950 sm:text-base">
+              ATENÇÃO: fluxo exclusivo para exames de urgência e emergência
+            </p>
+            <p className="mt-1 text-xs leading-5 text-amber-900 sm:text-sm">
+              Utilize somente quando houver indicação clínica para o atendimento emergencial. Exames de rotina, check-up, prevenção ou acompanhamento devem seguir o fluxo regular da rede.
+            </p>
+          </div>
+          <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-900">
+            <HeartPulse size={15} />
+            Uso restrito
+          </span>
+        </div>
+
+        {/* =====================================================
             HERO + ETAPAS
         ====================================================== */}
 
@@ -452,7 +482,7 @@ export default function GestaoExamePage() {
                 lg:justify-between
               "
             >
-              <div>
+              <div className="max-w-2xl">
                 <div
                   className="
                     flex
@@ -470,34 +500,16 @@ export default function GestaoExamePage() {
                   "
                 >
                   <Stethoscope size={15} />
-
-                  Gestão clínica
+                  Fluxo de urgência e emergência
                 </div>
 
-                <h1
-                  className="
-                    mt-4
-                    text-3xl
-                    font-bold
-                    sm:text-4xl
-                  "
-                >
-                  Solicitação de Exames Emergenciais
+                <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+                  Solicitação de Exames de Urgência e Emergência
                 </h1>
 
-                <p
-                  className="
-                    mt-3
-                    max-w-2xl
-                    text-sm
-                    leading-6
-                    text-blue-100
-                    sm:text-base
-                  "
-                >
-                  Solicite exames necessários em situações de
-                  urgência ou emergência e encaminhe o paciente
-                  para uma unidade disponível da rede UneSUS.
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
+                  Registre exames indicados pela equipe assistencial durante um atendimento
+                  de urgência ou emergência. Este fluxo não substitui o processo de exames de rotina.
                 </p>
               </div>
 
@@ -521,164 +533,6 @@ export default function GestaoExamePage() {
                   titulo="Uso emergencial"
                   texto="Prioridade clínica"
                 />
-              </div>
-            </div>
-          </div>
-
-          {/* =====================================================
-              AVISO EMERGENCIAL
-          ====================================================== */}
-
-          <div
-            className="
-              relative
-              z-20
-              mx-5
-              -mt-8
-              sm:mx-7
-            "
-          >
-            <div
-              className="
-                relative
-                overflow-hidden
-                rounded-[24px]
-                border
-                border-amber-200
-                bg-gradient-to-r
-                from-amber-50
-                via-[#FFF9E7]
-                to-white
-                p-5
-                shadow-[0_14px_35px_rgba(120,53,15,0.10)]
-              "
-            >
-              <div
-                className="
-                  pointer-events-none
-                  absolute
-                  -right-10
-                  -top-10
-                  h-32
-                  w-32
-                  rounded-full
-                  bg-amber-100/70
-                "
-              />
-
-              <div
-                className="
-                  relative
-                  z-10
-                  flex
-                  flex-col
-                  gap-4
-                  md:flex-row
-                  md:items-center
-                  md:justify-between
-                "
-              >
-                <div
-                  className="
-                    flex
-                    items-start
-                    gap-4
-                  "
-                >
-                  <div
-                    className="
-                      flex
-                      h-12
-                      w-12
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-2xl
-                      bg-amber-100
-                      text-amber-700
-                    "
-                  >
-                    <AlertTriangle size={23} />
-                  </div>
-
-                  <div>
-                    <div
-                      className="
-                        flex
-                        flex-wrap
-                        items-center
-                        gap-2
-                      "
-                    >
-                      <h2
-                        className="
-                          text-sm
-                          font-bold
-                          text-amber-900
-                          sm:text-base
-                        "
-                      >
-                        Uso exclusivo para exames emergenciais
-                      </h2>
-
-                      <span
-                        className="
-                          rounded-full
-                          bg-amber-200
-                          px-2.5
-                          py-1
-                          text-[10px]
-                          font-bold
-                          uppercase
-                          tracking-wide
-                          text-amber-800
-                        "
-                      >
-                        Emergência
-                      </span>
-                    </div>
-
-                    <p
-                      className="
-                        mt-1
-                        max-w-3xl
-                        text-xs
-                        leading-5
-                        text-amber-800/80
-                        sm:text-sm
-                      "
-                    >
-                      Esta área deve ser utilizada somente para
-                      exames necessários durante atendimentos de
-                      urgência ou emergência. Exames de rotina,
-                      acompanhamento ou prevenção devem seguir o
-                      fluxo normal da rede.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="
-                    flex
-                    w-fit
-                    shrink-0
-                    items-center
-                    gap-2
-                    rounded-full
-                    border
-                    border-amber-200
-                    bg-white
-                    px-3
-                    py-2
-                    text-xs
-                    font-semibold
-                    text-amber-800
-                  "
-                >
-                  <HeartPulse size={15} />
-
-                  Atendimento emergencial
-                </div>
               </div>
             </div>
           </div>
@@ -774,6 +628,7 @@ export default function GestaoExamePage() {
             </div>
           </div>
         </section>
+
 
         {/* =====================================================
             ETAPA 1
@@ -937,7 +792,7 @@ export default function GestaoExamePage() {
             numero="02"
             icon={<FileText size={21} />}
             titulo="Selecionar exame emergencial"
-            descricao="Escolha somente o exame necessário para o atendimento de urgência."
+            descricao="Selecione o exame indicado pela equipe assistencial para este atendimento de urgência ou emergência."
           />
 
           {!paciente ? (
@@ -956,17 +811,17 @@ export default function GestaoExamePage() {
                   gap-3
                   rounded-2xl
                   border
-                  border-amber-200
-                  bg-amber-50
+                  border-[#D7E5F1]
+                  bg-[#F3F8FC]
                   p-4
                 "
               >
-                <AlertTriangle
-                  size={18}
+                <Stethoscope
+                  size={19}
                   className="
                     mt-0.5
                     shrink-0
-                    text-amber-700
+                    text-[#174693]
                   "
                 />
 
@@ -975,10 +830,10 @@ export default function GestaoExamePage() {
                     className="
                       text-xs
                       font-bold
-                      text-amber-900
+                      text-[#0B1756]
                     "
                   >
-                    Selecione apenas exames necessários para a emergência
+                    A indicação depende da avaliação clínica
                   </p>
 
                   <p
@@ -986,11 +841,10 @@ export default function GestaoExamePage() {
                       mt-1
                       text-xs
                       leading-5
-                      text-amber-800/80
+                      text-slate-600
                     "
                   >
-                    Não utilize esta área para exames eletivos ou
-                    acompanhamento de rotina.
+                    Os exames abaixo só devem ser solicitados por este fluxo quando forem necessários para o atendimento de urgência ou emergência. O tipo de exame, por si só, não define a prioridade.
                   </p>
                 </div>
               </div>
@@ -1016,6 +870,7 @@ export default function GestaoExamePage() {
                       onClick={() => {
                         setExameSelecionado(exame);
                         setUnidadeSelecionada(null);
+                        setConfirmacaoEmergencial(false);
                       }}
                       className={`
                         group
@@ -1234,9 +1089,10 @@ export default function GestaoExamePage() {
                   <button
                     key={unidade.id}
                     type="button"
-                    onClick={() =>
-                      setUnidadeSelecionada(unidade)
-                    }
+                    onClick={() => {
+                      setUnidadeSelecionada(unidade);
+                      setConfirmacaoEmergencial(false);
+                    }}
                     className={`
                       group
                       relative
@@ -1362,7 +1218,7 @@ export default function GestaoExamePage() {
                           "
                         >
                           <CheckCircle2 size={13} />
-                          Exame disponível
+                          Disponível neste fluxo
                         </span>
 
                         <ArrowRight
@@ -1502,59 +1358,42 @@ export default function GestaoExamePage() {
                 />
               </div>
 
-              {/* AVISO FINAL */}
+              {/* CONFIRMAÇÃO OBRIGATÓRIA DE USO EMERGENCIAL */}
 
               <div
-                className="
-                  mt-5
-                  flex
-                  items-start
-                  gap-3
-                  rounded-2xl
-                  border
-                  border-amber-200
-                  bg-amber-50
-                  p-4
-                "
+                className="mt-5 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5"
               >
-                <AlertTriangle
-                  size={19}
-                  className="
-                    mt-0.5
-                    shrink-0
-                    text-amber-700
-                  "
-                />
-
-                <div>
-                  <p
-                    className="
-                      text-xs
-                      font-bold
-                      text-amber-900
-                    "
-                  >
-                    Confirmação de emergência
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      text-xs
-                      leading-5
-                      text-amber-800/80
-                    "
-                  >
-                    Ao continuar, você confirma que este exame é
-                    necessário para o atendimento de urgência ou
-                    emergência deste paciente.
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-900">
+                    <AlertTriangle size={21} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-amber-950 sm:text-base">
+                      Antes de confirmar: esta solicitação é exclusivamente emergencial
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-amber-900 sm:text-sm">
+                      Confirme somente se o exame foi indicado para apoiar um atendimento de urgência ou emergência. Não utilize este fluxo para exames de rotina, check-up, prevenção ou acompanhamento.
+                    </p>
+                  </div>
                 </div>
+
+                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-white p-3 text-sm text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={confirmacaoEmergencial}
+                    onChange={(event) => setConfirmacaoEmergencial(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#174693]"
+                  />
+                  <span>
+                    <span className="font-bold">Confirmo</span> que esta solicitação corresponde a uma necessidade de urgência ou emergência e foi indicada conforme a avaliação clínica.
+                  </span>
+                </label>
               </div>
 
               <button
                 type="button"
                 onClick={solicitarExame}
+                disabled={!confirmacaoEmergencial}
                 className="
                   mt-5
                   flex
@@ -1570,12 +1409,16 @@ export default function GestaoExamePage() {
                   text-white
                   transition-all
 
+                  disabled:cursor-not-allowed
+                  disabled:bg-slate-300
+                  disabled:text-slate-500
+                  disabled:hover:translate-y-0
                   hover:-translate-y-0.5
                   hover:bg-[#0B1756]
                 "
               >
                 <CheckCircle2 size={18} />
-                Confirmar solicitação emergencial
+                Confirmar exame de urgência/emergência
               </button>
             </div>
           </section>
@@ -1702,8 +1545,9 @@ export default function GestaoExamePage() {
                   text-blue-100
                 "
               >
-                O exame foi registrado e encaminhado para a
-                unidade selecionada.
+                A solicitação foi confirmada nesta demonstração.
+                Para salvar e encaminhar o pedido de verdade, conecte
+                esta ação ao backend.
               </p>
             </div>
 
@@ -1774,8 +1618,8 @@ export default function GestaoExamePage() {
                       text-emerald-600
                     "
                   >
-                    A unidade selecionada já pode visualizar o
-                    encaminhamento emergencial.
+                    Os dados foram validados nesta tela. O registro
+                    definitivo depende da integração com a API.
                   </p>
                 </div>
               </div>
