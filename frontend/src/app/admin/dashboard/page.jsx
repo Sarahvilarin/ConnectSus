@@ -170,7 +170,7 @@ export default function DashboardAdmin() {
 
             
             {/* IMAGEM À DIREITA */}
-<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-145 lg:origin-center lg:-translate-x-30">
+<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-[1.78] lg:origin-center lg:-translate-x-30">
   <img
     src="/img_dashboard_admin.png"
     alt="Profissional de saúde, painel de fila de atendimento e QR Code"

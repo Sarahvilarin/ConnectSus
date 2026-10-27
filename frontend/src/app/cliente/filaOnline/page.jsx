@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   APIProvider,
   Map,
@@ -30,7 +30,7 @@ import {
 // ======================================================
 
 // Imagem fixa do card principal (arquivo em /public/sus.png)
-const FOTO_SUS = "/sus-filaOnline.png";
+const FOTO_SUS = "/filaOnline.png";
 
 // Quantidade máxima de unidades exibidas na lista
 const LIMITE_UNIDADES = 5;
@@ -66,17 +66,148 @@ const unidades = [
   }
 ];
 
+// TODO: trocar pelo retorno do banco de dados
+// (por enquanto é montada a partir das unidades acima)
+const todasEspecialidades = [...new Set(unidades.flatMap((u) => u.servicos))];
+
+// ======================================================
+// CAMPO DE ESPECIALIDADES (busca + chips)
+// ======================================================
+
+// Remove acentos e deixa minúsculo para a busca ("clinico" acha "Clínico geral")
+const normalizar = (texto) =>
+  texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+function EspecialidadeSelect({ opcoes, selecionadas, onChange }) {
+  const [texto, setTexto] = useState("");
+  const [aberto, setAberto] = useState(false);
+  const caixaRef = useRef(null);
+
+  // Fecha a lista ao clicar fora
+  useEffect(() => {
+    function aoClicarFora(e) {
+      if (caixaRef.current && !caixaRef.current.contains(e.target)) {
+        setAberto(false);
+      }
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    return () => document.removeEventListener("mousedown", aoClicarFora);
+  }, []);
+
+  // Só mostra o que ainda não foi escolhido e bate com o texto digitado
+  const filtradas = opcoes.filter(
+    (op) =>
+      !selecionadas.includes(op) &&
+      normalizar(op).includes(normalizar(texto))
+  );
+
+  function adicionar(op) {
+    onChange([...selecionadas, op]);
+    setTexto("");
+  }
+
+  function remover(op) {
+    onChange(selecionadas.filter((s) => s !== op));
+  }
+
+  function aoTeclar(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (filtradas[0]) adicionar(filtradas[0]);
+    }
+    // Backspace com campo vazio remove o último chip
+    if (e.key === "Backspace" && !texto && selecionadas.length > 0) {
+      remover(selecionadas[selecionadas.length - 1]);
+    }
+    if (e.key === "Escape") setAberto(false);
+  }
+
+  return (
+    <div ref={caixaRef} className="relative">
+      <div
+        onClick={() => setAberto(true)}
+        className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-xl border bg-white px-2.5 py-2 transition ${
+          aberto ? "border-[#023E8A]" : "border-[#D4E1F5]"
+        }`}
+      >
+        {selecionadas.map((servico) => (
+          <span
+            key={servico}
+            className="inline-flex items-center gap-1 text-sm font-medium text-[#142F68]"
+          >
+            {servico}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                remover(servico);
+              }}
+              aria-label={`Remover ${servico}`}
+              className="rounded-full p-0.5 text-[#60769C] transition hover:bg-[#EAF1FD] hover:text-[#142F68]"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+
+        <input
+          type="text"
+          value={texto}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            setAberto(true);
+          }}
+          onFocus={() => setAberto(true)}
+          onKeyDown={aoTeclar}
+          placeholder={
+            selecionadas.length === 0 ? "Digite ou selecione..." : ""
+          }
+          className="min-w-[110px] flex-1 bg-transparent py-1 text-sm text-[#142F68] placeholder-[#60769C] focus:outline-none"
+        />
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#304A7D] transition ${
+            aberto ? "rotate-180" : ""
+          }`}
+        />
+      </div>
+
+      {aberto && (
+        <ul className="absolute left-0 right-0 z-20 mt-1.5 max-h-44 overflow-y-auto rounded-xl border border-[#D9E6F8] bg-white p-1.5 shadow-lg">
+          {filtradas.length > 0 ? (
+            filtradas.map((op) => (
+              <li key={op}>
+                <button
+                  type="button"
+                  onClick={() => adicionar(op)}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#142F68] transition hover:bg-[#EAF1FD]"
+                >
+                  {op}
+                </button>
+              </li>
+            ))
+          ) : (
+            <li className="px-3 py-2 text-sm text-[#60769C]">
+              Nenhuma especialidade encontrada
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ======================================================
 // ILUSTRAÇÃO DOS CARDS DAS UNIDADES
 // ======================================================
 
+
 function UnidadeFoto({ unidade, destaque = false }) {
-  // No card de destaque (fila) a imagem é fixa, vinda de /public/sus.png
   const [foto, setFoto] = useState(destaque ? FOTO_SUS : "");
   const [atribuicao, setAtribuicao] = useState(null);
 
   useEffect(() => {
-    // Card de destaque usa a imagem fixa, não busca no Google
     if (destaque) return;
 
     let cancelado = false;
@@ -86,6 +217,7 @@ function UnidadeFoto({ unidade, destaque = false }) {
         if (!window.google?.maps?.importLibrary) return;
 
         const { Place } = await window.google.maps.importLibrary("places");
+
         const resposta = await Place.searchByText({
           textQuery: `${unidade.nome}, ${unidade.endereco}, Brasil`,
           fields: ["displayName", "formattedAddress", "photos"],
@@ -99,9 +231,12 @@ function UnidadeFoto({ unidade, destaque = false }) {
 
         if (!fotoGoogle || cancelado) return;
 
-        const urlFoto = fotoGoogle.getURI({ maxWidth: 500, maxHeight: 350 });
-        const autores = fotoGoogle.authorAttributions || [];
-        const autor = autores[0];
+        const urlFoto = fotoGoogle.getURI({
+          maxWidth: 500,
+          maxHeight: 350,
+        });
+
+        const autor = fotoGoogle.authorAttributions?.[0];
 
         if (!cancelado && urlFoto) {
           setFoto(urlFoto);
@@ -115,7 +250,10 @@ function UnidadeFoto({ unidade, destaque = false }) {
           );
         }
       } catch (erro) {
-        console.warn(`Não foi possível buscar foto de ${unidade.nome}:`, erro);
+        console.warn(
+          `Não foi possível buscar foto de ${unidade.nome}:`,
+          erro
+        );
       }
     }
 
@@ -128,37 +266,55 @@ function UnidadeFoto({ unidade, destaque = false }) {
 
   if (destaque) {
     return (
-      <div className="relative isolate flex min-h-[170px] overflow-hidden rounded-2xl bg-[#EAF3FF]">
-        {foto && (
+      <div className="relative isolate flex h-[180px] min-h-[180px] items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#2F6FBE] via-[#1D5BA8] to-[#0B4A9E] sm:h-[190px] sm:min-h-[190px]">
+        {/* Cruz decorativa */}
+        <svg
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-10 -left-8 z-0 h-44 w-44 text-white/[0.08]"
+        >
+          <path
+            fill="currentColor"
+            d="M35 0h30v35h35v30H65v35H35V65H0V35h35z"
+          />
+        </svg>
+
+        {/* Detalhe claro atrás da foto */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 z-0 hidden w-[63%] bg-white/15 sm:block"
+          style={{
+            clipPath: "ellipse(100% 160% at 100% 50%)",
+          }}
+        />
+
+        {/* Imagem fixa com borda curva */}
+        <div
+          className="absolute inset-y-0 right-0 z-0 hidden w-[62%] sm:block"
+          style={{
+            clipPath: "ellipse(100% 160% at 100% 50%)",
+          }}
+        >
           <img
-            src={foto}
-            alt={`Foto da unidade ${unidade.nome}`}
-            className="absolute inset-0 h-full w-full object-cover"
+            src={FOTO_SUS}
+            alt="Fachada ilustrativa de uma unidade de saúde do SUS"
+            className="h-full w-full object-cover object-center"
             loading="eager"
           />
-        )}
-        <div className="absolute inset-0 z-0" style={{ background: "linear-gradient(90deg, #EDF5FF 0%, #EDF5FF 25%, rgba(237,245,255,0.98) 34%, rgba(237,245,255,0.92) 42%, rgba(237,245,255,0.78) 51%, rgba(237,245,255,0.58) 60%, rgba(237,245,255,0.34) 70%, rgba(237,245,255,0.14) 82%, rgba(237,245,255,0.03) 94%, transparent 100%)" }} />
-        <div className="relative z-10 flex w-full items-center gap-4 px-5 py-5 sm:gap-6 sm:px-6 sm:py-6">
-          <div className="max-w-[620px] min-w-0">
-            <span className="inline-flex rounded-full bg-[#D6E9FF] px-3.5 py-1.5 text-sm font-semibold text-[#1264B5]">
-              Você está na fila da
-            </span>
-            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-[#123C7D] sm:text-[30px]">
-              {unidade.nome}
-            </h2>
-            <p className="mt-1 flex items-start text-sm leading-6 text-[#24558F] sm:text-base">
-              <span>{unidade.endereco}</span>
-            </p>
-            {foto && atribuicao && (
-              <p className="mt-1 text-[9px] text-[#496A91]">
-                Foto: {atribuicao.url ? (
-                  <a href={atribuicao.url} target="_blank" rel="noopener noreferrer" className="underline">{atribuicao.nome}</a>
-                ) : atribuicao.nome}
-              </p>
-            )}
-          </div>
         </div>
-        {!foto && <div className="absolute right-5 top-5 hidden h-20 w-24 rounded-xl bg-[#DDEBFF]/70 sm:block" />}
+
+        {/* Texto da unidade */}
+        <div className="relative z-10 min-w-0 px-5 sm:max-w-[48%] sm:px-8">
+          
+
+          <h2 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-white sm:mt-2.5 sm:text-[clamp(25px,2.4vw,36px)]">
+            {unidade.nome}
+          </h2>
+
+          <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-white/90 sm:text-sm sm:leading-snug">
+            {unidade.endereco}
+          </p>
+        </div>
       </div>
     );
   }
@@ -174,7 +330,11 @@ function UnidadeFoto({ unidade, destaque = false }) {
             loading="lazy"
           />
         ) : (
-          <svg viewBox="0 0 76 68" className="h-full w-full" aria-hidden="true">
+          <svg
+            viewBox="0 0 76 68"
+            className="h-full w-full"
+            aria-hidden="true"
+          >
             <rect x="0" y="49" width="76" height="19" fill="#9FB5A1" />
             <rect x="9" y="17" width="58" height="38" rx="2" fill="#F8FCFF" />
             <rect x="9" y="17" width="58" height="9" fill="#2D91AC" />
@@ -184,8 +344,12 @@ function UnidadeFoto({ unidade, destaque = false }) {
           </svg>
         )}
       </div>
+
       {foto && atribuicao && (
-        <p className="mt-1 max-w-[76px] truncate text-[8px] leading-3 text-[#60769C]" title={`Foto: ${atribuicao.nome}`}>
+        <p
+          className="mt-1 max-w-[76px] truncate text-[8px] leading-3 text-[#60769C]"
+          title={`Foto: ${atribuicao.nome}`}
+        >
           Foto:{" "}
           {atribuicao.url ? (
             <a
@@ -204,6 +368,7 @@ function UnidadeFoto({ unidade, destaque = false }) {
     </div>
   );
 }
+
 
 
 
@@ -404,8 +569,9 @@ function FilaOnlineConteudo() {
 
   const [ordenacao, setOrdenacao] = useState("proxima");
 
-  const [especialidadeSelecionada, setEspecialidadeSelecionada] =
-    useState("");
+  // Especialidades escolhidas no modal (várias, viram chips)
+  const [especialidadesSelecionadas, setEspecialidadesSelecionadas] =
+    useState([]);
 
   const [especialidadeConfirmada, setEspecialidadeConfirmada] =
     useState("");
@@ -439,22 +605,22 @@ function FilaOnlineConteudo() {
 
   function abrirConfirmacao(unidade) {
     setUnidadeParaConfirmar(unidade);
-    setEspecialidadeSelecionada(unidade.servicos[0]);
+    setEspecialidadesSelecionadas([unidade.servicos[0]]);
     setEntrouNaFila(false);
   }
 
   function fecharModal() {
     setUnidadeParaConfirmar(null);
     setEntrouNaFila(false);
-    setEspecialidadeSelecionada("");
+    setEspecialidadesSelecionadas([]);
   }
 
   function confirmarEntrada() {
-    if (!especialidadeSelecionada || !unidadeParaConfirmar) {
+    if (especialidadesSelecionadas.length === 0 || !unidadeParaConfirmar) {
       return;
     }
 
-    setEspecialidadeConfirmada(especialidadeSelecionada);
+    setEspecialidadeConfirmada(especialidadesSelecionadas.join(", "));
     setEntrouNaFila(true);
   }
 
@@ -786,48 +952,60 @@ function FilaOnlineConteudo() {
             }
           }}
         >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="titulo-sair-fila"
-            aria-describedby="descricao-sair-fila"
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#D9E6F8] bg-white shadow-2xl"
-          >
-            <div className="flex items-start gap-4 p-6 sm:p-7">
-              <div className="min-w-0 flex-1">
-                <h2 id="titulo-sair-fila" className="text-xl font-bold text-[#142F68]">
-                  Deseja sair da fila?
-                </h2>
-                <p id="descricao-sair-fila" className="mt-2 text-sm leading-6 text-[#526987]">
-                  Se você sair agora, sua posição atual será encerrada. Para acompanhar o atendimento novamente, será necessário entrar na fila outra vez.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMostrarConfirmacaoSaida(false)}
-                aria-label="Fechar confirmação"
-                className="-mr-2 -mt-2 rounded-lg p-2 text-[#7183A0] transition hover:bg-[#F1F6FD] hover:text-[#142F68]"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="flex flex-col-reverse gap-3 border-t border-[#E6EDF7] bg-[#F8FAFE] p-5 sm:flex-row sm:justify-end sm:px-7">
-              <button
-                type="button"
-                onClick={() => setMostrarConfirmacaoSaida(false)}
-                className="rounded-xl border border-[#C9D7EA] bg-white px-5 py-3 text-sm font-semibold text-[#24466F] transition hover:bg-[#EDF4FD]"
-              >
-                Continuar na fila
-              </button>
-              <button
-                type="button"
-                onClick={confirmarSaidaDaFila}
-                className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002B66] focus:outline-none focus:ring-4 focus:ring-[#023E8A]/20"
-              >
-                Sim, sair da fila
-              </button>
-            </div>
-          </div>
+          
+<div
+  role="alertdialog"
+  aria-modal="true"
+  aria-labelledby="titulo-sair-fila"
+  aria-describedby="descricao-sair-fila"
+  className="w-full max-w-sm overflow-hidden rounded-2xl border border-[#D9E6F8] bg-white text-center shadow-2xl"
+>
+  <div className="relative flex flex-col items-center px-6 py-8 sm:px-7">
+    <button
+      type="button"
+      onClick={() => setMostrarConfirmacaoSaida(false)}
+      aria-label="Fechar confirmação"
+      className="absolute right-4 top-4 rounded-lg p-2 text-[#7183A0] transition hover:bg-[#F1F6FD] hover:text-[#142F68]"
+    >
+      <X size={20} />
+    </button>
+
+    <h2
+      id="titulo-sair-fila"
+      className="text-xl font-bold text-[#142F68]"
+    >
+      Deseja sair da fila?
+    </h2>
+
+    <p
+      id="descricao-sair-fila"
+      className="mt-3 max-w-sm text-sm leading-6 text-[#526987]"
+    >
+      Se você sair agora, sua posição atual será encerrada.
+      Para acompanhar o atendimento novamente, será necessário
+      entrar na fila outra vez.
+    </p>
+  </div>
+
+  <div className="flex flex-col justify-center gap-3 border-t border-[#E6EDF7] bg-[#F8FAFE] px-5 py-5 sm:flex-row">
+    <button
+      type="button"
+      onClick={() => setMostrarConfirmacaoSaida(false)}
+      className="rounded-xl border border-[#C9D7EA] bg-white px-5 py-3 text-sm font-semibold text-[#24466F] transition hover:bg-[#EDF4FD]"
+    >
+      Continuar na fila
+    </button>
+
+    <button
+      type="button"
+      onClick={confirmarSaidaDaFila}
+      className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002B66] focus:outline-none focus:ring-4 focus:ring-[#023E8A]/20"
+    >
+      Sim, sair da fila
+    </button>
+  </div>
+</div>
+
         </div>
       )}
 
@@ -848,11 +1026,11 @@ function FilaOnlineConteudo() {
             aria-labelledby="titulo-confirmacao"
             className={`my-auto w-full ${
               entrouNaFila
-                ? "max-w-[480px] p-6 sm:p-7"
-                : "max-w-xl p-7 sm:p-9"
+                ? "max-w-[440px] p-5 sm:p-6"
+                : "max-w-md p-5 sm:p-6"
             } rounded-2xl bg-white shadow-2xl`}
           >
-            <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#023E8A]">
                   Fila Online
@@ -860,7 +1038,7 @@ function FilaOnlineConteudo() {
 
                 <h2
                   id="titulo-confirmacao"
-                  className="mt-3 text-2xl font-bold text-[#142F68]"
+                  className="mt-2 text-2xl font-bold text-[#142F68]"
                 >
                   {entrouNaFila
                     ? ""
@@ -920,7 +1098,7 @@ function FilaOnlineConteudo() {
                     </p>
 
                     <p className="mt-1 text-sm text-[#60769C]">
-                      {especialidadeSelecionada}
+                      {especialidadeConfirmada}
                     </p>
                   </div>
                 </div>
@@ -940,12 +1118,12 @@ function FilaOnlineConteudo() {
               </div>
             ) : (
               <>
-                <p className="mb-5 text-sm leading-6 text-[#304A7D]">
+                <p className="mb-4 text-sm leading-6 text-[#304A7D]">
                   Confira os dados da unidade e escolha o tipo de
                   atendimento antes de solicitar sua entrada na fila.
                 </p>
 
-                <div className="rounded-xl border border-[#D9E6F8] bg-[#F4F8FF] p-4">
+                <div className="rounded-xl border border-[#D9E6F8] bg-[#F4F8FF] p-3.5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#DFEAFC] text-[#023E8A]">
                       <MapPin size={25} />
@@ -956,82 +1134,30 @@ function FilaOnlineConteudo() {
                         {unidadeParaConfirmar.nome}
                       </h3>
 
-                      <p className="mt-1 text-sm text-[#304A7D]">
-                        Unidade de saúde
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-start gap-2 text-sm leading-5 text-[#304A7D]">
-                    <Navigation
-                      size={17}
-                      className="mt-0.5 shrink-0 text-[#023E8A]"
-                    />
+                      <div className="mt-2.5 flex items-start gap-2 text-sm leading-5 text-[#304A7D]">
+                    
 
                     <span>{unidadeParaConfirmar.endereco}</span>
                   </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-lg bg-white p-3">
-                      <p className="text-xs text-[#304A7D]">
-                        Endereço da Unidade
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold text-[#142F68] line-clamp-2">
-                        {unidadeParaConfirmar.endereco}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-white p-3">
-                      <p className="text-xs text-[#304A7D]">
-                        Espera estimada
-                      </p>
-
-                      <p className="mt-1 font-bold text-[#142F68]">
-                        {unidadeParaConfirmar.espera} minutos
-                      </p>
                     </div>
                   </div>
 
+                  
+
+                  
+
                   {/* ESPECIALIDADES */}
 
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <p className="mb-2 text-xs font-bold text-[#304A7D]">
                       ESCOLHA O TIPO DE ATENDIMENTO
                     </p>
 
-                    <div className="flex flex-wrap gap-2">
-                      {unidadeParaConfirmar.servicos.map(
-                        (servico) => {
-                          const selecionado =
-                            especialidadeSelecionada === servico;
-
-                          return (
-                            <button
-                              key={servico}
-                              type="button"
-                              onClick={() =>
-                                setEspecialidadeSelecionada(servico)
-                              }
-                              aria-pressed={selecionado}
-                              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                                selecionado
-                                  ? "border-[#023E8A] bg-[#023E8A] text-white shadow-sm"
-                                  : "border-transparent bg-[#E3EDFC] text-[#214A96] hover:border-[#9CB8E8]"
-                              }`}
-                            >
-                              {servico}
-
-                              {selecionado && (
-                                <span className="ml-1.5">✓</span>
-                              )}
-                            </button>
-                          );
-                        }
-                      )}
-                    </div>
-
-                    
+                    <EspecialidadeSelect
+                      opcoes={todasEspecialidades}
+                      selecionadas={especialidadesSelecionadas}
+                      onChange={setEspecialidadesSelecionadas}
+                    />
                   </div>
                 </div>
 
@@ -1039,17 +1165,17 @@ function FilaOnlineConteudo() {
 
                 {/* CONFIRMAÇÃO */}
 
-                <p className="mt-4 text-sm font-medium leading-6 text-[#142F68]">
+                <p className="mt-3 text-sm font-medium leading-6 text-[#142F68]">
                   Deseja solicitar sua entrada na fila de{" "}
-                  <strong>{especialidadeSelecionada}</strong> da
+                  <strong>{especialidadesSelecionadas.join(", ")}</strong> da
                   unidade <strong>{unidadeParaConfirmar.nome}</strong>?
                 </p>
 
-                <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row">
+                <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row">
                   <button
                     type="button"
                     onClick={fecharModal}
-                    className="flex-1 rounded-xl border border-[#C9D8EF] px-4 py-3 font-semibold text-[#023E8A] transition-colors hover:bg-slate-50"
+                    className="flex-1 rounded-xl border border-[#C9D8EF] px-4 py-2.5 font-semibold text-[#023E8A] transition-colors hover:bg-slate-50"
                   >
                     Cancelar
                   </button>
@@ -1057,8 +1183,8 @@ function FilaOnlineConteudo() {
                   <button
                     type="button"
                     onClick={confirmarEntrada}
-                    disabled={!especialidadeSelecionada}
-                    className="flex-1 rounded-xl bg-[#023E8A] px-4 py-3 font-semibold text-white transition-colors hover:bg-[#002B66] disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={especialidadesSelecionadas.length === 0}
+                    className="flex-1 rounded-xl bg-[#023E8A] px-4 py-2.5 font-semibold text-white transition-colors hover:bg-[#002B66] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Confirmar entrada
                   </button>
