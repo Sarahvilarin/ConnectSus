@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   ArrowLeft,
@@ -14,6 +14,8 @@ import {
   CalendarPlus,
   Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Clock,
   Eye,
@@ -143,46 +145,269 @@ const estiloStatus = {
 
 const filtros = ["Todas", "Agendada", "Concluída", "Cancelada"];
 
+const nomesMeses = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+const nomesSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+function paraIso(ano, mes, dia) {
+  return `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(
+    2,
+    "0"
+  )}`;
+}
+
+function formatarData(iso) {
+  if (!iso) return "";
+  const [a, m, d] = iso.split("-");
+  return `${d}/${m}/${a}`;
+}
+
+function textoData(iso) {
+  const d = new Date(`${iso}T00:00:00`);
+  const mes = d
+    .toLocaleDateString("pt-BR", { month: "short" })
+    .replace(".", "");
+  return `${String(d.getDate()).padStart(2, "0")} de ${mes}, ${d.getFullYear()}`;
+}
+
+/* Calendário com posição fixa. valor/onChange usam AAAA-MM-DD.
+   Bloqueia dias anteriores a `minimo` e, se pedido, os domingos. */
+function DatePicker({
+  rotulo,
+  valor,
+  onChange,
+  minimo = "",
+  bloquearDomingos = false,
+  placeholder = "Selecione a data",
+  altura = "min-h-[50px]",
+  largura = "w-full",
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [visao, setVisao] = useState({ ano: 2026, mes: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const ref = useRef(null);
+
+  const hoje = new Date();
+  const hojeIso = paraIso(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+  // Fecha ao rolar a página ou redimensionar a janela
+  useEffect(() => {
+    if (!aberto) return;
+    const fechar = (e) => {
+      if (e.target?.closest?.("[data-popup]")) return;
+      setAberto(false);
+    };
+    window.addEventListener("scroll", fechar, true);
+    window.addEventListener("resize", fechar);
+    return () => {
+      window.removeEventListener("scroll", fechar, true);
+      window.removeEventListener("resize", fechar);
+    };
+  }, [aberto]);
+
+  function alternar() {
+    if (!aberto) {
+      const base = valor
+        ? new Date(`${valor}T00:00:00`)
+        : minimo
+        ? new Date(`${minimo}T00:00:00`)
+        : new Date();
+      setVisao({ ano: base.getFullYear(), mes: base.getMonth() });
+
+      if (ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        const ALT = 360;
+        const LARG = 320;
+        let top = r.bottom + 8;
+
+        if (top + ALT > window.innerHeight - 12) {
+          const acima = r.top - ALT - 8;
+          top = acima >= 12 ? acima : Math.max(12, window.innerHeight - ALT - 12);
+        }
+
+        setPos({
+          top,
+          left: Math.max(12, Math.min(r.left, window.innerWidth - LARG - 12)),
+        });
+      }
+    }
+    setAberto((a) => !a);
+  }
+
+  function mudarMes(delta) {
+    setVisao(({ ano, mes }) => {
+      const d = new Date(ano, mes + delta, 1);
+      return { ano: d.getFullYear(), mes: d.getMonth() };
+    });
+  }
+
+  const primeiroDia = new Date(visao.ano, visao.mes, 1).getDay();
+  const totalDias = new Date(visao.ano, visao.mes + 1, 0).getDate();
+  const celulas = [
+    ...Array(primeiroDia).fill(null),
+    ...Array.from({ length: totalDias }, (_, i) => i + 1),
+  ];
+
+  // Impede voltar para meses totalmente bloqueados
+  const mesMinimo = minimo ? minimo.slice(0, 7) : "";
+  const mesAtualVisao = paraIso(visao.ano, visao.mes, 1).slice(0, 7);
+  const bloqueiaAnterior = mesMinimo && mesAtualVisao <= mesMinimo;
+
+  return (
+    <div
+      ref={ref}
+      className={`relative ${largura}`}
+      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
+    >
+      <button
+        type="button"
+        aria-label={rotulo}
+        aria-haspopup="dialog"
+        aria-expanded={aberto}
+        onClick={alternar}
+        className={`flex ${altura} w-full items-center justify-between gap-3 rounded-lg border bg-white px-4 py-2 text-left text-sm font-semibold text-[#0B1756] transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30 ${
+          aberto
+            ? "border-[#023E8A] ring-2 ring-[#3563A7]/30"
+            : "border-[#3563A7]/40 hover:border-[#3563A7]"
+        }`}
+      >
+        <span
+          className={`min-w-0 truncate ${valor ? "" : "font-normal opacity-60"}`}
+        >
+          {valor ? formatarData(valor) : placeholder}
+        </span>
+        <CalendarDays size={18} className="shrink-0 text-[#3563A7]" />
+      </button>
+
+      {aberto && (
+        <>
+          <button
+            type="button"
+            aria-label="Fechar calendário"
+            onClick={() => setAberto(false)}
+            className="fixed inset-0 z-10 cursor-default"
+          />
+
+          <div
+            data-popup
+            role="dialog"
+            aria-label={rotulo}
+            style={{ top: pos.top, left: pos.left }}
+            className="fixed z-20 w-[320px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-blue-100 bg-white p-3 shadow-xl"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                disabled={bloqueiaAnterior}
+                onClick={() => mudarMes(-1)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#3563A7]/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft size={19} />
+              </button>
+
+              <p className="text-sm font-bold">
+                {nomesMeses[visao.mes]} {visao.ano}
+              </p>
+
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => mudarMes(1)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#3563A7]/10"
+              >
+                <ChevronRight size={19} />
+              </button>
+            </div>
+
+            <div className="mb-1 grid grid-cols-7 text-center">
+              {nomesSemana.map((d) => (
+                <span key={d} className="py-1 text-xs font-semibold opacity-60">
+                  {d}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-1">
+              {celulas.map((dia, i) => {
+                if (!dia) return <span key={`vazio-${i}`} />;
+
+                const iso = paraIso(visao.ano, visao.mes, dia);
+                const selecionado = iso === valor;
+                const ehHoje = iso === hojeIso;
+                const domingo =
+                  new Date(visao.ano, visao.mes, dia).getDay() === 0;
+                const bloqueado =
+                  (minimo && iso < minimo) || (bloquearDomingos && domingo);
+
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    disabled={bloqueado}
+                    aria-pressed={selecionado}
+                    onClick={() => {
+                      onChange(iso);
+                      setAberto(false);
+                    }}
+                    className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm transition ${
+                      bloqueado
+                        ? "cursor-not-allowed opacity-30"
+                        : selecionado
+                        ? "bg-[#023E8A] font-bold text-white"
+                        : ehHoje
+                        ? "border border-[#023E8A] font-bold hover:bg-[#3563A7]/10"
+                        : "hover:bg-[#3563A7]/10"
+                    }`}
+                  >
+                    {dia}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Consultas() {
   const [aba, setAba] = useState("agendar");
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [especialidade, setEspecialidade] = useState("");
   const [unidade, setUnidade] = useState(null);
   const modalidade = "Presencial";
-  const [dias, setDias] = useState([]);
-  const [dia, setDia] = useState(null);
+  const [dia, setDia] = useState(""); // guarda AAAA-MM-DD
   const [horario, setHorario] = useState("");
   const [motivo, setMotivo] = useState("");
   const [consultas, setConsultas] = useState(consultasIniciais);
   const [filtro, setFiltro] = useState("Todas");
   const [erro, setErro] = useState("");
 
-  // Datas geradas no cliente para evitar diferença entre servidor e navegador
-  useEffect(() => {
-    const lista = [];
-    const hoje = new Date();
+  const diaSelecionado = dia ? { texto: textoData(dia) } : null;
 
-    for (let i = 1; lista.length < 7; i++) {
-      const d = new Date(hoje);
-      d.setDate(hoje.getDate() + i);
-      if (d.getDay() === 0) continue; // sem domingos
+  // A partir de amanhã
+  const amanha = new Date();
+  amanha.setDate(amanha.getDate() + 1);
+  const minimoIso = paraIso(
+    amanha.getFullYear(),
+    amanha.getMonth(),
+    amanha.getDate()
+  );
 
-      lista.push({
-        semana: d
-          .toLocaleDateString("pt-BR", { weekday: "short" })
-          .replace(".", ""),
-        numero: d.getDate(),
-        mes: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
-        texto: `${String(d.getDate()).padStart(2, "0")} de ${d
-          .toLocaleDateString("pt-BR", { month: "short" })
-          .replace(".", "")}, ${d.getFullYear()}`,
-      });
-    }
-
-    setDias(lista);
-  }, []);
-
-  const diaSelecionado = dia !== null ? dias[dia] : null;
   const ativas = consultas.filter((c) => c.status === "Agendada").length;
   const listaFiltrada = consultas.filter(
     (c) => filtro === "Todas" || c.status === filtro
@@ -212,7 +437,7 @@ export default function Consultas() {
       return;
     }
 
-    if (dia === null || !horario) {
+    if (!dia || !horario) {
       setErro("Selecione a data e o horário da consulta.");
       return;
     }
@@ -247,7 +472,7 @@ export default function Consultas() {
   function novoAgendamento(consulta) {
     setEspecialidade(consulta?.especialidade || "");
     setUnidade(UNIDADES.find((u) => u.nome === consulta?.unidade) || null);
-    setDia(null);
+    setDia("");
     setHorario("");
     setMotivo("");
     setErro("");
@@ -534,15 +759,24 @@ export default function Consultas() {
 
                                   <div className="mt-4 space-y-2.5 text-sm">
                                     <p className="flex items-center gap-2">
-                                      <MapPin size={15} className="shrink-0 text-[#3563A7]" />
+                                      <MapPin
+                                        size={15}
+                                        className="shrink-0 text-[#3563A7]"
+                                      />
                                       {u.bairro}
                                     </p>
                                     <p className="flex items-center gap-2">
-                                      <Clock size={15} className="shrink-0 text-[#3563A7]" />
+                                      <Clock
+                                        size={15}
+                                        className="shrink-0 text-[#3563A7]"
+                                      />
                                       {u.horario}
                                     </p>
                                     <p className="flex items-center gap-2">
-                                      <Building2 size={15} className="shrink-0 text-[#3563A7]" />
+                                      <Building2
+                                        size={15}
+                                        className="shrink-0 text-[#3563A7]"
+                                      />
                                       {u.distancia} de distância
                                     </p>
                                   </div>
@@ -573,33 +807,15 @@ export default function Consultas() {
                         <span className="ml-1 text-red-500">*</span>
                       </legend>
 
-                      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-7">
-                        {dias.map((d, i) => {
-                          const selecionado = dia === i;
-
-                          return (
-                            <button
-                              key={d.texto}
-                              type="button"
-                              aria-pressed={selecionado}
-                              onClick={() => setDia(i)}
-                              className={`flex flex-col items-center rounded-lg border px-2 py-3 transition ${
-                                selecionado
-                                  ? "border-[#023E8A] bg-[#023E8A] text-white"
-                                  : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
-                              }`}
-                            >
-                              <span className="text-xs font-semibold capitalize">
-                                {d.semana}
-                              </span>
-                              <span className="text-xl font-extrabold">
-                                {d.numero}
-                              </span>
-                              <span className="text-xs capitalize">{d.mes}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <DatePicker
+                        rotulo="Data da consulta"
+                        valor={dia}
+                        onChange={setDia}
+                        minimo={minimoIso}
+                        bloquearDomingos
+                        placeholder="Selecione o dia"
+                        largura="w-full sm:w-60"
+                      />
                     </fieldset>
 
                     {/* HORÁRIO */}
@@ -687,14 +903,18 @@ export default function Consultas() {
                           {unidade && ` · ${unidade.nome}`}
                           <br />
                           {diaSelecionado
-                            ? `${diaSelecionado.texto}${horario ? ` às ${horario}` : ""}`
+                            ? `${diaSelecionado.texto}${
+                                horario ? ` às ${horario}` : ""
+                              }`
                             : "Data e horário não escolhidos"}
                         </p>
                       </div>
                     </section>
 
                     {/* PRÓXIMOS PASSOS */}
-                    <section className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}>
+                    <section
+                      className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}
+                    >
                       <h3 className="mb-6 mt-1 text-lg font-bold">
                         Próximos passos
                       </h3>
@@ -714,12 +934,17 @@ export default function Consultas() {
                             descricao: "Veja o status em Minhas consultas.",
                           },
                         ].map((item, i) => (
-                          <div key={item.titulo} className="flex items-start gap-3">
+                          <div
+                            key={item.titulo}
+                            className="flex items-start gap-3"
+                          >
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/15 text-sm font-bold">
                               {i + 1}
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold">{item.titulo}</h4>
+                              <h4 className="text-sm font-bold">
+                                {item.titulo}
+                              </h4>
                               <p className="mt-1 text-xs leading-5 sm:text-sm">
                                 {item.descricao}
                               </p>
@@ -795,12 +1020,20 @@ export default function Consultas() {
                 </div>
 
                 <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
-                  <button type="button" onClick={voltar} className={botaoSecundario}>
+                  <button
+                    type="button"
+                    onClick={voltar}
+                    className={botaoSecundario}
+                  >
                     <ArrowLeft size={19} />
                     Voltar e editar
                   </button>
 
-                  <button type="button" onClick={confirmar} className={botaoPrimario}>
+                  <button
+                    type="button"
+                    onClick={confirmar}
+                    className={botaoPrimario}
+                  >
                     Confirmar agendamento
                     <ArrowRight size={20} />
                   </button>
@@ -820,8 +1053,8 @@ export default function Consultas() {
                 </h2>
 
                 <p className="mx-auto mt-4 max-w-xl text-sm leading-7 sm:text-base">
-                  Sua consulta de {especialidade} na {unidade?.nome} está marcada
-                  para {diaSelecionado?.texto} às {horario}.
+                  Sua consulta de {especialidade} na {unidade?.nome} está
+                  marcada para {diaSelecionado?.texto} às {horario}.
                 </p>
 
                 <div className="mx-auto mt-7 max-w-xl rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-5 text-left">
@@ -974,7 +1207,9 @@ export default function Consultas() {
                           className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#3563A7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/40"
                         >
                           <RefreshCw size={17} />
-                          {c.status === "Agendada" ? "Reagendar" : "Agendar novamente"}
+                          {c.status === "Agendada"
+                            ? "Reagendar"
+                            : "Agendar novamente"}
                         </button>
                       </div>
                     </article>
