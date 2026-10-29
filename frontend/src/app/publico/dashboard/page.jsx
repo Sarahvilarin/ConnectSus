@@ -234,29 +234,37 @@ export default function Home() {
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#etapas"
-                className="inline-flex items-center gap-3 rounded-xl bg-[#023E8A] px-5 py-4 font-bold text-white shadow-lg shadow-[#0B1756]/10 transition hover:bg-[#0B1756] sm:px-6"
-              >
-                <span className="flex h-5 w-6 items-center justify-center rounded-full bg-white text-[#023E8A]">
-                  ▶
-                </span>
-                Ver como funciona
-              </a>
+  <a
+    href="#etapas"
+    className="inline-flex items-center gap-3 rounded-xl bg-[#023E8A] px-4 py-3 font-bold text-white shadow-lg shadow-[#0B1756]/10 transition hover:bg-[#0B1756] sm:px-6"
+  >
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#023E8A]">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-3.5 w-3.5"
+      >
+        <path d="M8 5.5v13l10-6.5-10-6.5Z" />
+      </svg>
+    </span>
 
-              <a
-                href="/login"
-                className="inline-flex items-center gap-3 rounded-xl border border-[#3563A7]/50 bg-white/60 px-5 py-4 font-bold text-[#023E8A] transition hover:bg-white sm:px-6"
-              >
-                Entrar na fila
-              </a>
-            </div>
+    Ver como funciona
+  </a>
+
+  <a
+    href="/publico/login"
+    className="inline-flex items-center gap-3 rounded-xl border border-[#3563A7]/50 bg-white/60 px-4 py-3 font-bold text-[#023E8A] transition hover:bg-white sm:px-6"
+  >
+    Entrar na fila
+  </a>
+</div>
           </div>
 
           {/* Fila com imagem ao fundo */}
           
 {/* IMAGEM À DIREITA */}
-<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-145 lg:origin-center lg:-translate-x-8">
+<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-145 lg:origin-center lg:-translate-x-12">
   <img
     src="/img-dashboard.png"
     alt="Profissional de saúde, painel de fila de atendimento e QR Code"
