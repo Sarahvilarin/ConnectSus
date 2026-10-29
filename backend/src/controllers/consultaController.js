@@ -102,6 +102,31 @@ export async function solicitarConsulta(req, res, next) {
       });
     }
 
+
+    const [conflitosPaciente] = await conexao.query(
+      `SELECT id
+   FROM consultas
+   WHERE paciente_id = ?
+     AND data_hora = ?
+     AND status IN ('pendente', 'confirmada')
+   LIMIT 1
+   FOR UPDATE`,
+      [
+        pacienteId,
+        dataHora.toISOString().slice(0, 19).replace("T", " ")
+      ]
+    );
+
+    if (conflitosPaciente.length > 0) {
+      await conexao.rollback();
+
+      return res.status(409).json({
+        mensagem:
+          "Você já possui uma consulta pendente ou confirmada nesse horário."
+      });
+    }
+
+
     const [conflitos] = await conexao.query(
       `SELECT id
        FROM consultas
@@ -213,6 +238,225 @@ export async function listarMinhasConsultas(req, res, next) {
     return res.status(200).json({
       total: consultas.length,
       consultas
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
+export async function cancelarMinhaConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        mensagem: "ID da consulta inválido."
+      });
+    }
+
+    const [resultado] = await pool.query(
+      `UPDATE consultas
+       SET status = 'cancelada'
+       WHERE id = ?
+         AND paciente_id = ?
+         AND status IN ('pendente', 'confirmada')`,
+      [id, req.paciente.id]
+    );
+
+    if (resultado.affectedRows === 0) {
+      const [consultas] = await pool.query(
+        `SELECT id, status
+         FROM consultas
+         WHERE id = ? AND paciente_id = ?`,
+        [id, req.paciente.id]
+      );
+
+      if (consultas.length === 0) {
+        return res.status(404).json({
+          mensagem: "Consulta não encontrada."
+        });
+      }
+
+      return res.status(409).json({
+        mensagem: `Não é possível cancelar uma consulta com status "${consultas[0].status}".`
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: "Solicitação de consulta cancelada com sucesso.",
+      consulta: {
+        id: Number(id),
+        status: "cancelada"
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
+export async function confirmarConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        mensagem: "ID da consulta inválido."
+      });
+    }
+
+    const medicoId = req.medico.id;
+
+    const [resultado] = await pool.query(
+      `UPDATE consultas
+       SET status = 'confirmada'
+       WHERE id = ?
+         AND medico_id = ?
+         AND status = 'pendente'
+         AND EXISTS (
+           SELECT 1
+           FROM medicos m
+           WHERE m.id = consultas.medico_id
+             AND m.ativo = TRUE
+         )`,
+      [id, medicoId]
+    );
+
+    if (resultado.affectedRows === 0) {
+      const [consultas] = await pool.query(
+        `SELECT id, medico_id, status
+         FROM consultas
+         WHERE id = ?`,
+        [id]
+      );
+
+      if (consultas.length === 0) {
+        return res.status(404).json({
+          mensagem: "Consulta não encontrada."
+        });
+      }
+
+      if (consultas[0].medico_id !== medicoId) {
+        return res.status(403).json({
+          mensagem: "Você não tem permissão para confirmar esta consulta."
+        });
+      }
+
+      return res.status(409).json({
+        mensagem: `Não é possível confirmar uma consulta com status "${consultas[0].status}".`
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: "Consulta confirmada com sucesso.",
+      consulta: {
+        id: Number(id),
+        status: "confirmada"
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
+export async function listarConsultasDoMedico(req, res, next) {
+  try {
+    const medicoId = req.medico.id;
+
+    const [consultas] = await pool.query(
+      `SELECT
+         c.id,
+         c.data_hora,
+         c.status,
+         c.observacoes,
+         c.criado_em,
+         p.id AS paciente_id,
+         p.nome_completo AS paciente,
+         p.cpf AS paciente_cpf,
+         p.data_nascimento AS paciente_data_nascimento,
+         p.telefone AS paciente_telefone,
+         u.id AS unidade_id,
+         u.nome AS unidade,
+         u.rua,
+         u.bairro,
+         e.id AS especialidade_id,
+         e.nome AS especialidade,
+         s.id AS setor_id,
+         s.nome AS setor
+       FROM consultas c
+       INNER JOIN pacientes p ON p.id = c.paciente_id
+       INNER JOIN unidades u ON u.id = c.unidade_id
+       INNER JOIN especialidades e ON e.id = c.especialidade_id
+       INNER JOIN setores s ON s.id = c.setor_id
+       WHERE c.medico_id = ?
+       ORDER BY c.data_hora ASC, c.id ASC`,
+      [medicoId]
+    );
+
+    return res.status(200).json({
+      total: consultas.length,
+      consultas
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
+export async function concluirConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        mensagem: "ID da consulta inválido."
+      });
+    }
+
+    const medicoId = req.medico.id;
+
+    const [resultado] = await pool.query(
+      `UPDATE consultas
+       SET status = 'concluida'
+       WHERE id = ?
+         AND medico_id = ?
+         AND status = 'confirmada'`,
+      [id, medicoId]
+    );
+
+    if (resultado.affectedRows === 0) {
+      const [consultas] = await pool.query(
+        `SELECT id, medico_id, status
+         FROM consultas
+         WHERE id = ?`,
+        [id]
+      );
+
+      if (consultas.length === 0) {
+        return res.status(404).json({
+          mensagem: "Consulta não encontrada."
+        });
+      }
+
+      if (consultas[0].medico_id !== medicoId) {
+        return res.status(403).json({
+          mensagem: "Você não tem permissão para concluir esta consulta."
+        });
+      }
+
+      return res.status(409).json({
+        mensagem: `Não é possível concluir uma consulta com status "${consultas[0].status}".`
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: "Consulta concluída com sucesso.",
+      consulta: {
+        id: Number(id),
+        status: "concluida"
+      }
     });
   } catch (error) {
     return next(error);
