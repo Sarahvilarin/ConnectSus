@@ -117,10 +117,16 @@ const opcoesUnidade = [
   ...UNIDADES.map((u) => ({ valor: String(u.id), texto: u.nome })),
 ];
 
-/* Menu suspenso personalizado (mesmo visual da triagem).
+/* Renderiza o conteúdo direto no <body>, acima do menu superior do site
+   e acima dos modais (usado também pelos menus e pelo calendário). */
+function Portal({ children }) {
+  return createPortal(children, document.body);
+}
+
+/* Menu suspenso personalizado.
    `opcoes` aceita textos simples ou objetos { valor, texto }.
-   A lista usa posição fixa, então nunca é cortada por janelas com rolagem,
-   e abre para cima quando falta espaço embaixo. */
+   A lista é renderizada no <body> com z-index acima dos modais, então nunca
+   fica escondida atrás deles nem é cortada por janelas com rolagem. */
 function Dropdown({
   rotulo,
   valor,
@@ -161,7 +167,10 @@ function Dropdown({
     if (!aberto && ref.current) {
       const r = ref.current.getBoundingClientRect();
       const altLista = Math.min(240, lista.length * 48 + 12);
-      const larg = Math.max(r.width, minLista);
+      const larg = Math.min(
+        Math.max(r.width, minLista),
+        window.innerWidth - 24
+      );
       const cabeEmbaixo = window.innerHeight - r.bottom - 12 >= altLista;
 
       setPos({
@@ -205,12 +214,12 @@ function Dropdown({
       </button>
 
       {aberto && !desabilitado && (
-        <>
+        <Portal>
           <button
             type="button"
             aria-label="Fechar menu"
             onClick={() => setAberto(false)}
-            className="fixed inset-0 z-10 cursor-default"
+            className="fixed inset-0 z-[1100] cursor-default"
           />
 
           <div
@@ -218,7 +227,7 @@ function Dropdown({
             role="listbox"
             aria-label={rotulo}
             style={{ top: pos.top, left: pos.left, width: pos.width }}
-            className="fixed z-20 max-h-60 overflow-y-auto rounded-xl border border-blue-100 bg-white p-1.5 shadow-xl"
+            className="fixed z-[1110] max-h-60 overflow-y-auto rounded-xl border border-blue-100 bg-white p-1.5 text-[#0B1756] shadow-xl"
           >
             {lista.map((opcao) => {
               const selecionada = opcao.valor === valor;
@@ -248,7 +257,7 @@ function Dropdown({
               );
             })}
           </div>
-        </>
+        </Portal>
       )}
     </div>
   );
@@ -264,9 +273,10 @@ function paraIso(ano, mes, dia) {
   return `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 }
 
-/* Calendário personalizado (mesmo visual do menu suspenso).
+/* Calendário personalizado.
    `valor` e `onChange` usam o formato AAAA-MM-DD.
-   Posição fixa: nunca é cortado por janelas com rolagem. */
+   O card é renderizado no <body>, acima de qualquer modal, e a posição é
+   calculada para ficar sempre inteiro dentro da tela. */
 function DatePicker({
   rotulo,
   valor,
@@ -305,10 +315,12 @@ function DatePicker({
 
       if (ref.current) {
         const r = ref.current.getBoundingClientRect();
-        const ALT = 380;
+        const ALT = 430; // altura máxima do card (mês com 6 semanas)
         const LARG = 300;
-        let top = r.bottom + 8;
 
+        // Tenta abrir embaixo; se não couber, abre em cima; se também não
+        // couber, encosta na parte de baixo da tela.
+        let top = r.bottom + 8;
         if (top + ALT > window.innerHeight - 12) {
           const acima = r.top - ALT - 8;
           top = acima >= 12 ? acima : Math.max(12, window.innerHeight - ALT - 12);
@@ -368,12 +380,12 @@ function DatePicker({
       </button>
 
       {aberto && (
-        <>
+        <Portal>
           <button
             type="button"
             aria-label="Fechar calendário"
             onClick={() => setAberto(false)}
-            className="fixed inset-0 z-10 cursor-default"
+            className="fixed inset-0 z-[1100] cursor-default"
           />
 
           <div
@@ -381,7 +393,7 @@ function DatePicker({
             role="dialog"
             aria-label={rotulo}
             style={{ top: pos.top, left: pos.left }}
-            className="fixed z-20 w-[300px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-blue-100 bg-white p-3 shadow-xl"
+            className="fixed z-[1110] w-[300px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-blue-100 bg-white p-3 text-[#0B1756] shadow-xl"
           >
             <div className="mb-3 flex items-center justify-between">
               <button
@@ -463,7 +475,7 @@ function DatePicker({
               )}
             </div>
           </div>
-        </>
+        </Portal>
       )}
     </div>
   );
@@ -549,11 +561,6 @@ function Paginacao({ pagina, totalPaginas, totalItens, onChange }) {
       </div>
     </nav>
   );
-}
-
-/* Renderiza o conteúdo direto no <body>, acima do menu superior do site */
-function Portal({ children }) {
-  return createPortal(children, document.body);
 }
 
 export default function GestaoConsultas() {
@@ -949,11 +956,11 @@ export default function GestaoConsultas() {
             })}
 
             <Paginacao
-            pagina={paginaAtual}
-            totalPaginas={totalPaginas}
-            totalItens={lista.length}
-            onChange={mudarPagina}
-          />
+              pagina={paginaAtual}
+              totalPaginas={totalPaginas}
+              totalItens={lista.length}
+              onChange={mudarPagina}
+            />
           </section>
         )}
       </div>
@@ -961,220 +968,220 @@ export default function GestaoConsultas() {
       {/* MODAL: NOVA / EDITAR CONSULTA */}
       {modalAberto && (
         <Portal>
-        <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-[#0B1756]/50 p-0 sm:items-center sm:p-6">
-          <form
-            onSubmit={salvar}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="titulo-modal"
-            className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-8"
-          >
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
-                  <CalendarPlus size={26} />
+          <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-[#0B1756]/50 p-0 sm:items-center sm:p-6">
+            <form
+              onSubmit={salvar}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="titulo-modal"
+              className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-5 text-[#0B1756] shadow-2xl sm:rounded-2xl sm:p-8"
+            >
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
+                    <CalendarPlus size={26} />
+                  </div>
+                  <div>
+                    <h2 id="titulo-modal" className="text-xl font-bold sm:text-2xl">
+                      {editandoId ? "Editar consulta" : "Nova consulta"}
+                    </h2>
+                    <p className="mt-1 text-sm">Preencha os dados abaixo.</p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  onClick={() => setModalAberto(false)}
+                  className="rounded-lg p-2 transition hover:bg-[#3563A7]/10"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="paciente" className="mb-2 block text-sm font-bold">
+                    Paciente<span className="ml-1 text-red-500">*</span>
+                  </label>
+                  <input
+                    id="paciente"
+                    value={form.paciente}
+                    onChange={(e) => atualizar("paciente", e.target.value)}
+                    maxLength={80}
+                    placeholder="Nome completo do paciente"
+                    className={campo}
+                  />
+                </div>
+
+                <fieldset className="sm:col-span-2">
+                  <legend className="mb-2 text-sm font-bold">
+                    Especialidade<span className="ml-1 text-red-500">*</span>
+                  </legend>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {especialidades.map(({ nome, Icone }) => {
+                      const sel = form.especialidade === nome;
+
+                      return (
+                        <button
+                          key={nome}
+                          type="button"
+                          aria-pressed={sel}
+                          onClick={() => escolherEspecialidade(nome)}
+                          className={`flex min-h-[48px] items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                            sel
+                              ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]"
+                              : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
+                          }`}
+                        >
+                          <Icone size={17} />
+                          {nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                <div className="sm:col-span-2">
+                  <p className="mb-2 text-sm font-bold">
+                    Unidade<span className="ml-1 text-red-500">*</span>
+                  </p>
+                  <Dropdown
+                    rotulo="Unidade"
+                    valor={form.unidadeId}
+                    opcoes={unidadesDoForm.map((u) => ({
+                      valor: String(u.id),
+                      texto: u.nome,
+                    }))}
+                    onChange={(novo) => atualizar("unidadeId", novo)}
+                    placeholder={
+                      form.especialidade
+                        ? "Selecione a unidade"
+                        : "Escolha a especialidade primeiro"
+                    }
+                    desabilitado={!form.especialidade}
+                    altura="min-h-[46px]"
+                  />
+                </div>
+
                 <div>
-                  <h2 id="titulo-modal" className="text-xl font-bold sm:text-2xl">
-                    {editandoId ? "Editar consulta" : "Nova consulta"}
-                  </h2>
-                  <p className="mt-1 text-sm">Preencha os dados abaixo.</p>
+                  <p className="mb-2 text-sm font-bold">
+                    Data<span className="ml-1 text-red-500">*</span>
+                  </p>
+                  <DatePicker
+                    rotulo="Data da consulta"
+                    valor={form.data}
+                    onChange={(novo) => atualizar("data", novo)}
+                  />
                 </div>
-              </div>
 
-              <button
-                type="button"
-                aria-label="Fechar"
-                onClick={() => setModalAberto(false)}
-                className="rounded-lg p-2 transition hover:bg-[#3563A7]/10"
-              >
-                <X size={22} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label htmlFor="paciente" className="mb-2 block text-sm font-bold">
-                  Paciente<span className="ml-1 text-red-500">*</span>
-                </label>
-                <input
-                  id="paciente"
-                  value={form.paciente}
-                  onChange={(e) => atualizar("paciente", e.target.value)}
-                  maxLength={80}
-                  placeholder="Nome completo do paciente"
-                  className={campo}
-                />
-              </div>
-
-              <fieldset className="sm:col-span-2">
-                <legend className="mb-2 text-sm font-bold">
-                  Especialidade<span className="ml-1 text-red-500">*</span>
-                </legend>
-
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {especialidades.map(({ nome, Icone }) => {
-                    const sel = form.especialidade === nome;
-
-                    return (
-                      <button
-                        key={nome}
-                        type="button"
-                        aria-pressed={sel}
-                        onClick={() => escolherEspecialidade(nome)}
-                        className={`flex min-h-[48px] items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                          sel
-                            ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]"
-                            : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
-                        }`}
-                      >
-                        <Icone size={17} />
-                        {nome}
-                      </button>
-                    );
-                  })}
+                <div>
+                  <p className="mb-2 text-sm font-bold">Situação</p>
+                  <Dropdown
+                    rotulo="Situação"
+                    valor={form.status}
+                    opcoes={statusLista}
+                    onChange={(novo) => atualizar("status", novo)}
+                    altura="min-h-[46px]"
+                  />
                 </div>
-              </fieldset>
 
-              <div className="sm:col-span-2">
-                <p className="mb-2 text-sm font-bold">
-                  Unidade<span className="ml-1 text-red-500">*</span>
-                </p>
-                <Dropdown
-                  rotulo="Unidade"
-                  valor={form.unidadeId}
-                  opcoes={unidadesDoForm.map((u) => ({
-                    valor: String(u.id),
-                    texto: u.nome,
-                  }))}
-                  onChange={(novo) => atualizar("unidadeId", novo)}
-                  placeholder={
-                    form.especialidade
-                      ? "Selecione a unidade"
-                      : "Escolha a especialidade primeiro"
-                  }
-                  desabilitado={!form.especialidade}
-                  altura="min-h-[46px]"
-                />
+                <fieldset className="sm:col-span-2">
+                  <legend className="mb-2 text-sm font-bold">
+                    Horário<span className="ml-1 text-red-500">*</span>
+                  </legend>
+
+                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+                    {horarios.map((h) => {
+                      const sel = form.horario === h;
+
+                      return (
+                        <button
+                          key={h}
+                          type="button"
+                          aria-pressed={sel}
+                          onClick={() => atualizar("horario", h)}
+                          className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold transition ${
+                            sel
+                              ? "border-[#023E8A] bg-[#023E8A] text-white"
+                              : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
+                          }`}
+                        >
+                          {sel ? <Check size={15} /> : <Clock size={15} />}
+                          {h}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
               </div>
 
-              <div>
-                <p className="mb-2 text-sm font-bold">
-                  Data<span className="ml-1 text-red-500">*</span>
-                </p>
-                <DatePicker
-                  rotulo="Data da consulta"
-                  valor={form.data}
-                  onChange={(novo) => atualizar("data", novo)}
-                />
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-bold">Situação</p>
-                <Dropdown
-                  rotulo="Situação"
-                  valor={form.status}
-                  opcoes={statusLista}
-                  onChange={(novo) => atualizar("status", novo)}
-                  altura="min-h-[46px]"
-                />
-              </div>
-
-              <fieldset className="sm:col-span-2">
-                <legend className="mb-2 text-sm font-bold">
-                  Horário<span className="ml-1 text-red-500">*</span>
-                </legend>
-
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-                  {horarios.map((h) => {
-                    const sel = form.horario === h;
-
-                    return (
-                      <button
-                        key={h}
-                        type="button"
-                        aria-pressed={sel}
-                        onClick={() => atualizar("horario", h)}
-                        className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold transition ${
-                          sel
-                            ? "border-[#023E8A] bg-[#023E8A] text-white"
-                            : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
-                        }`}
-                      >
-                        {sel ? <Check size={15} /> : <Clock size={15} />}
-                        {h}
-                      </button>
-                    );
-                  })}
+              {erro && (
+                <div
+                  role="alert"
+                  className="mt-5 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
+                >
+                  <Info size={19} className="mt-0.5 shrink-0" />
+                  <p>{erro}</p>
                 </div>
-              </fieldset>
-            </div>
+              )}
 
-            {erro && (
-              <div
-                role="alert"
-                className="mt-5 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
-              >
-                <Info size={19} className="mt-0.5 shrink-0" />
-                <p>{erro}</p>
+              <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
+                <button type="button" onClick={() => setModalAberto(false)} className={botaoSecundario}>
+                  Cancelar
+                </button>
+
+                <button type="submit" className={botaoPrimario}>
+                  <Check size={20} />
+                  {editandoId ? "Salvar alterações" : "Cadastrar consulta"}
+                </button>
               </div>
-            )}
-
-            <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
-              <button type="button" onClick={() => setModalAberto(false)} className={botaoSecundario}>
-                Cancelar
-              </button>
-
-              <button type="submit" className={botaoPrimario}>
-                <Check size={20} />
-                {editandoId ? "Salvar alterações" : "Cadastrar consulta"}
-              </button>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
         </Portal>
       )}
 
       {/* MODAL: CONFIRMAR CANCELAMENTO */}
       {cancelar && (
         <Portal>
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/50 p-4">
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="titulo-cancelamento"
-            className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl sm:p-8"
-          >
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
-              <AlertTriangle size={34} />
-            </div>
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/50 p-4">
+            <div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-cancelamento"
+              className="w-full max-w-md rounded-2xl bg-white p-6 text-center text-[#0B1756] shadow-2xl sm:p-8"
+            >
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <AlertTriangle size={34} />
+              </div>
 
-            <h2 id="titulo-cancelamento" className="text-xl font-bold">
-              Cancelar consulta?
-            </h2>
+              <h2 id="titulo-cancelamento" className="text-xl font-bold">
+                Cancelar consulta?
+              </h2>
 
-            <p className="mt-3 text-sm leading-6">
-              A consulta de {cancelar.paciente} ({cancelar.especialidade}) em{" "}
-              {formatarData(cancelar.data)} às {cancelar.horario} será marcada
-              como cancelada e o horário ficará livre.
-            </p>
+              <p className="mt-3 text-sm leading-6">
+                A consulta de {cancelar.paciente} ({cancelar.especialidade}) em{" "}
+                {formatarData(cancelar.data)} às {cancelar.horario} será marcada
+                como cancelada e o horário ficará livre.
+              </p>
 
-            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
-              <button type="button" onClick={() => setCancelar(null)} className={botaoSecundario}>
-                Voltar
-              </button>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                <button type="button" onClick={() => setCancelar(null)} className={botaoSecundario}>
+                  Voltar
+                </button>
 
-              <button
-                type="button"
-                onClick={confirmarCancelamento}
-                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200"
-              >
-                <CalendarX size={18} />
-                Sim, cancelar
-              </button>
+                <button
+                  type="button"
+                  onClick={confirmarCancelamento}
+                  className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200"
+                >
+                  <CalendarX size={18} />
+                  Sim, cancelar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </Portal>
       )}
     </main>
