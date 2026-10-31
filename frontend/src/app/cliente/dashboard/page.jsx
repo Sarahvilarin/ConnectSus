@@ -190,11 +190,14 @@ export default function DashboardCliente() {
               className="absolute right-8 top-8 h-56 w-56 rounded-full bg-[#B8D6FC]/40 blur-2xl sm:h-72 sm:w-72"
             />
 
-            <img
-              src="/"
-              alt="Profissionais de saúde em atendimento"
-              className="relative z-10 max-h-[440px] w-full object-contain"
-            />
+            {/* IMAGEM À DIREITA */}
+<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-120 lg:origin-center lg:-translate-x-12">
+  <img
+    src="/img-dashboard-cliente.png"
+    alt="Profissional de saúde, painel de fila de atendimento e QR Code"
+    className="block h-auto w-full object-contain mix-blend-multiply"
+  />
+</div>
           </div>
         </section>
 

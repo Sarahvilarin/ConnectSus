@@ -3,25 +3,21 @@ const indicadores = [
   {
     titulo: "Atendimentos hoje",
     valor: "248",
-    descricao: "Total registrado no dia",
     icone: "users",
   },
   {
     titulo: "Pacientes aguardando",
     valor: "32",
-    descricao: "Na fila de atendimento",
     icone: "clock",
   },
   {
     titulo: "Em atendimento",
     valor: "18",
-    descricao: "Atendimentos em andamento",
     icone: "activity",
   },
   {
     titulo: "Tempo médio de espera",
     valor: "24 min",
-    descricao: "Média de espera dos pacientes",
     icone: "timer",
   },
 ];
@@ -181,7 +177,7 @@ export default function DashboardAdmin() {
         </section>
 
         {/* INDICADORES PRINCIPAIS */}
-        <section>
+        <section className="mt-18">
           <div className="mb-10">
             <h2 className="text-xl font-extrabold sm:text-3xl">
               Indicadores de atendimento
