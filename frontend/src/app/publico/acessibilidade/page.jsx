@@ -177,42 +177,6 @@ export default function AcessibilidadePage() {
                 Explorar recursos
               </Link>
             </div>
-
-            {/* CARDS INFORMATIVOS */}
-            <div className="mt-9 grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="flex min-h-[100px] flex-col items-center justify-center gap-3 rounded-[24px] border border-[#EAF3F7] bg-white/90 px-2 py-4 shadow-[0_4px_15px_rgba(49,95,161,0.05)] transition duration-300 hover:-translate-y-1 hover:shadow-md sm:min-h-[112px]">
-                <HeartHandshake
-                  size={29}
-                  strokeWidth={1.8}
-                  className="text-[#3563A7]"
-                />
-                <span className="text-center text-xs font-bold text-[#023E8A] sm:text-sm">
-                  Acolhimento
-                </span>
-              </div>
-
-              <div className="flex min-h-[100px] flex-col items-center justify-center gap-3 rounded-[24px] border border-[#EAF3F7] bg-white/90 px-2 py-4 shadow-[0_4px_15px_rgba(49,95,161,0.05)] transition duration-300 hover:-translate-y-1 hover:shadow-md sm:min-h-[112px]">
-                <BookOpen
-                  size={29}
-                  strokeWidth={1.8}
-                  className="text-[#3563A7]"
-                />
-                <span className="text-center text-xs font-bold text-[#023E8A] sm:text-sm">
-                  Informação clara
-                </span>
-              </div>
-
-              <div className="flex min-h-[100px] flex-col items-center justify-center gap-3 rounded-[24px] border border-[#EAF3F7] bg-white/90 px-2 py-4 shadow-[0_4px_15px_rgba(49,95,161,0.05)] transition duration-300 hover:-translate-y-1 hover:shadow-md sm:min-h-[112px]">
-                <UsersRound
-                  size={29}
-                  strokeWidth={1.8}
-                  className="text-[#3563A7]"
-                />
-                <span className="text-center text-xs font-bold text-[#023E8A] sm:text-sm">
-                  Para todos
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* IMAGEM INICIAL — EXPANDIDA PARA A DIREITA */}
@@ -243,38 +207,6 @@ export default function AcessibilidadePage() {
 
             {/* CÍRCULO DECORATIVO INFERIOR */}
             <div className="pointer-events-none absolute -bottom-20 -right-16 z-10 h-[300px] w-[300px] rounded-full bg-[#3563A7]/75 sm:h-[360px] sm:w-[360px]" />
-
-            {/* SELO SUPERIOR */}
-            <div className="absolute right-4 top-8 z-20 flex items-center gap-3 rounded-full border border-white/70 bg-white/95 px-4 py-3 shadow-[0_8px_30px_rgba(25,60,110,0.12)] sm:right-8 sm:px-6 sm:py-4 xl:right-12">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3563A7] text-white">
-                <CheckCircle2 size={25} />
-              </div>
-
-              <div>
-                <p className="text-sm font-extrabold text-[#023E8A] sm:text-base">
-                  Inclusão para todos
-                </p>
-                <p className="mt-1 text-xs text-[#3563A7]">
-                  Respeito e autonomia
-                </p>
-              </div>
-            </div>
-
-            {/* SELO INFERIOR */}
-            <div className="absolute bottom-24 right-4 z-20 flex items-center gap-3 rounded-full border border-white/60 bg-white/95 px-4 py-3 shadow-lg sm:bottom-28 sm:right-8 sm:px-6 sm:py-4 xl:right-12">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#3563A7] text-white">
-                <HeartPulse size={27} />
-              </div>
-
-              <div>
-                <p className="text-sm font-extrabold text-[#023E8A] sm:text-base">
-                  UneSUS
-                </p>
-                <p className="mt-1 text-xs text-[#3563A7]">
-                  Saúde mais acessível
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
