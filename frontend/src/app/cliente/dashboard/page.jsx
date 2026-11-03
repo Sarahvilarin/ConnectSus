@@ -155,54 +155,61 @@ export default function DashboardCliente() {
         className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#3563A7]/25"
       />
 
-      <div className="relative z-10 mx-auto max-w-[1440px] px-5 pb-16 pt-14 sm:px-6 md:px-10 md:pb-20 md:pt-20 lg:px-14">
-        {/* BANNER PRINCIPAL — mantido */}
-        <section className="grid items-center gap-8 lg:grid-cols-[1fr_1fr] lg:gap-4">
-          <div className="max-w-[550px] lg:-translate-x-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-5 py-3 text-sm font-semibold text-[#023E8A] shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-[#3563A7]" />
-              Área do paciente
-            </div>
+      <div className="relative z-10 mx-auto w-full max-w-[1480px] px-4 pb-16 pt-14 sm:px-6 md:pb-20 md:pt-20 lg:px-6 xl:px-8">
 
-            <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-[#0B1756] sm:text-5xl md:text-5xl">
-              Sua saúde,
-              <br />
-              <span className="text-[#023E8A]">mais perto de você.</span>
-            </h1>
 
-            <p className="mt-5 max-w-lg text-base leading-7 text-[#425875] sm:text-lg">
-              Acesse seus serviços de saúde, acompanhe seus atendimentos e
-              encontre informações importantes para cuidar melhor de você.
-            </p>
+        
+        {/* BANNER PRINCIPAL */}
+<section className="grid items-center gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-8">
 
-            <a
-              href="#meus-servicos"
-              className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#023E8A] px-6 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B1756]"
-            >
-              Acessar meus atendimentos
-              <Icon name="arrow" className="h-4 w-4" />
-            </a>
-          </div>
+  {/* TEXTO */}
+  <div className="max-w-[570px] -translate-y-13">
+    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-5 py-3 text-sm font-semibold text-[#023E8A] shadow-sm">
+      <span className="h-2 w-2 rounded-full bg-[#3563A7]" />
+      Área do paciente
+    </div>
 
-          <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[380px] lg:min-h-[440px]">
-            <div
-              aria-hidden="true"
-              className="absolute right-8 top-8 h-56 w-56 rounded-full bg-[#B8D6FC]/40 blur-2xl sm:h-72 sm:w-72"
-            />
+    <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-[#0B1756] sm:text-5xl md:text-5xl">
+      Sua saúde,
+      <br />
+      <span className="text-[#023E8A]">
+        mais perto de você.
+      </span>
+    </h1>
 
-            {/* IMAGEM À DIREITA */}
-<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-120 lg:origin-center lg:-translate-x-12">
-  <img
-    src="/img-dashboard-cliente.png"
-    alt="Profissional de saúde, painel de fila de atendimento e QR Code"
-    className="block h-auto w-full object-contain mix-blend-multiply"
-  />
-</div>
-          </div>
-        </section>
+    <p className="mt-5 max-w-lg text-base leading-7 text-[#425875] sm:text-lg">
+      Acesse seus serviços de saúde, acompanhe seus atendimentos e
+      encontre informações importantes para cuidar melhor de você.
+    </p>
+
+    <a
+      href="#meus-servicos"
+      className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#023E8A] px-6 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B1756]"
+    >
+      Acessar meus atendimentos
+      <Icon name="arrow" className="h-4 w-4" />
+    </a>
+  </div>
+
+  {/* IMAGEM DO PACIENTE */}
+  <div className="relative min-h-[400px] w-full lg:min-h-[520px] lg:w-[150%] lg:-ml-[45%] lg:translate-x-0 lg:-translate-y-20">
+    <img
+      src="/img-dashboard-cliente.jpg"
+      alt="Paciente recebendo atendimento humanizado de uma profissional de saúde"
+      className="absolute inset-0 h-full w-full object-cover object-right"
+      style={{
+        maskImage:
+          "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+      }}
+    />
+  </div>
+
+</section>
 
         {/* RESUMO DA SAÚDE */}
-        <section className="mt-12 grid gap-5 sm:grid-cols-2 sm:gap-6">
+        <section className="mt-4 grid gap-5 sm:grid-cols-2 sm:gap-6">
           <a
             href="/cliente/consultas"
             className="group flex items-center gap-5 rounded-[24px] border border-[#3563A7]/15 bg-white/80 p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md sm:p-6"
@@ -315,8 +322,7 @@ export default function DashboardCliente() {
             </h2>
 
             <p className="mt-4 text-base leading-7 text-[#536783]">
-              Conheça as principais etapas que podem fazer parte do
-              atendimento em uma unidade de saúde.
+              Conheça as principais etapas que podem fazer parte do atendimento em uma unidade de saúde.
             </p>
           </div>
 
@@ -370,81 +376,83 @@ export default function DashboardCliente() {
           </div>
         </section>
 
+
+                
 {/* ORIENTAÇÕES AO PACIENTE */}
-<section className="mt-20 sm:mt-24">
-  <div className="mb-9">
-    <span className="text-sm font-bold uppercase tracking-[0.16em] text-[#3563A7]">
+<section className="mt-20 sm:mt-22">
+  <div className="mb-6 flex flex-col gap-3">
+    <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#3563A7]">
       Cuidado e organização
     </span>
 
-    <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl">
+    <h2 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl">
       Orientações ao paciente
     </h2>
 
-    <p className="mt-4 max-w-2xl text-base leading-7 text-[#536783]">
-      Algumas dicas simples para ajudar você a se preparar para o atendimento.
+    <p className="text-base leading-7 text-[#536783]">
+      Preparamos algumas informações importantes para tornar sua experiência de atendimento mais tranquila.
     </p>
   </div>
 
-  <div className="grid gap-8 md:grid-cols-3 md:gap-10">
-    {/* Orientação 1 */}
-    <article className="flex items-start gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/70 text-[#023E8A]">
-        <Icon name="calendar" className="h-6 w-6" />
-      </div>
+  <div className="grid gap-10 md:grid-cols-3 md:gap-12">
 
-      <div>
-        <h3 className="text-lg font-bold text-[#0B1756]">
-          Confira sua consulta
-        </h3>
+    {/* ORIENTAÇÃO 1 */}
+    <article className="relative">
+      <span className="text-4xl font-extralight tracking-tight text-[#023E8A]">
+        01
+      </span>
 
-        <p className="mt-2 text-sm leading-6 text-[#536783]">
-          Verifique a data, o horário e as orientações do seu agendamento
-          antes de sair de casa.
-        </p>
-      </div>
+      <h3 className="mt-5 text-lg font-bold text-[#0B1756]">
+        Confira seu agendamento
+      </h3>
+
+      <p className="mt-3 text-sm leading-7 text-[#64748B]">
+        Verifique a data, o horário e as informações da consulta
+        antes de se dirigir à unidade de saúde.
+      </p>
     </article>
 
-    {/* Orientação 2 */}
-    <article className="flex items-start gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/70 text-[#023E8A]">
-        <Icon name="check" className="h-6 w-6" />
-      </div>
+    {/* ORIENTAÇÃO 2 */}
+    <article className="relative">
+      <span className="text-4xl font-extralight tracking-tight text-[#023E8A]">
+        02
+      </span>
 
-      <div>
-        <h3 className="text-lg font-bold text-[#0B1756]">
-          Tenha seus documentos
-        </h3>
+      <h3 className="mt-5 text-lg font-bold text-[#0B1756]">
+        Separe seus documentos
+      </h3>
 
-        <p className="mt-2 text-sm leading-6 text-[#536783]">
-          Leve um documento de identificação e, se disponível, seu Cartão SUS.
-        </p>
-      </div>
+      <p className="mt-3 text-sm leading-7 text-[#64748B]">
+        Tenha em mãos um documento de identificação e,
+        se disponível, seu Cartão Nacional de Saúde (Cartão SUS).
+      </p>
     </article>
 
-    {/* Orientação 3 */}
-    <article className="flex items-start gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/70 text-[#023E8A]">
-        <Icon name="file" className="h-6 w-6" />
-      </div>
+    {/* ORIENTAÇÃO 3 */}
+    <article className="relative">
+      <span className="text-4xl font-extralight tracking-tight text-[#023E8A]">
+        03
+      </span>
 
-      <div>
-        <h3 className="text-lg font-bold text-[#0B1756]">
-          Organize seus exames
-        </h3>
+      <h3 className="mt-5 text-lg font-bold text-[#0B1756]">
+        Organize seus exames
+      </h3>
 
-        <p className="mt-2 text-sm leading-6 text-[#536783]">
-          Quando necessário, leve pedidos de exames, receitas e outros
-          documentos relacionados ao atendimento.
-        </p>
-      </div>
+      <p className="mt-3 text-sm leading-7 text-[#64748B]">
+        Apresente pedidos de exames, receitas e resultados
+        anteriores que possam contribuir para seu atendimento.
+      </p>
     </article>
+
   </div>
 
-  <p className="mt-8 border-t text-center border-[#3563A7]/15 pt-4 text-xs leading-5 text-[#536783]">
-    Os documentos necessários podem variar conforme o serviço e a unidade de saúde.
+  {/* AVISO */}
+  <p className="mt-7 text-center text-xs leading-6 text-[#536783]">
+    Os documentos e preparativos necessários podem variar
+    conforme o tipo de atendimento e a unidade de saúde.
   </p>
 </section>
+
 
       </div>
     </main>

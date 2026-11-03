@@ -163,33 +163,39 @@ const atalhos = [
   },
 ];
 
-function CartaoIndicador({ indicador }) {
+
+function CartaoIndicador({ indicador, index }) {
   return (
-    <article className="rounded-2xl border border-[#3563A7]/10 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A] sm:h-14 sm:w-14">
-          <Icon name={indicador.icon} className="h-7 w-7" />
+    <article
+      className="group relative overflow-hidden rounded-[24px] border border-[#3563A7]/30 bg-[#023E8A] p-6 shadow-md transition-all duration-500 ease-out hover:-translate-y-2 hover:bg-[#0B1756] hover:shadow-xl"
+      style={{
+        animation: "fadeIn 0.7s ease-out both",
+        animationDelay: `${index * 0.15}s`,
+      }}
+    >
+      {/* DETALHE DECORATIVO */}
+      <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full border-[18px] border-white/[0.06] transition-transform duration-700 group-hover:scale-125" />
+
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <div>
+          <p className="max-w-[170px] text-sm font-medium leading-relaxed text-white/80">
+            {indicador.titulo}
+          </p>
+
+          <h3 className="mt-5 text-4xl font-extrabold leading-none tracking-tight text-white transition-all duration-300 group-hover:scale-105">
+            {indicador.valor}
+          </h3>
         </div>
 
-        <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-semibold text-[#3563A7]">
-          Hoje
-        </span>
+        {/* ÍCONE */}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 group-hover:bg-white/25">
+          <Icon name={indicador.icon} className="h-7 w-7" />
+        </div>
       </div>
-
-      <p className="mt-5 text-sm font-medium text-[#0B1756]/65">
-        {indicador.titulo}
-      </p>
-
-      <p className="mt-2 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl">
-        {indicador.valor}
-      </p>
-
-      <p className="mt-2 text-xs leading-relaxed text-[#0B1756]/55 sm:text-sm">
-        {indicador.descricao}
-      </p>
     </article>
   );
 }
+
 
 
 export default function DashboardMedico() {
@@ -219,12 +225,11 @@ export default function DashboardMedico() {
 
       {/* CONTAINER PRINCIPAL — MESMAS MARGENS DO DASHBOARD DO PACIENTE */}
 
-      <div className="relative z-10 mx-auto max-w-[1440px] px-5 pb-16 pt-14 sm:px-6 md:px-10 md:pb-20 md:pt-20 lg:px-14">
-
+      <div className="relative z-10 mx-auto w-full max-w-[1480px] px-6 pb-16 pt-14 sm:px-6 md:pb-20 md:pt-20 xl:px-8">
         {/* BANNER PRINCIPAL */}
 
         <section className="grid items-center gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-8">
-          <div className="max-w-[570px] lg:-translate-x-8">
+          <div className="max-w-[570px] lg:-translate-x-1 lg:-translate-y-9">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-5 py-3 text-sm font-semibold text-[#023E8A] shadow-sm">
               <span className="h-2 w-2 rounded-full bg-[#3563A7]" />
               Área do profissional
@@ -252,32 +257,48 @@ export default function DashboardMedico() {
             </a>
           </div>
 
-          {/*aquiiii*/}
+          {/* IMAGEM ADMINISTRATIVA */}
+     
+<div className="relative min-h-[400px] w-full lg:min-h-[520px] lg:w-[150%] lg:-ml-[50%] lg:translate-x-2 lg:-translate-y-20">
+  <img
+    src="/img-dashboard-medico.jpg"
+    alt="Profissional de saúde, painel de fila de atendimento e QR Code"
+    className="absolute inset-0 h-full w-full object-cover object-right"
+    style={{
+      maskImage:
+        "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+      WebkitMaskImage:
+        "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+    }}
+  />
+</div>
         </section>
 
         
-{/* INDICADORES PRINCIPAIS */}
 
-<section className="mt-18">
-  <div className="mb-10">
+{/* INDICADORES PRINCIPAIS */}
+<section className="mt-6">
+  <div className="mb-7">
     <h2 className="text-xl font-extrabold text-[#0B1756] sm:text-3xl">
       Indicadores de atendimento
     </h2>
 
-    <p className="mt-2 text-sm text-[#0B1756]/60 sm:text-base">
+    <p className="mt-3 max-w-2xl text-base leading-7 text-[#536783]">
       Os números essenciais para acompanhar o dia.
     </p>
   </div>
 
-  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    {indicadores.map((indicador) => (
+  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    {indicadores.map((indicador, index) => (
       <CartaoIndicador
         key={indicador.titulo}
         indicador={indicador}
+        index={index}
       />
     ))}
   </div>
 </section>
+
 
    {/* AGENDA DO DIA */}
 
@@ -297,7 +318,7 @@ export default function DashboardMedico() {
 
     <div className="flex w-fit items-center gap-3 rounded-2xl border border-[#3563A7]/15 bg-white/80 px-4 py-3">
       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D9EBFF] text-[#023E8A]">
-        <Icon name="calendar" className="h-6 w-6" />
+        <Icon name="check" className="h-6 w-6" />
       </div>
 
       <div>
@@ -534,9 +555,6 @@ export default function DashboardMedico() {
 
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-bold uppercase tracking-[0.12em] text-[#8CBFFF]">
-              Comunicado em destaque
-            </span>
 
             <span className="rounded-full bg-[#3563A7]/30 px-2.5 py-1 text-[11px] font-semibold text-[#D9EBFF]">
               Unidade de saúde
@@ -553,83 +571,74 @@ export default function DashboardMedico() {
             da unidade.
           </p>
         </div>
-
-        <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-[#B8D6FC] sm:flex">
-          <Icon name="arrow" className="h-5 w-5" />
-        </div>
       </div>
     </div>
 
     {/* OUTROS COMUNICADOS */}
-    <div className="mt-8">
-      <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-white/45">
-        Outros avisos
-      </h3>
+<div className="mt-6">
+  <h3 className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-white/45">
+    Outros avisos
+  </h3>
 
-      <div className="divide-y divide-white/10">
-        <article className="flex items-start gap-4 py-5">
-          <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
-            <Icon name="calendar" className="h-5 w-5" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-white">
-              Organização dos atendimentos
-            </h4>
-            <p className="mt-1 text-sm leading-6 text-white/55">
-              Confira as orientações sobre a programação dos atendimentos.
-            </p>
-          </div>
-
-          <span className="hidden pt-1 text-xs text-white/40 sm:block">
-            Unidade
-          </span>
-        </article>
-
-        <article className="flex items-start gap-4 py-5">
-          <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
-            <Icon name="file" className="h-5 w-5" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-white">
-              Protocolos e orientações
-            </h4>
-            <p className="mt-1 text-sm leading-6 text-white/55">
-              Acompanhe as informações e os procedimentos atualizados.
-            </p>
-          </div>
-
-          <span className="hidden pt-1 text-xs text-white/40 sm:block">
-            Orientação
-          </span>
-        </article>
-
-        <article className="flex items-start gap-4 py-5 last:pb-0">
-          <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
-            <Icon name="activity" className="h-5 w-5" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-white">
-              Campanhas de saúde
-            </h4>
-            <p className="mt-1 text-sm leading-6 text-white/55">
-              Informe-se sobre campanhas de prevenção e ações da unidade.
-            </p>
-          </div>
-
-          <span className="hidden pt-1 text-xs text-white/40 sm:block">
-            Saúde
-          </span>
-        </article>
+  <div className="divide-y divide-white/10">
+    <article className="flex items-center gap-3 py-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
+        <Icon name="calendar" className="h-4 w-4" />
       </div>
-    </div>
 
-    <div className="mt-7 flex items-center gap-2 border-t border-white/10 pt-5 text-xs text-white/40">
-      <Icon name="hospital" className="h-4 w-4" />
-      <span>UneSUS · Painel do profissional de saúde</span>
-    </div>
+      <div className="min-w-0 flex-1">
+        <h4 className="text-sm font-semibold text-white">
+          Organização dos atendimentos
+        </h4>
+        <p className="mt-0.5 text-xs leading-5 text-white/55">
+          Orientações sobre a programação dos atendimentos.
+        </p>
+      </div>
+
+      <span className="hidden text-[11px] text-white/40 sm:block">
+        Unidade
+      </span>
+    </article>
+
+    <article className="flex items-center gap-3 py-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
+        <Icon name="file" className="h-4 w-4" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <h4 className="text-sm font-semibold text-white">
+          Protocolos e orientações
+        </h4>
+        <p className="mt-0.5 text-xs leading-5 text-white/55">
+          Informações e procedimentos atualizados.
+        </p>
+      </div>
+
+      <span className="hidden text-[11px] text-white/40 sm:block">
+        Orientação
+      </span>
+    </article>
+
+    <article className="flex items-center gap-3 py-3 last:pb-0">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
+        <Icon name="activity" className="h-4 w-4" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <h4 className="text-sm font-semibold text-white">
+          Campanhas de saúde
+        </h4>
+        <p className="mt-0.5 text-xs leading-5 text-white/55">
+          Campanhas de prevenção e ações da unidade.
+        </p>
+      </div>
+
+      <span className="hidden text-[11px] text-white/40 sm:block">
+        Saúde
+      </span>
+    </article>
+  </div>
+</div>
   </div>
 </section>
 </section>
