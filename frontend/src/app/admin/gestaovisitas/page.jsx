@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-/* Dados demonstrativos */
+/* =========================
+   DADOS DEMONSTRATIVOS
+========================= */
+
 const HOJE = "2026-10-27";
 const ITENS_POR_PAGINA = 6;
 
@@ -158,42 +161,36 @@ const equipeInicial = [
     nome: "Carla Souza",
     cargo: "Agente Comunitária de Saúde",
     regiao: "Centro",
-    status: "Em atendimento",
   },
   {
     id: 2,
     nome: "Juliana Ribeiro",
     cargo: "Enfermeira",
     regiao: "Cerâmica",
-    status: "Em atendimento",
   },
   {
     id: 3,
     nome: "Rafael Martins",
     cargo: "Enfermeiro",
     regiao: "Barcelona",
-    status: "Disponível",
   },
   {
     id: 4,
     nome: "Carlos Mendes",
     cargo: "Médico",
     regiao: "Centro",
-    status: "Em atendimento",
   },
   {
     id: 5,
     nome: "Marcos Lima",
     cargo: "Médico",
     regiao: "Fundação",
-    status: "Disponível",
   },
   {
     id: 6,
     nome: "Fernanda Alves",
     cargo: "Agente Comunitária de Saúde",
     regiao: "Nova Gerty",
-    status: "Disponível",
   },
 ];
 
@@ -208,8 +205,6 @@ const STATUS_VISITA = [
   "Cancelada",
 ];
 
-const STATUS_PROF = ["Disponível", "Em atendimento", "Afastado"];
-
 const TIPOS = [
   "Visita preventiva",
   "Acompanhamento domiciliar",
@@ -217,8 +212,22 @@ const TIPOS = [
   "Avaliação clínica",
 ];
 
+const DURACAO_VISITAS = {
+  "Visita preventiva": 60,
+  "Acompanhamento domiciliar": 90,
+  Curativo: 60,
+  "Avaliação clínica": 90,
+};
+
 const PRIORIDADES = ["Alta", "Média", "Baixa"];
 const ATIVAS = ["Agendada", "Em atendimento"];
+
+const inputCls =
+  "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15";
+
+/* =========================
+   FUNÇÕES AUXILIARES
+========================= */
 
 function formatarData(data) {
   if (!data) return "Data não definida";
@@ -230,45 +239,53 @@ function formatarData(data) {
 function contar(lista, campo) {
   const mapa = {};
 
-  lista.forEach((v) => {
-    const chave = v[campo] || "Não informado";
+  lista.forEach((item) => {
+    const chave = item[campo] || "Não informado";
     mapa[chave] = (mapa[chave] || 0) + 1;
   });
 
   return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
 }
 
-/* BADGES COM FUNDOS SUAVES E TEXTO PRETO */
+function horarioEmMinutos(horario) {
+  if (!horario) return 0;
+
+  const [horas, minutos] = horario.split(":").map(Number);
+  return horas * 60 + minutos;
+}
+
+function calcularHorarioFim(visita) {
+  const inicio = horarioEmMinutos(visita.horario);
+  const duracao = DURACAO_VISITAS[visita.tipo] || 60;
+  const fim = inicio + duracao;
+
+  const horas = Math.floor(fim / 60);
+  const minutos = fim % 60;
+
+  return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
+}
+
+function dataAtualISO() {
+  const agora = new Date();
+
+  return `${agora.getFullYear()}-${String(
+    agora.getMonth() + 1
+  ).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`;
+}
+
+/* =========================
+   COMPONENTES VISUAIS
+========================= */
+
 function Badge({ children, tipo = "neutro" }) {
   const estilos = {
-    neutro: {
-      fundo: "#EAF3F7",
-      texto: "#000000",
-    },
-    azul: {
-      fundo: "#3563A7",
-      texto: "#FFFFFF",
-    },
-    azulClaro: {
-      fundo: "#EAF3F7",
-      texto: "#000000",
-    },
-    verde: {
-      fundo: "#023E8A",
-      texto: "#FFFFFF",
-    },
-    amarelo: {
-      fundo: "#3563A7",
-      texto: "#FFFFFF",
-    },
-    vermelho: {
-      fundo: "#0B1756",
-      texto: "#FFFFFF",
-    },
-    roxo: {
-      fundo: "#023E8A",
-      texto: "#FFFFFF",
-    },
+    neutro: { fundo: "#EAF3F7", texto: "#000000" },
+    azul: { fundo: "#3563A7", texto: "#FFFFFF" },
+    azulClaro: { fundo: "#EAF3F7", texto: "#000000" },
+    verde: { fundo: "#023E8A", texto: "#FFFFFF" },
+    amarelo: { fundo: "#3563A7", texto: "#FFFFFF" },
+    vermelho: { fundo: "#0B1756", texto: "#FFFFFF" },
+    roxo: { fundo: "#023E8A", texto: "#FFFFFF" },
   };
 
   const estilo = estilos[tipo] || estilos.neutro;
@@ -287,34 +304,29 @@ function Badge({ children, tipo = "neutro" }) {
   );
 }
 
-const corPrioridade = (prioridade) => {
-  return prioridade === "Alta"
+const corPrioridade = (prioridade) =>
+  prioridade === "Alta"
     ? "vermelho"
     : prioridade === "Média"
-    ? "amarelo"
-    : "verde";
-};
+      ? "amarelo"
+      : "verde";
 
-const corStatus = (status) => {
-  return status === "Concluída"
+const corStatus = (status) =>
+  status === "Concluída"
     ? "verde"
     : status === "Agendada"
-    ? "azul"
-    : status === "Em atendimento"
-    ? "roxo"
-    : status === "Em análise"
-    ? "azulClaro"
-    : status === "Cancelada"
-    ? "neutro"
-    : status === "Com inconsistência"
-    ? "vermelho"
-    : status === "Aguardando correção"
-    ? "amarelo"
-    : "neutro";
-};
-
-const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#3563A7] focus:ring-2 focus:ring-[#3563A7]/15";
+      ? "azul"
+      : status === "Em atendimento"
+        ? "roxo"
+        : status === "Em análise"
+          ? "azulClaro"
+          : status === "Cancelada"
+            ? "neutro"
+            : status === "Com inconsistência"
+              ? "vermelho"
+              : status === "Aguardando correção"
+                ? "amarelo"
+                : "neutro";
 
 function Campo({ label, children, className = "" }) {
   return (
@@ -323,6 +335,283 @@ function Campo({ label, children, className = "" }) {
         {label}
       </label>
       {children}
+    </div>
+  );
+}
+
+function FiltroSelect({ value, onChange, placeholder, options }) {
+  const [aberto, setAberto] = useState(false);
+  const selecionado = options.find((opcao) => opcao.value === value);
+  const rotulo = selecionado?.label || placeholder;
+
+  return (
+    <div
+      className="relative w-full"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setAberto(false);
+      }}
+    >
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        onClick={() => setAberto((atual) => !atual)}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm outline-none transition hover:border-[#3563A7] focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 ${
+          aberto
+            ? "border-[#0B1756] ring-4 ring-[#0B1756]/15"
+            : "border-[#C8D8EC]"
+        }`}
+      >
+        <span className="truncate text-[#0B1756]">{rotulo}</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={`h-4 w-4 shrink-0 text-[#0B1756] transition-transform ${
+            aberto ? "rotate-180" : ""
+          }`}
+        >
+          <path
+            d="m6 9 6 6 6-6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {aberto && (
+        <div
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-64 overflow-y-auto rounded-2xl border border-[#D5E2F1] bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+        >
+          {options.map((opcao) => {
+            const ativo = opcao.value === value;
+
+            return (
+              <button
+                key={opcao.value}
+                type="button"
+                role="option"
+                aria-selected={ativo}
+                onClick={() => {
+                  onChange(opcao.value);
+                  setAberto(false);
+                }}
+                className={`w-full rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
+                  ativo
+                    ? "bg-[#0B1756] font-semibold text-white"
+                    : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                }`}
+              >
+                {opcao.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SeletorData({
+  value,
+  onChange,
+  min = "",
+  placeholder = "dd/mm/aaaa",
+  limpar = false,
+}) {
+  const [aberto, setAberto] = useState(false);
+
+  const dataSelecionada = value
+    ? new Date(`${value}T12:00:00`)
+    : null;
+
+  const [mesVisivel, setMesVisivel] = useState(() => {
+    const base = dataSelecionada || new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    if (value) {
+      setMesVisivel(
+        new Date(
+          Number(value.slice(0, 4)),
+          Number(value.slice(5, 7)) - 1,
+          1
+        )
+      );
+    }
+  }, [value]);
+
+  const ano = mesVisivel.getFullYear();
+  const mes = mesVisivel.getMonth();
+  const primeiroDia = new Date(ano, mes, 1);
+  const deslocamento = (primeiroDia.getDay() + 6) % 7;
+  const quantidadeDias = new Date(ano, mes + 1, 0).getDate();
+  const totalCelulas = Math.ceil(
+    (deslocamento + quantidadeDias) / 7
+  ) * 7;
+
+  const hoje = new Date();
+  const hojeISO = dataAtualISO();
+
+  const formatarISO = (anoData, mesData, dia) =>
+    `${anoData}-${String(mesData + 1).padStart(2, "0")}-${String(
+      dia
+    ).padStart(2, "0")}`;
+
+  const valorFormatado = dataSelecionada
+    ? dataSelecionada.toLocaleDateString("pt-BR")
+    : "";
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setAberto((atual) => !atual)}
+        aria-expanded={aberto}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm transition focus:outline-none focus:ring-4 focus:ring-[#3563A7]/15 ${
+          aberto
+            ? "border-[#0B1756] ring-4 ring-[#3563A7]/15"
+            : "border-[#C8D8EC] hover:border-[#3563A7]"
+        }`}
+      >
+        <span
+          className={
+            valorFormatado ? "text-[#0B1756]" : "text-slate-400"
+          }
+        >
+          {valorFormatado || placeholder}
+        </span>
+
+        <svg
+          viewBox="0 0 24 24"
+          className="h-4 w-4 shrink-0 text-[#0B1756]"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M16 3v4M8 3v4M3 10h18" />
+        </svg>
+      </button>
+
+      {aberto && (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-[70] w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-[#0B1756]/20 bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.28)]">
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#0B1756] px-3 py-2.5">
+            <p className="text-sm font-bold capitalize text-white">
+              {mesVisivel.toLocaleDateString("pt-BR", {
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+
+            <div className="flex gap-1">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() =>
+                  setMesVisivel(new Date(ano, mes - 1, 1))
+                }
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                ←
+              </button>
+
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() =>
+                  setMesVisivel(new Date(ano, mes + 1, 1))
+                }
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                →
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#0B1756]">
+            {["S", "T", "Q", "Q", "S", "S", "D"].map(
+              (dia, i) => (
+                <span key={`${dia}-${i}`} className="py-1">
+                  {dia}
+                </span>
+              )
+            )}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: totalCelulas }, (_, i) => {
+              const dia = i - deslocamento + 1;
+
+              if (dia < 1 || dia > quantidadeDias) {
+                return <span key={`vazio-${i}`} className="h-8" />;
+              }
+
+              const iso = formatarISO(ano, mes, dia);
+              const ativo = value === iso;
+              const ehHoje = hojeISO === iso;
+              const desabilitado = Boolean(min && iso < min);
+
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  disabled={desabilitado}
+                  onClick={() => {
+                    onChange(iso);
+                    setAberto(false);
+                  }}
+                  className={`h-8 rounded-lg text-xs font-medium transition ${
+                    ativo
+                      ? "bg-[#0B1756] text-white shadow-md ring-2 ring-[#0B1756]/20"
+                      : ehHoje
+                        ? "border-2 border-[#0B1756] bg-[#EAF3F7] font-extrabold text-[#0B1756]"
+                        : "text-[#0B1756] hover:bg-[#0B1756] hover:text-white"
+                  } disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent`}
+                >
+                  {dia}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t border-[#0B1756]/15 pt-3 text-xs font-semibold">
+            {limpar ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("");
+                  setAberto(false);
+                }}
+                className="rounded-lg px-2 py-1 text-[#0B1756] hover:bg-[#EAF3F7]"
+              >
+                Limpar
+              </button>
+            ) : (
+              <span />
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!min || hojeISO >= min) onChange(hojeISO);
+                setMesVisivel(
+                  new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+                );
+                setAberto(false);
+              }}
+              className="rounded-lg bg-[#0B1756] px-3 py-2 text-white hover:bg-[#023E8A]"
+            >
+              Hoje
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -340,10 +629,14 @@ function CardSecao({
     >
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-2xl font-bold text-[#0B1756]">{titulo}</h3>
+          <h3 className="text-2xl font-bold text-[#0B1756]">
+            {titulo}
+          </h3>
 
           {subtitulo && (
-            <p className="mt-1 text-base text-slate-400">{subtitulo}</p>
+            <p className="mt-1 text-base text-slate-400">
+              {subtitulo}
+            </p>
           )}
         </div>
 
@@ -371,7 +664,9 @@ function Barras({ dados }) {
       {dados.map(([nome, qtd]) => (
         <div key={nome}>
           <div className="mb-1.5 flex justify-between gap-3 text-base">
-            <span className="font-medium text-slate-600">{nome}</span>
+            <span className="font-medium text-slate-600">
+              {nome}
+            </span>
             <strong className="text-[#0B1756]">{qtd}</strong>
           </div>
 
@@ -397,13 +692,19 @@ function GraficoVisitas({ visitas }) {
 
     if (dias === 180) {
       for (let i = 5; i >= 0; i--) {
-        const d = new Date(fim.getFullYear(), fim.getMonth() - i, 1);
+        const d = new Date(
+          fim.getFullYear(),
+          fim.getMonth() - i,
+          1
+        );
 
         buckets.push({
           chave: `${d.getFullYear()}-${String(
             d.getMonth() + 1
           ).padStart(2, "0")}`,
-          label: d.toLocaleDateString("pt-BR", { month: "short" }),
+          label: d.toLocaleDateString("pt-BR", {
+            month: "short",
+          }),
           qtd: 0,
         });
       }
@@ -411,7 +712,9 @@ function GraficoVisitas({ visitas }) {
       visitas
         .filter((v) => v.status === "Concluída")
         .forEach((v) => {
-          const b = buckets.find((x) => x.chave === v.data.slice(0, 7));
+          const b = buckets.find(
+            (x) => x.chave === v.data.slice(0, 7)
+          );
           if (b) b.qtd++;
         });
     } else {
@@ -423,13 +726,18 @@ function GraficoVisitas({ visitas }) {
 
         const chave = `${d.getFullYear()}-${String(
           d.getMonth() + 1
-        ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        ).padStart(2, "0")}-${String(d.getDate()).padStart(
+          2,
+          "0"
+        )}`;
 
         buckets.push({
           chave,
           label:
             dias === 7
-              ? d.toLocaleDateString("pt-BR", { weekday: "short" })
+              ? d.toLocaleDateString("pt-BR", {
+                  weekday: "short",
+                })
               : d.toLocaleDateString("pt-BR", {
                   day: "2-digit",
                   month: "2-digit",
@@ -462,7 +770,10 @@ function GraficoVisitas({ visitas }) {
       (pontos.length === 1
         ? 0
         : (i * (width - padX * 2)) / (pontos.length - 1)),
-    y: height - padY - (p.qtd / max) * (height - padY * 2),
+    y:
+      height -
+      padY -
+      (p.qtd / max) * (height - padY * 2),
   }));
 
   const linha = coords.map((p) => `${p.x},${p.y}`).join(" ");
@@ -477,28 +788,31 @@ function GraficoVisitas({ visitas }) {
           <p className="text-2xl font-bold tracking-tight text-[#0B1756]">
             {visitas.filter((v) => v.status === "Concluída").length}
           </p>
+
           <p className="whitespace-nowrap text-xs font-medium text-[#3563A7]">
             visitas concluídas nos registros atuais
           </p>
         </div>
 
         <div className="flex rounded-xl bg-slate-100 p-1">
-          {[["7", "7 dias"], ["30", "30 dias"], ["180", "6 meses"]].map(
-            ([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setPeriodo(val)}
-                className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                  periodo === val
-                    ? "bg-white text-[#17418E] shadow-sm"
-                    : "text-slate-500 hover:text-[#17418E]"
-                }`}
-              >
-                {label}
-              </button>
-            )
-          )}
+          {[
+            ["7", "7 dias"],
+            ["30", "30 dias"],
+            ["180", "6 meses"],
+          ].map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setPeriodo(val)}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                periodo === val
+                  ? "bg-white text-[#17418E] shadow-sm"
+                  : "text-slate-500 hover:text-[#17418E]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -563,20 +877,35 @@ function GraficoVisitas({ visitas }) {
   );
 }
 
+/* =========================
+   PÁGINA PRINCIPAL
+========================= */
+
 export default function GestaoVisitasPage() {
   const [aba, setAba] = useState("geral");
   const [visitas, setVisitas] = useState(visitasIniciais);
-  const [equipe, setEquipe] = useState(equipeInicial);
+  const [equipe] = useState(equipeInicial);
+  const [afastamentos, setAfastamentos] = useState([]);
+
+  const [profissionalSelecionado, setProfissionalSelecionado] =
+    useState(null);
+
+  const [formAfastamento, setFormAfastamento] = useState({
+    motivo: "",
+    dataInicio: HOJE,
+    previsaoRetorno: "",
+    observacoes: "",
+  });
 
   const [buscaVisita, setBuscaVisita] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [filtroPrioridade, setFiltroPrioridade] = useState("Todas");
   const [filtroData, setFiltroData] = useState("");
-
   const [paginaAtual, setPaginaAtual] = useState(1);
 
   const [buscaProfissional, setBuscaProfissional] = useState("");
   const [filtroCargo, setFiltroCargo] = useState("Todos");
+  const [paginaEquipe, setPaginaEquipe] = useState(1);
   const [filtroAgendaProf, setFiltroAgendaProf] = useState("Todos");
 
   const [visitaId, setVisitaId] = useState(null);
@@ -584,9 +913,15 @@ export default function GestaoVisitasPage() {
   const [aviso, setAviso] = useState(null);
   const [mensagemCorrecao, setMensagemCorrecao] = useState("");
 
+  const [horarioAtual, setHorarioAtual] = useState(() => {
+    const agora = new Date();
+    return agora.getHours() * 60 + agora.getMinutes();
+  });
+
   const [mesCalendario, setMesCalendario] = useState(
     new Date(`${HOJE}T12:00:00`)
   );
+
   const [diaSelecionado, setDiaSelecionado] = useState(HOJE);
 
   const formVazio = {
@@ -605,13 +940,31 @@ export default function GestaoVisitasPage() {
 
   const [novaVisita, setNovaVisita] = useState(formVazio);
 
-  const visitaDetalhe = visitas.find((v) => v.id === visitaId) || null;
+  useEffect(() => {
+    const atualizarHorario = () => {
+      const agora = new Date();
+      setHorarioAtual(
+        agora.getHours() * 60 + agora.getMinutes()
+      );
+    };
+
+    atualizarHorario();
+
+    const intervalo = setInterval(atualizarHorario, 60000);
+
+    return () => clearInterval(intervalo);
+  }, []);
+
+  const visitaDetalhe =
+    visitas.find((v) => v.id === visitaId) || null;
 
   const pendentes = visitas.filter(
     (v) => v.status === "Com inconsistência"
   );
 
-  const agendadas = visitas.filter((v) => v.status === "Agendada");
+  const agendadas = visitas.filter(
+    (v) => v.status === "Agendada"
+  );
 
   const emAndamento = visitas.filter(
     (v) => v.status === "Em atendimento"
@@ -661,6 +1014,53 @@ export default function GestaoVisitasPage() {
     [visitas]
   );
 
+  /* =========================
+     AFASTAMENTOS E DISPONIBILIDADE
+  ========================= */
+
+  function afastamentoVigente(profissionalId, data) {
+    return afastamentos.find(
+      (a) =>
+        a.profissionalId === profissionalId &&
+        a.dataInicio <= data &&
+        a.previsaoRetorno >= data &&
+        (!a.dataEncerramento || data < a.dataEncerramento)
+    );
+  }
+
+  function calcularDisponibilidade(profissional) {
+    const afastamento = afastamentoVigente(
+      profissional.id,
+      HOJE
+    );
+
+    if (afastamento) return "Afastado";
+
+    const visitaEmAndamento = visitas.find((v) => {
+      if (
+        v.profissional !== profissional.nome ||
+        v.data !== HOJE ||
+        !ATIVAS.includes(v.status)
+      ) {
+        return false;
+      }
+
+      const inicio = horarioEmMinutos(v.horario);
+      const fim =
+        inicio + (DURACAO_VISITAS[v.tipo] || 60);
+
+      return horarioAtual >= inicio && horarioAtual < fim;
+    });
+
+    return visitaEmAndamento
+      ? "Em atendimento"
+      : "Disponível";
+  }
+
+  /* =========================
+     FILTROS DE VISITAS
+  ========================= */
+
   const visitasFiltradas = useMemo(() => {
     const termo = buscaVisita.toLowerCase().trim();
     const ordem = { Alta: 0, Média: 1, Baixa: 2 };
@@ -675,8 +1075,11 @@ export default function GestaoVisitasPage() {
             v.profissional,
             v.tipo,
             v.endereco,
-          ].some((c) => (c || "").toLowerCase().includes(termo)) &&
-          (filtroStatus === "Todos" || v.status === filtroStatus) &&
+          ].some((c) =>
+            (c || "").toLowerCase().includes(termo)
+          ) &&
+          (filtroStatus === "Todos" ||
+            v.status === filtroStatus) &&
           (filtroPrioridade === "Todas" ||
             v.prioridade === filtroPrioridade) &&
           (!filtroData || v.data === filtroData)
@@ -698,7 +1101,12 @@ export default function GestaoVisitasPage() {
 
   useEffect(() => {
     setPaginaAtual(1);
-  }, [buscaVisita, filtroStatus, filtroPrioridade, filtroData]);
+  }, [
+    buscaVisita,
+    filtroStatus,
+    filtroPrioridade,
+    filtroData,
+  ]);
 
   const totalPaginas = Math.ceil(
     visitasFiltradas.length / ITENS_POR_PAGINA
@@ -708,6 +1116,10 @@ export default function GestaoVisitasPage() {
     (paginaAtual - 1) * ITENS_POR_PAGINA,
     paginaAtual * ITENS_POR_PAGINA
   );
+
+  /* =========================
+     FILTROS DA EQUIPE
+  ========================= */
 
   const equipeFiltrada = useMemo(() => {
     const termo = buscaProfissional.toLowerCase().trim();
@@ -721,6 +1133,24 @@ export default function GestaoVisitasPage() {
     );
   }, [equipe, buscaProfissional, filtroCargo]);
 
+  useEffect(() => {
+    setPaginaEquipe(1);
+  }, [buscaProfissional, filtroCargo]);
+
+  const totalPaginasEquipe = Math.max(
+    1,
+    Math.ceil(equipeFiltrada.length / ITENS_POR_PAGINA)
+  );
+
+  const equipePaginada = equipeFiltrada.slice(
+    (paginaEquipe - 1) * ITENS_POR_PAGINA,
+    paginaEquipe * ITENS_POR_PAGINA
+  );
+
+  /* =========================
+     AGENDA
+  ========================= */
+
   const visitasDoDia = useMemo(
     () =>
       visitas
@@ -731,7 +1161,9 @@ export default function GestaoVisitasPage() {
             (filtroAgendaProf === "Todos" ||
               v.profissional === filtroAgendaProf)
         )
-        .sort((a, b) => a.horario.localeCompare(b.horario)),
+        .sort((a, b) =>
+          a.horario.localeCompare(b.horario)
+        ),
     [visitas, diaSelecionado, filtroAgendaProf]
   );
 
@@ -767,41 +1199,87 @@ export default function GestaoVisitasPage() {
     return itens;
   }, [mesCalendario, visitas, filtroAgendaProf]);
 
+  /* =========================
+     AVISOS
+  ========================= */
+
   function mostrarAviso(texto, tipo = "ok") {
     setAviso({ texto, tipo });
+
     setTimeout(() => setAviso(null), 3500);
   }
 
-  function conflito(id, profissional, data, horario) {
-    return visitas.find(
-      (v) =>
-        v.id !== id &&
-        v.profissional === profissional &&
-        v.data === data &&
-        v.horario === horario &&
-        ATIVAS.includes(v.status)
-    );
+  /* =========================
+     VERIFICAÇÃO DE CONFLITOS
+  ========================= */
+
+  function conflito(id, profissional, data, horario, tipo) {
+    if (!profissional || profissional === "Não definido") {
+      return null;
+    }
+
+    const inicioNovo = horarioEmMinutos(horario);
+    const fimNovo =
+      inicioNovo + (DURACAO_VISITAS[tipo] || 60);
+
+    return visitas.find((v) => {
+      if (
+        v.id === id ||
+        v.profissional !== profissional ||
+        v.data !== data ||
+        !ATIVAS.includes(v.status)
+      ) {
+        return false;
+      }
+
+      const inicioExistente = horarioEmMinutos(v.horario);
+      const fimExistente =
+        inicioExistente + (DURACAO_VISITAS[v.tipo] || 60);
+
+      return (
+        inicioNovo < fimExistente &&
+        fimNovo > inicioExistente
+      );
+    });
   }
 
   function atualizarVisita(id, patch, log) {
     const atual = visitas.find((v) => v.id === id);
+
     if (!atual) return false;
 
     const prof = patch.profissional ?? atual.profissional;
     const data = patch.data ?? atual.data;
     const horario = patch.horario ?? atual.horario;
+    const tipo = patch.tipo ?? atual.tipo;
     const statusFinal = patch.status ?? atual.status;
 
     if (
       ATIVAS.includes(statusFinal) &&
-      conflito(id, prof, data, horario)
+      conflito(id, prof, data, horario, tipo)
     ) {
       mostrarAviso(
-        `${prof} já tem uma visita em ${formatarData(
-          data
-        )} às ${horario}.`,
+        `${prof} já possui uma visita nesse intervalo de horário.`,
         "erro"
       );
+
+      return false;
+    }
+
+    const profissionalEquipe = equipe.find(
+      (p) => p.nome === prof
+    );
+
+    if (
+      ATIVAS.includes(statusFinal) &&
+      profissionalEquipe &&
+      afastamentoVigente(profissionalEquipe.id, data)
+    ) {
+      mostrarAviso(
+        `${prof} está afastado na data selecionada.`,
+        "erro"
+      );
+
       return false;
     }
 
@@ -821,6 +1299,10 @@ export default function GestaoVisitasPage() {
 
     return true;
   }
+
+  /* =========================
+     SOLICITAÇÕES E CORREÇÕES
+  ========================= */
 
   function solicitarCorrecao(v) {
     if (!mensagemCorrecao.trim()) {
@@ -850,7 +1332,10 @@ export default function GestaoVisitasPage() {
 
     setMensagemCorrecao("");
     setVisitaId(null);
-    mostrarAviso("Solicitação devolvida ao cliente para correção.");
+
+    mostrarAviso(
+      "Solicitação devolvida ao cliente para correção."
+    );
   }
 
   function registrarRetornoCliente(id) {
@@ -869,22 +1354,44 @@ export default function GestaoVisitasPage() {
       )
     );
 
-    mostrarAviso("Correção recebida. Solicitação voltou para análise.");
+    mostrarAviso(
+      "Correção recebida. Solicitação voltou para análise."
+    );
   }
+
+  /* =========================
+     CADASTRO DE VISITA
+  ========================= */
 
   function cadastrarVisita(e) {
     e.preventDefault();
+
+    const profissionalEquipe = equipe.find(
+      (p) => p.nome === novaVisita.profissional
+    );
+
+    if (
+      profissionalEquipe &&
+      afastamentoVigente(profissionalEquipe.id, novaVisita.data)
+    ) {
+      mostrarAviso(
+        `${novaVisita.profissional} estará afastado nessa data.`,
+        "erro"
+      );
+      return;
+    }
 
     if (
       conflito(
         null,
         novaVisita.profissional,
         novaVisita.data,
-        novaVisita.horario
+        novaVisita.horario,
+        novaVisita.tipo
       )
     ) {
       mostrarAviso(
-        `${novaVisita.profissional} já tem uma visita nesse horário.`,
+        `${novaVisita.profissional} já possui uma visita nesse intervalo.`,
         "erro"
       );
       return;
@@ -894,6 +1401,7 @@ export default function GestaoVisitasPage() {
       ...novaVisita,
       id: Math.max(0, ...visitas.map((v) => v.id)) + 1,
       idade: Number(novaVisita.idade),
+      profissional: novaVisita.profissional || "Não definido",
       status: "Recebida",
       inconsistencias: [],
       mensagemCorrecao: "",
@@ -904,7 +1412,7 @@ export default function GestaoVisitasPage() {
       ],
     };
 
-    setVisitas((a) => [registro, ...a]);
+    setVisitas((atuais) => [registro, ...atuais]);
 
     setNovaVisita({
       ...formVazio,
@@ -914,14 +1422,122 @@ export default function GestaoVisitasPage() {
     setMostrarFormulario(false);
     setAba("visitas");
     setPaginaAtual(1);
+
     mostrarAviso("Solicitação registrada com sucesso.");
   }
 
-  function alterarStatusProf(id, status) {
-    setEquipe((a) =>
-      a.map((p) => (p.id === id ? { ...p, status } : p))
-    );
+  /* =========================
+     AFASTAMENTOS
+  ========================= */
+
+  function abrirAfastamento(profissional) {
+    setProfissionalSelecionado(profissional);
+
+    setFormAfastamento({
+      motivo: "",
+      dataInicio: HOJE,
+      previsaoRetorno: "",
+      observacoes: "",
+    });
   }
+
+  function registrarAfastamento(e) {
+    e.preventDefault();
+
+    if (!profissionalSelecionado) return;
+
+    if (!formAfastamento.motivo.trim()) {
+      mostrarAviso("Informe o motivo do afastamento.", "erro");
+      return;
+    }
+
+    if (!formAfastamento.dataInicio) {
+      mostrarAviso("Informe a data de início.", "erro");
+      return;
+    }
+
+    if (!formAfastamento.previsaoRetorno) {
+      mostrarAviso("Informe a previsão de retorno.", "erro");
+      return;
+    }
+
+    if (
+      formAfastamento.previsaoRetorno <
+      formAfastamento.dataInicio
+    ) {
+      mostrarAviso(
+        "A previsão de retorno não pode ser anterior à data de início.",
+        "erro"
+      );
+      return;
+    }
+
+    const jaExiste = afastamentos.some(
+      (a) =>
+        a.profissionalId === profissionalSelecionado.id &&
+        a.dataInicio <= formAfastamento.previsaoRetorno &&
+        a.previsaoRetorno >= formAfastamento.dataInicio &&
+        !a.dataEncerramento
+    );
+
+    if (jaExiste) {
+      mostrarAviso(
+        "Já existe um afastamento registrado nesse período.",
+        "erro"
+      );
+      return;
+    }
+
+    const registro = {
+      id: Date.now(),
+      profissionalId: profissionalSelecionado.id,
+      nome: profissionalSelecionado.nome,
+      motivo: formAfastamento.motivo.trim(),
+      dataInicio: formAfastamento.dataInicio,
+      previsaoRetorno: formAfastamento.previsaoRetorno,
+      observacoes: formAfastamento.observacoes.trim(),
+      ativo: true,
+      dataEncerramento: null,
+    };
+
+    setAfastamentos((atuais) => [...atuais, registro]);
+
+    setProfissionalSelecionado(null);
+
+    mostrarAviso("Afastamento registrado com sucesso.");
+  }
+
+  function encerrarAfastamento(id) {
+    const afastamento = afastamentos.find(
+      (a) =>
+        a.profissionalId === id &&
+        !a.dataEncerramento &&
+        a.dataInicio <= HOJE &&
+        a.previsaoRetorno >= HOJE
+    );
+
+    if (!afastamento) return;
+
+    setAfastamentos((atuais) =>
+      atuais.map((a) =>
+        a.id === afastamento.id
+          ? {
+              ...a,
+              ativo: false,
+              dataEncerramento: HOJE,
+            }
+          : a
+      )
+    );
+
+    setProfissionalSelecionado(null);
+
+    mostrarAviso("Afastamento encerrado com sucesso.");
+  }
+
+  /* =========================
+     EXPORTAÇÃO CSV
+  ========================= */
 
   function exportarCSV() {
     const cab = [
@@ -954,7 +1570,9 @@ export default function GestaoVisitasPage() {
         v.prioridade,
         v.status,
       ]
-        .map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`)
+        .map((c) =>
+          `"${String(c ?? "").replace(/"/g, '""')}"`
+        )
         .join(";")
     );
 
@@ -965,17 +1583,35 @@ export default function GestaoVisitasPage() {
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+
     a.href = url;
     a.download = "visitas-domiciliares.csv";
     a.click();
+
     URL.revokeObjectURL(url);
   }
 
   const abas = [
-    { id: "geral", titulo: "Visão geral", sub: "Indicadores e panorama" },
-    { id: "visitas", titulo: "Todas as visitas", sub: "Busca e gerenciamento" },
-    { id: "agenda", titulo: "Agenda", sub: "Calendário de visitas" },
-    { id: "equipe", titulo: "Equipe", sub: "Profissionais e disponibilidade" },
+    {
+      id: "geral",
+      titulo: "Visão geral",
+      sub: "Indicadores e panorama",
+    },
+    {
+      id: "visitas",
+      titulo: "Todas as visitas",
+      sub: "Busca e gerenciamento",
+    },
+    {
+      id: "agenda",
+      titulo: "Agenda",
+      sub: "Calendário de visitas",
+    },
+    {
+      id: "equipe",
+      titulo: "Equipe",
+      sub: "Profissionais e disponibilidade",
+    },
   ];
 
   return (
@@ -984,7 +1620,7 @@ export default function GestaoVisitasPage() {
       <div className="pointer-events-none fixed -bottom-40 -left-32 h-96 w-96 rounded-full bg-white/70" />
 
       <main className="relative z-10 mx-auto max-w-[1400px] space-y-7 px-4 py-7 sm:px-6 lg:px-8">
-        {/* Cabeçalho e navegação */}
+        {/* CABEÇALHO E NAVEGAÇÃO */}
 
         <section className="relative pb-0">
           <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-20 pt-7 shadow-sm sm:px-10 sm:pt-9 sm:pb-22">
@@ -1058,13 +1694,15 @@ export default function GestaoVisitasPage() {
                 <span className="text-base font-bold text-[#0B1756]">
                   {a.titulo}
                 </span>
-                <span className="mt-1 text-sm text-[#3563A7]">{a.sub}</span>
+                <span className="mt-1 text-sm text-[#3563A7]">
+                  {a.sub}
+                </span>
               </button>
             ))}
           </nav>
         </section>
 
-        {/* Formulário de nova solicitação */}
+        {/* FORMULÁRIO DE NOVA SOLICITAÇÃO */}
 
         {mostrarFormulario && (
           <CardSecao
@@ -1081,7 +1719,10 @@ export default function GestaoVisitasPage() {
                   required
                   value={novaVisita.paciente}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, paciente: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      paciente: e.target.value,
+                    })
                   }
                   placeholder="Nome completo"
                   className={inputCls}
@@ -1095,7 +1736,10 @@ export default function GestaoVisitasPage() {
                   min="0"
                   value={novaVisita.idade}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, idade: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      idade: e.target.value,
+                    })
                   }
                   placeholder="Idade"
                   className={inputCls}
@@ -1106,7 +1750,10 @@ export default function GestaoVisitasPage() {
                 <input
                   value={novaVisita.telefone}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, telefone: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      telefone: e.target.value,
+                    })
                   }
                   placeholder="(11) 90000-0000"
                   className={inputCls}
@@ -1118,7 +1765,10 @@ export default function GestaoVisitasPage() {
                   required
                   value={novaVisita.bairro}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, bairro: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      bairro: e.target.value,
+                    })
                   }
                   placeholder="Bairro do paciente"
                   className={inputCls}
@@ -1130,7 +1780,10 @@ export default function GestaoVisitasPage() {
                   required
                   value={novaVisita.endereco}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, endereco: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      endereco: e.target.value,
+                    })
                   }
                   placeholder="Rua, número e complemento"
                   className={inputCls}
@@ -1142,7 +1795,10 @@ export default function GestaoVisitasPage() {
                   required
                   value={novaVisita.motivo}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, motivo: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      motivo: e.target.value,
+                    })
                   }
                   placeholder="Necessidade relatada"
                   className={inputCls}
@@ -1153,7 +1809,10 @@ export default function GestaoVisitasPage() {
                 <select
                   value={novaVisita.tipo}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, tipo: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      tipo: e.target.value,
+                    })
                   }
                   className={inputCls}
                 >
@@ -1174,9 +1833,11 @@ export default function GestaoVisitasPage() {
                   }
                   className={inputCls}
                 >
-                  {PRIORIDADES.slice().reverse().map((p) => (
-                    <option key={p}>{p}</option>
-                  ))}
+                  {PRIORIDADES.slice()
+                    .reverse()
+                    .map((p) => (
+                      <option key={p}>{p}</option>
+                    ))}
                 </select>
               </Campo>
 
@@ -1192,8 +1853,12 @@ export default function GestaoVisitasPage() {
                   className={inputCls}
                 >
                   <option value="">Selecione um profissional</option>
+
                   {equipe
-                    .filter((p) => p.status !== "Afastado")
+                    .filter(
+                      (p) =>
+                        !afastamentoVigente(p.id, novaVisita.data)
+                    )
                     .map((p) => (
                       <option key={p.id} value={p.nome}>
                         {p.nome} — {p.cargo}
@@ -1203,15 +1868,12 @@ export default function GestaoVisitasPage() {
               </Campo>
 
               <Campo label="Data sugerida">
-                <input
-                  required
-                  type="date"
-                  min={HOJE}
+                <SeletorData
                   value={novaVisita.data}
-                  onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, data: e.target.value })
+                  min={HOJE}
+                  onChange={(data) =>
+                    setNovaVisita({ ...novaVisita, data })
                   }
-                  className={inputCls}
                 />
               </Campo>
 
@@ -1221,7 +1883,10 @@ export default function GestaoVisitasPage() {
                   type="time"
                   value={novaVisita.horario}
                   onChange={(e) =>
-                    setNovaVisita({ ...novaVisita, horario: e.target.value })
+                    setNovaVisita({
+                      ...novaVisita,
+                      horario: e.target.value,
+                    })
                   }
                   className={inputCls}
                 />
@@ -1245,10 +1910,6 @@ export default function GestaoVisitasPage() {
               </div>
             </form>
 
-            <p className="mt-4 text-xs leading-5 text-slate-400">
-              O registro feito pelo administrador não substitui a avaliação
-              da solicitação nem define prioridade clínica automaticamente.
-            </p>
           </CardSecao>
         )}
 
@@ -1269,10 +1930,22 @@ export default function GestaoVisitasPage() {
             <section className="overflow-hidden rounded-2xl border border-[#1D4C91] bg-gradient-to-r from-[#023E8A] via-[#3563A7] to-[#0B1756] p-5 text-white shadow-lg sm:p-6">
               <div className="grid grid-cols-2 gap-y-5 lg:grid-cols-4 lg:gap-y-0">
                 {[
-                  { titulo: "Solicitações pendentes", valor: pendentes.length },
-                  { titulo: "Visitas agendadas", valor: agendadas.length },
-                  { titulo: "Em andamento", valor: emAndamento.length },
-                  { titulo: "Concluídas", valor: concluidas.length },
+                  {
+                    titulo: "Solicitações pendentes",
+                    valor: pendentes.length,
+                  },
+                  {
+                    titulo: "Visitas agendadas",
+                    valor: agendadas.length,
+                  },
+                  {
+                    titulo: "Em andamento",
+                    valor: emAndamento.length,
+                  },
+                  {
+                    titulo: "Concluídas",
+                    valor: concluidas.length,
+                  },
                 ].map((k, i) => (
                   <div
                     key={k.titulo}
@@ -1387,50 +2060,83 @@ export default function GestaoVisitasPage() {
 
         {aba === "visitas" && (
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div className="border-b border-slate-100 bg-white p-4">
-              <h2 className="text-lg font-bold text-[#0B1756]">
-                Todas as visitas
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Pesquise e gerencie solicitações e atendimentos registrados.
-              </p>
+            <div className="border-b border-slate-100 bg-white p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#0B1756]">
+                  <svg
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="10" cy="7" r="4" />
+                    <path d="M20 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+
+                <div>
+                  <h2 className="text-base font-bold text-[#0B1756]">
+                    Todas as visitas
+                  </h2>
+                  <p className="mt-1 text-xs text-[#0B1756]">
+                    Pesquise e gerencie solicitações e atendimentos registrados.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 border-y border-slate-100 bg-slate-50/60 p-4 sm:grid-cols-2 lg:grid-cols-5">
-              <input
-                value={buscaVisita}
-                onChange={(e) => setBuscaVisita(e.target.value)}
-                placeholder="Buscar paciente, bairro, profissional..."
-                className={`${inputCls} lg:col-span-2`}
+            {/* BUSCA E FILTROS */}
+
+            <div className="grid grid-cols-1 gap-3 border-b border-slate-100 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="relative lg:col-span-2">
+                <input
+                  value={buscaVisita}
+                  onChange={(e) => setBuscaVisita(e.target.value)}
+                  placeholder="Buscar paciente, bairro, profissional..."
+                  className={inputCls}
+                />
+              </div>
+
+              <FiltroSelect
+                value={filtroStatus}
+                onChange={setFiltroStatus}
+                placeholder="Todos os status"
+                options={[
+                  { value: "Todos", label: "Todos os status" },
+                  ...STATUS_VISITA.map((status) => ({
+                    value: status,
+                    label: status,
+                  })),
+                ]}
               />
 
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                className={inputCls}
-              >
-                <option value="Todos">Todos os status</option>
-                {STATUS_VISITA.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-
-              <select
+              <FiltroSelect
                 value={filtroPrioridade}
-                onChange={(e) => setFiltroPrioridade(e.target.value)}
-                className={inputCls}
-              >
-                <option value="Todas">Todas as prioridades</option>
-                {PRIORIDADES.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
+                onChange={setFiltroPrioridade}
+                placeholder="Todas as prioridades"
+                options={[
+                  {
+                    value: "Todas",
+                    label: "Todas as prioridades",
+                  },
+                  ...PRIORIDADES.map((prioridade) => ({
+                    value: prioridade,
+                    label: prioridade,
+                  })),
+                ]}
+              />
 
-              <input
-                type="date"
+              <SeletorData
                 value={filtroData}
-                onChange={(e) => setFiltroData(e.target.value)}
-                className={inputCls}
+                onChange={setFiltroData}
+                placeholder="Filtrar por data"
+                limpar
               />
             </div>
 
@@ -1456,6 +2162,7 @@ export default function GestaoVisitasPage() {
             </div>
 
             {/* TABELA */}
+
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="border-y border-slate-100 bg-slate-50 text-xs uppercase text-slate-600">
@@ -1563,25 +2270,26 @@ export default function GestaoVisitasPage() {
             </div>
 
             {/* PAGINAÇÃO */}
+
             {visitasFiltradas.length > 0 && (
               <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-600">
                   Mostrando{" "}
                   <span className="font-semibold text-[#0B1756]">
                     {(paginaAtual - 1) * ITENS_POR_PAGINA + 1}
-                  </span>
-                  {" "}a{" "}
+                  </span>{" "}
+                  a{" "}
                   <span className="font-semibold text-[#0B1756]">
                     {Math.min(
                       paginaAtual * ITENS_POR_PAGINA,
                       visitasFiltradas.length
                     )}
-                  </span>
-                  {" "}de{" "}
+                  </span>{" "}
+                  de{" "}
                   <span className="font-semibold text-[#0B1756]">
                     {visitasFiltradas.length}
-                  </span>
-                  {" "}visitas
+                  </span>{" "}
+                  visitas
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -1589,7 +2297,9 @@ export default function GestaoVisitasPage() {
                     type="button"
                     disabled={paginaAtual === 1}
                     onClick={() =>
-                      setPaginaAtual((pagina) => Math.max(1, pagina - 1))
+                      setPaginaAtual((pagina) =>
+                        Math.max(1, pagina - 1)
+                      )
                     }
                     className="rounded-lg border border-[#D5E0ED] px-4 py-2 text-sm font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40"
                   >
@@ -1628,12 +2338,16 @@ export default function GestaoVisitasPage() {
               acao={
                 <select
                   value={filtroAgendaProf}
-                  onChange={(e) => setFiltroAgendaProf(e.target.value)}
+                  onChange={(e) =>
+                    setFiltroAgendaProf(e.target.value)
+                  }
                   className="max-w-44 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-600"
                 >
                   <option value="Todos">Todas as equipes</option>
                   {equipe.map((p) => (
-                    <option key={p.id}>{p.nome}</option>
+                    <option key={p.id} value={p.nome}>
+                      {p.nome}
+                    </option>
                   ))}
                 </select>
               }
@@ -1643,10 +2357,15 @@ export default function GestaoVisitasPage() {
                   type="button"
                   onClick={() =>
                     setMesCalendario(
-                      (d) => new Date(d.getFullYear(), d.getMonth() - 1, 1)
+                      (d) =>
+                        new Date(
+                          d.getFullYear(),
+                          d.getMonth() - 1,
+                          1
+                        )
                     )
                   }
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-[#17418E] hover:bg-slate-50"
+                  className="rounded-xl border border-[#0B1756]/25 px-3 py-2 text-sm font-semibold text-[#0B1756] transition hover:bg-[#0B1756]/10"
                   aria-label="Mês anterior"
                 >
                   ←
@@ -1663,10 +2382,15 @@ export default function GestaoVisitasPage() {
                   type="button"
                   onClick={() =>
                     setMesCalendario(
-                      (d) => new Date(d.getFullYear(), d.getMonth() + 1, 1)
+                      (d) =>
+                        new Date(
+                          d.getFullYear(),
+                          d.getMonth() + 1,
+                          1
+                        )
                     )
                   }
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-[#17418E] hover:bg-slate-50"
+                  className="rounded-xl border border-[#0B1756]/25 px-3 py-2 text-sm font-semibold text-[#0B1756] transition hover:bg-[#0B1756]/10"
                   aria-label="Próximo mês"
                 >
                   →
@@ -1678,7 +2402,7 @@ export default function GestaoVisitasPage() {
                   (d) => (
                     <div
                       key={d}
-                      className="py-2 text-center text-xs font-semibold text-slate-400"
+                      className="py-2 text-center text-xs font-semibold text-[#0B1756]"
                     >
                       {d}
                     </div>
@@ -1695,14 +2419,14 @@ export default function GestaoVisitasPage() {
                       onClick={() => setDiaSelecionado(d.data)}
                       className={`flex min-h-[66px] flex-col items-center rounded-xl border p-2 transition sm:min-h-[78px] ${
                         diaSelecionado === d.data
-                          ? "border-[#17418E] bg-[#EAF1FC] ring-1 ring-[#17418E]/20"
-                          : "border-slate-100 bg-white hover:border-[#B8CBE4]"
+                          ? "border-[#0B1756] bg-[#0B1756] text-white shadow-sm ring-1 ring-[#0B1756]/20"
+                          : "border-slate-200 bg-white hover:border-[#0B1756] hover:bg-[#0B1756]/5"
                       }`}
                     >
                       <span
                         className={`text-sm ${
                           diaSelecionado === d.data
-                            ? "font-bold text-[#17418E]"
+                            ? "font-bold text-white"
                             : "text-slate-700"
                         }`}
                       >
@@ -1711,10 +2435,23 @@ export default function GestaoVisitasPage() {
 
                       {d.qtd > 0 && (
                         <>
-                          <span className="mt-1 rounded-full bg-[#17418E] px-2 py-0.5 text-[10px] font-semibold text-white">
+                          <span
+                            className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              diaSelecionado === d.data
+                                ? "bg-white text-[#0B1756]"
+                                : "bg-[#0B1756] text-white"
+                            }`}
+                          >
                             {d.qtd}
                           </span>
-                          <span className="mt-1 hidden text-[9px] text-slate-400 sm:block">
+
+                          <span
+                            className={`mt-1 hidden text-[9px] sm:block ${
+                              diaSelecionado === d.data
+                                ? "text-white/80"
+                                : "text-slate-400"
+                            }`}
+                          >
                             {d.qtd === 1 ? "visita" : "visitas"}
                           </span>
                         </>
@@ -1726,10 +2463,12 @@ export default function GestaoVisitasPage() {
 
               <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#17418E]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#0B1756]" />
                   Quantidade de visitas no dia
                 </span>
-                <span>Selecione uma data para ver a lista ao lado.</span>
+                <span>
+                  Selecione uma data para ver a lista ao lado.
+                </span>
               </div>
             </CardSecao>
 
@@ -1762,12 +2501,15 @@ export default function GestaoVisitasPage() {
                         <span className="block font-semibold text-[#0B1756]">
                           {v.paciente}
                         </span>
+
                         <span className="mt-1 block text-sm text-slate-500">
                           {v.tipo} · {v.bairro}
                         </span>
+
                         <span className="mt-1 block text-xs text-slate-400">
                           {v.profissional}
                         </span>
+
                         <span className="mt-2 inline-flex">
                           <Badge tipo={corStatus(v.status)}>
                             {v.status}
@@ -1795,38 +2537,88 @@ export default function GestaoVisitasPage() {
 
         {aba === "equipe" && (
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div className="border-b border-slate-100 p-5">
-              <h2 className="text-lg font-bold text-[#0B1756]">
-                Equipe de atendimento
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Consulte a região, a disponibilidade e as visitas atribuídas
-                a cada profissional.
-              </p>
+            <div className="border-b border-slate-100 bg-white p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#0B1756]">
+                  <svg
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="10" cy="7" r="4" />
+                    <path d="M20 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+
+                <div>
+                  <h2 className="text-base font-bold text-[#0B1756]">
+                    Equipe de atendimento
+                  </h2>
+
+                  <p className="mt-1 text-xs text-[#0B1756]">
+                    Consulte a região, a disponibilidade e as visitas atribuídas a cada profissional.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid gap-3 border-b border-slate-100 bg-slate-50/60 p-4 sm:grid-cols-[1fr_260px]">
-              <input
-                value={buscaProfissional}
-                onChange={(e) => setBuscaProfissional(e.target.value)}
-                placeholder="Buscar por nome, cargo ou região..."
-                className={inputCls}
-              />
+            {/* PESQUISA E FILTROS */}
 
-              <select
+            <div className="grid gap-3 border-b border-slate-100 bg-white p-4 sm:grid-cols-[1fr_250px]">
+              <div className="relative">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#0B1756]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" />
+                </svg>
+
+                <input
+                  value={buscaProfissional}
+                  onChange={(e) =>
+                    setBuscaProfissional(e.target.value)
+                  }
+                  placeholder="Buscar profissional, cargo ou região..."
+                  className={`${inputCls} pl-11`}
+                />
+              </div>
+
+              <FiltroSelect
                 value={filtroCargo}
-                onChange={(e) => setFiltroCargo(e.target.value)}
-                className={inputCls}
-              >
-                <option value="Todos">Todos os cargos</option>
-                {[...new Set(equipe.map((p) => p.cargo))].map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+                onChange={setFiltroCargo}
+                placeholder="Todos os cargos"
+                options={[
+                  {
+                    value: "Todos",
+                    label: "Todos os cargos",
+                  },
+                  ...[...new Set(equipe.map((p) => p.cargo))].map(
+                    (cargo) => ({
+                      value: cargo,
+                      label: cargo,
+                    })
+                  ),
+                ]}
+              />
             </div>
+
+            {/* TABELA DA EQUIPE */}
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-xs">
+              <table className="w-full border-collapse text-left text-sm">
                 <thead className="border-b border-slate-100 bg-slate-50 text-[10px] uppercase text-slate-500">
                   <tr>
                     {[
@@ -1834,11 +2626,12 @@ export default function GestaoVisitasPage() {
                       "Cargo",
                       "Região de atendimento",
                       "Disponibilidade",
+                      "Afastamento",
                       "Visitas atribuídas",
                     ].map((t) => (
                       <th
                         key={t}
-                        className="whitespace-nowrap px-5 py-3 font-bold"
+                        className="whitespace-nowrap px-4 py-4 font-bold sm:px-5"
                       >
                         {t}
                       </th>
@@ -1847,47 +2640,82 @@ export default function GestaoVisitasPage() {
                 </thead>
 
                 <tbody className="divide-y divide-slate-100">
-                  {equipeFiltrada.map((p) => {
+                  {equipePaginada.map((p) => {
                     const carga = cargaPorProf[p.nome] || 0;
+
                     const maiorCarga = Math.max(
                       1,
-                      ...Object.values(cargaPorProf),
-                      1
+                      ...Object.values(cargaPorProf)
                     );
 
+                    const disponibilidade =
+                      calcularDisponibilidade(p);
+
                     return (
-                      <tr key={p.id} className="hover:bg-slate-50/70">
-                        <td className="whitespace-nowrap px-5 py-4 font-semibold text-[#0B1756]">
+                      <tr
+                        key={p.id}
+                        className="transition hover:bg-slate-50/70"
+                      >
+                        <td className="whitespace-nowrap px-4 py-5 font-semibold text-[#0B1756] sm:px-5">
                           {p.nome}
                         </td>
-                        <td className="min-w-52 px-4 py-4 text-slate-500">
+
+                        <td className="min-w-52 px-4 py-5 text-slate-500">
                           {p.cargo}
                         </td>
-                        <td className="px-4 py-4">{p.regiao}</td>
-                        <td className="px-4 py-4">
-                          <select
-                            value={p.status}
-                            onChange={(e) =>
-                              alterarStatusProf(p.id, e.target.value)
-                            }
-                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-600 outline-none focus:border-[#3563A7]"
-                            aria-label={`Disponibilidade de ${p.nome}`}
-                          >
-                            {STATUS_PROF.map((s) => (
-                              <option key={s}>{s}</option>
-                            ))}
-                          </select>
+
+                        <td className="whitespace-nowrap px-4 py-5 text-[#0B1756]">
+                          {p.regiao}
                         </td>
-                        <td className="min-w-48 px-4 py-4">
-                          <span className="font-semibold text-[#0B1756]">
-                            {carga}
-                          </span>
-                          <span className="ml-1 text-slate-400">
-                            {carga === 1 ? "visita ativa" : "visitas ativas"}
-                          </span>
+
+                        {/* DISPONIBILIDADE AUTOMÁTICA */}
+
+                        <td className="whitespace-nowrap px-4 py-5">
+                          <Badge
+                            tipo={
+                              disponibilidade === "Disponível"
+                                ? "verde"
+                                : disponibilidade === "Em atendimento"
+                                  ? "amarelo"
+                                  : "vermelho"
+                            }
+                          >
+                            {disponibilidade}
+                          </Badge>
+                        </td>
+
+                        {/* AFASTAMENTO */}
+
+                        <td className="whitespace-nowrap px-4 py-5">
+                          <button
+                            type="button"
+                            onClick={() => abrirAfastamento(p)}
+                            className="rounded-lg border border-[#D5E0ED] px-3 py-2 text-xs font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7]"
+                          >
+                            {afastamentoVigente(p.id, HOJE)
+                              ? "Consultar afastamento"
+                              : "Registrar afastamento"}
+                          </button>
+                        </td>
+
+                        {/* VISITAS ATRIBUÍDAS */}
+
+                        <td className="min-w-56 px-4 py-5">
+                          <div>
+                            <span className="font-semibold text-[#0B1756]">
+                              {carga}
+                            </span>
+
+                            <span className="ml-1 text-slate-400">
+                              {carga === 1
+                                ? "visita ativa"
+                                : "visitas ativas"}
+                            </span>
+                          </div>
+
                           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className="h-full rounded-full bg-[#3563A7]"
+                              className="h-full rounded-full bg-[#3563A7] transition-all"
                               style={{
                                 width: `${Math.min(
                                   100,
@@ -1904,19 +2732,288 @@ export default function GestaoVisitasPage() {
                   {!equipeFiltrada.length && (
                     <tr>
                       <td
-                        colSpan={5}
-                        className="py-10 text-center text-slate-400"
+                        colSpan={6}
+                        className="py-10 text-center text-sm text-slate-500"
                       >
-                        Nenhum profissional encontrado.
+                        Nenhum profissional encontrado com esses filtros.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+
+            {/* PAGINAÇÃO DA EQUIPE */}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-4 text-sm text-slate-500 sm:px-5">
+              <p>
+                Mostrando{" "}
+                <strong className="font-semibold text-[#0B1756]">
+                  {equipeFiltrada.length === 0
+                    ? 0
+                    : (paginaEquipe - 1) * ITENS_POR_PAGINA + 1}
+                </strong>{" "}
+                a{" "}
+                <strong className="font-semibold text-[#0B1756]">
+                  {Math.min(
+                    paginaEquipe * ITENS_POR_PAGINA,
+                    equipeFiltrada.length
+                  )}
+                </strong>{" "}
+                de{" "}
+                <strong className="font-semibold text-[#0B1756]">
+                  {equipeFiltrada.length}
+                </strong>{" "}
+                profissionais
+              </p>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaginaEquipe((p) => Math.max(1, p - 1))
+                  }
+                  disabled={paginaEquipe === 1}
+                  className="rounded-lg border border-[#D5E0ED] px-4 py-2 text-xs font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+
+                <span className="whitespace-nowrap text-xs font-semibold text-[#0B1756]">
+                  {paginaEquipe} / {totalPaginasEquipe}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaginaEquipe((p) =>
+                      Math.min(totalPaginasEquipe, p + 1)
+                    )
+                  }
+                  disabled={paginaEquipe === totalPaginasEquipe}
+                  className="rounded-lg border border-[#D5E0ED] px-4 py-2 text-xs font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
           </section>
         )}
       </main>
+
+      {/* MODAL DE AFASTAMENTO */}
+
+      {profissionalSelecionado && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0B1756]/40 p-4 backdrop-blur-sm"
+          onClick={() => setProfissionalSelecionado(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-lg space-y-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const afastamento = afastamentoVigente(
+                profissionalSelecionado.id,
+                HOJE
+              );
+
+              return (
+                <>
+                  <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#0B1756]">
+                        {afastamento
+                          ? "Detalhes do afastamento"
+                          : "Registrar afastamento"}
+                      </h3>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {profissionalSelecionado.nome} ·{" "}
+                        {profissionalSelecionado.cargo}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProfissionalSelecionado(null)
+                      }
+                      className="rounded-lg p-2 text-xl font-semibold text-slate-500 hover:bg-[#EAF3F7]"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {afastamento ? (
+                    <div className="space-y-4">
+                      <Badge tipo="vermelho">
+                        Afastamento ativo
+                      </Badge>
+
+                      <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
+                        <div>
+                          <p className="font-semibold text-slate-500">
+                            Motivo
+                          </p>
+                          <p className="mt-1 text-[#0B1756]">
+                            {afastamento.motivo}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="font-semibold text-slate-500">
+                              Data de início
+                            </p>
+                            <p className="mt-1 text-[#0B1756]">
+                              {formatarData(afastamento.dataInicio)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-slate-500">
+                              Previsão de retorno
+                            </p>
+                            <p className="mt-1 text-[#0B1756]">
+                              {formatarData(
+                                afastamento.previsaoRetorno
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-500">
+                            Observações
+                          </p>
+                          <p className="mt-1 text-[#0B1756]">
+                            {afastamento.observacoes ||
+                              "Nenhuma observação registrada."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          encerrarAfastamento(
+                            profissionalSelecionado.id
+                          )
+                        }
+                        className="w-full rounded-xl bg-[#023E8A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0B1756]"
+                      >
+                        Encerrar afastamento
+                      </button>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={registrarAfastamento}
+                      className="space-y-4"
+                    >
+                      <Campo label="Motivo do afastamento">
+                        <select
+                          required
+                          value={formAfastamento.motivo}
+                          onChange={(e) =>
+                            setFormAfastamento({
+                              ...formAfastamento,
+                              motivo: e.target.value,
+                            })
+                          }
+                          className={inputCls}
+                        >
+                          <option value="">
+                            Selecione o motivo
+                          </option>
+                          <option value="Férias">Férias</option>
+                          <option value="Licença médica">
+                            Licença médica
+                          </option>
+                          <option value="Licença pessoal">
+                            Licença pessoal
+                          </option>
+                          <option value="Capacitação profissional">
+                            Capacitação profissional
+                          </option>
+                          <option value="Outro">Outro</option>
+                        </select>
+                      </Campo>
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Campo label="Data de início">
+                          <SeletorData
+                            value={formAfastamento.dataInicio}
+                            min={HOJE}
+                            onChange={(data) =>
+                              setFormAfastamento({
+                                ...formAfastamento,
+                                dataInicio: data,
+                                previsaoRetorno:
+                                  formAfastamento.previsaoRetorno < data
+                                    ? ""
+                                    : formAfastamento.previsaoRetorno,
+                              })
+                            }
+                          />
+                        </Campo>
+
+                        <Campo label="Previsão de retorno">
+                          <SeletorData
+                            value={formAfastamento.previsaoRetorno}
+                            min={formAfastamento.dataInicio}
+                            onChange={(data) =>
+                              setFormAfastamento({
+                                ...formAfastamento,
+                                previsaoRetorno: data,
+                              })
+                            }
+                            placeholder="Data de retorno"
+                          />
+                        </Campo>
+                      </div>
+
+                      <Campo label="Observações (opcional)">
+                        <textarea
+                          rows={3}
+                          value={formAfastamento.observacoes}
+                          onChange={(e) =>
+                            setFormAfastamento({
+                              ...formAfastamento,
+                              observacoes: e.target.value,
+                            })
+                          }
+                          placeholder="Informações adicionais sobre o afastamento..."
+                          className={inputCls}
+                        />
+                      </Campo>
+
+                      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProfissionalSelecionado(null)
+                          }
+                          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                        >
+                          Cancelar
+                        </button>
+
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0B1756]"
+                        >
+                          Confirmar afastamento
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* MODAL DE DETALHES DA VISITA */}
 
@@ -1938,8 +3035,6 @@ export default function GestaoVisitasPage() {
                 <p className="mt-1 text-sm text-slate-400">
                   {visitaDetalhe.idade} anos · {visitaDetalhe.bairro}
                 </p>
-
-                
               </div>
 
               <button
@@ -1979,9 +3074,11 @@ export default function GestaoVisitasPage() {
                   </h4>
 
                   <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
-                    {visitaDetalhe.inconsistencias.map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
+                    {visitaDetalhe.inconsistencias.map(
+                      (item, i) => (
+                        <li key={i}>{item}</li>
+                      )
+                    )}
                   </ul>
                 </div>
 
@@ -2005,7 +3102,9 @@ export default function GestaoVisitasPage() {
 
                     <button
                       type="button"
-                      onClick={() => solicitarCorrecao(visitaDetalhe)}
+                      onClick={() =>
+                        solicitarCorrecao(visitaDetalhe)
+                      }
                       className="w-full rounded-xl bg-[#3563A7] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A]"
                     >
                       Solicitar correção ao cliente
@@ -2068,10 +3167,13 @@ export default function GestaoVisitasPage() {
                   className={inputCls}
                 >
                   <option value="Não definido">Não definido</option>
+
                   {equipe.map((p) => (
                     <option key={p.id} value={p.nome}>
                       {p.nome} — {p.cargo}
-                      {p.status === "Afastado" ? " (afastado)" : ""}
+                      {afastamentoVigente(p.id, visitaDetalhe.data)
+                        ? " (afastado)"
+                        : ""}
                     </option>
                   ))}
                 </select>
@@ -2096,19 +3198,17 @@ export default function GestaoVisitasPage() {
               </Campo>
 
               <Campo label="Data">
-                <input
-                  type="date"
-                  min={HOJE}
+                <SeletorData
                   value={visitaDetalhe.data}
-                  onChange={(e) =>
-                    e.target.value &&
+                  min={HOJE}
+                  onChange={(data) =>
+                    data &&
                     atualizarVisita(
                       visitaDetalhe.id,
-                      { data: e.target.value },
-                      `Data alterada para ${formatarData(e.target.value)}`
+                      { data },
+                      `Data alterada para ${formatarData(data)}`
                     )
                   }
-                  className={inputCls}
                 />
               </Campo>
 
@@ -2136,10 +3236,13 @@ export default function GestaoVisitasPage() {
                   rows={3}
                   value={visitaDetalhe.observacao || ""}
                   onChange={(e) =>
-                    setVisitas((a) =>
-                      a.map((v) =>
+                    setVisitas((atuais) =>
+                      atuais.map((v) =>
                         v.id === visitaDetalhe.id
-                          ? { ...v, observacao: e.target.value }
+                          ? {
+                              ...v,
+                              observacao: e.target.value,
+                            }
                           : v
                       )
                     )
@@ -2171,7 +3274,9 @@ export default function GestaoVisitasPage() {
         <div
           role="status"
           className={`fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg ${
-            aviso.tipo === "erro" ? "bg-rose-600" : "bg-[#17418E]"
+            aviso.tipo === "erro"
+              ? "bg-rose-600"
+              : "bg-[#17418E]"
           }`}
         >
           {aviso.texto}

@@ -1,4 +1,3 @@
-
 const indicadores = [
   {
     titulo: "Atendimentos hoje",
@@ -96,28 +95,27 @@ function Icone({ tipo, className = "h-6 w-6" }) {
 
 function CartaoIndicador({ indicador }) {
   return (
-    <article className="rounded-2xl border border-[#3563A7]/10 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A] sm:h-14 sm:w-14">
-          <Icone tipo={indicador.icone} className="h-7 w-7" />
+    <article className="group relative overflow-hidden rounded-[24px] border border-[#3563A7]/30 bg-[#023E8A] p-6 shadow-md transition-all duration-500 ease-out hover:-translate-y-2 hover:bg-[#0B1756] hover:shadow-xl">
+
+      <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full border-[18px] border-white/[0.06] transition-transform duration-700 group-hover:scale-125" />
+
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <div>
+          {/* Mantém o texto original */}
+          <p className="max-w-[170px] text-sm font-medium leading-relaxed text-white/80">
+            {indicador.titulo}
+          </p>
+
+          {/* Mantém o valor original */}
+          <h3 className="mt-5 text-4xl font-extrabold leading-none tracking-tight text-white transition-all duration-300 group-hover:scale-105">
+            {indicador.valor}
+          </h3>
         </div>
 
-        <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-semibold text-[#3563A7]">
-          Hoje
-        </span>
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 group-hover:bg-white/25">
+          <Icone tipo={indicador.icone} className="h-7 w-7" />
+        </div>
       </div>
-
-      <p className="mt-5 text-sm font-medium text-[#0B1756]/65">
-        {indicador.titulo}
-      </p>
-
-      <p className="mt-2 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl">
-        {indicador.valor}
-      </p>
-
-      <p className="mt-2 text-xs leading-relaxed text-[#0B1756]/55 sm:text-sm">
-        {indicador.descricao}
-      </p>
     </article>
   );
 }
@@ -125,59 +123,62 @@ function CartaoIndicador({ indicador }) {
 export default function DashboardAdmin() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7] text-[#0B1756]">
-      
-{/* Fundo com ilustrações de círculos */}
-<div className="pointer-events-none absolute -right-28 -top-36 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/50" />
 
-<div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
+      {/* Fundo com ilustrações de círculos */}
+      <div className="pointer-events-none absolute -right-28 -top-36 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/50" />
 
-<div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
+      <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
 
-<div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
+      <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
 
+      <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
-      <div className="relative z-10 mx-auto max-w-[1600px] space-y-8 px-5 py-7 sm:px-8 sm:py-10 lg:px-12">
+      {/* CONTEÚDO ALINHADO AO HEADER */}
+      <div className="relative z-10 mx-auto w-full max-w-[1480px] space-y-8 px-6 py-7 sm:py-10 xl:px-8">
+
         {/* BANNER ADMINISTRATIVO */}
-        <section className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-r from-[#D9EBFF] via-[#EDF6FF] to-white shadow-sm">
+        <section className="grid items-center gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-8">
 
-          <div className="relative grid min-h-[260px] items-center gap-6 px-6 py-9 sm:px-10 md:min-h-[290px] md:px-12 lg:grid-cols-[1.2fr_0.8fr] lg:px-14">
-            {/* Texto */}
-            <div className="relative z-10 max-w-2xl lg:translate-x-8">
-              <div className="mb-6 inline-flex items-center gap-3 rounded-full bg-white/80 px-5 py-3 text-sm font-semibold text-[#023E8A] shadow-sm">
-  <span className="h-3 w-3 rounded-full bg-[#3563A7]" />
-  Área administrativa
-</div>
-
-              <h1 className="mt-5 max-w-xl text-3xl font-extrabold leading-tight tracking-tight text-[#0B1756] sm:text-4xl md:text-5xl">
-                Gestão inteligente,
-                <br />
-                <span className="text-[#023E8A]">
-                  cuidado mais eficiente.
-                </span>
-              </h1>
-
-              <p className="mt-12 max-w-lg text-base leading-relaxed text-[#0B1756]/70 sm:text-lg">
-                Acompanhe os principais indicadores e identifique o que
-                precisa de atenção nas unidades de saúde.
-              </p>
+          {/* TEXTO */}
+          <div className="max-w-[570px] -translate-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-5 py-3 text-sm font-semibold text-[#023E8A] shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-[#3563A7]" />
+              Área administrativa
             </div>
 
+            <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-[#0B1756] sm:text-5xl md:text-5xl">
+              Gestão inteligente,
+              <br />
+              <span className="text-[#023E8A]">
+                cuidado mais eficiente.
+              </span>
+            </h1>
 
+            <p className="mt-5 max-w-lg text-base leading-7 text-[#425875] sm:text-lg">
+              Acompanhe os principais indicadores e identifique o que
+              precisa de atenção nas unidades de saúde.
+            </p>
+          </div>
 
-            
-            {/* IMAGEM À DIREITA */}
-<div className="relative z-10 flex w-full min-w-0 items-center justify-center lg:-mr-10 lg:scale-[1.78] lg:origin-center lg:-translate-x-30">
+          {/* IMAGEM ADMINISTRATIVA */}
+     
+<div className="relative min-h-[380px] w-full lg:min-h-[500px] lg:w-[150%] lg:-ml-[50%] lg:-translate-y-10">
   <img
-    src="/img_dashboard_admin.png"
+    src="/img-dashboard-admin.jpeg"
     alt="Profissional de saúde, painel de fila de atendimento e QR Code"
-    className="block h-auto w-full object-contain mix-blend-multiply"
+    className="absolute inset-0 h-full w-full object-cover object-right"
+    style={{
+      maskImage:
+        "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+      WebkitMaskImage:
+        "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+    }}
   />
 </div>
-          </div>
         </section>
 
         {/* INDICADORES PRINCIPAIS */}
-        <section className="mt-18">
+        <section className="mt-6">
           <div className="mb-10">
             <h2 className="text-xl font-extrabold sm:text-3xl">
               Indicadores de atendimento
@@ -199,6 +200,7 @@ export default function DashboardAdmin() {
 
         {/* RESUMO DAS UNIDADES E ALERTAS */}
         <section className="grid items-stretch gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+
           {/* Unidades */}
           <article className="rounded-2xl border border-[#3563A7]/10 bg-white p-5 shadow-sm sm:p-7">
             <div className="flex items-center gap-3">
