@@ -5,6 +5,7 @@ import {
   entrarPacienteNaFila,
   listarMinhaFila,
   cancelarMinhaEntrada,
+  realizarCheckin,
   listarFilaDoMedico,
   atualizarStatusDaFila,
   listarFilasAdmin
@@ -20,6 +21,7 @@ const router = Router();
 router.post("/", autenticarPaciente, entrarPacienteNaFila);
 router.get("/me", autenticarPaciente, listarMinhaFila);
 router.patch("/:id/cancelar", autenticarPaciente, cancelarMinhaEntrada);
+router.patch("/:id/checkin", autenticarPaciente, realizarCheckin);
 
 // Rotas do médico
 router.get("/medico/me", autenticarMedico, listarFilaDoMedico);

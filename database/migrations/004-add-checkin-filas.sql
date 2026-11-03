@@ -1,0 +1,7 @@
+ALTER TABLE filas
+ADD COLUMN checkin_realizado BOOLEAN NOT NULL DEFAULT FALSE
+AFTER prioridade;
+
+ALTER TABLE filas
+ADD COLUMN checkin_em DATETIME DEFAULT NULL
+AFTER checkin_realizado;

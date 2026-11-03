@@ -14,6 +14,7 @@ import pacienteRoutes from "./routes/pacienteRoutes.js";
 import consultaRoutes from "./routes/consultaRoutes.js";
 import exameRoutes from "./routes/exameRoutes.js";
 import filaRoutes from "./routes/filaRoutes.js";
+import atendimentoDomiciliarRoutes from "./routes/atendimentoDomiciliarRoutes.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/pacientes", pacienteRoutes);
 app.use("/api/consultas", consultaRoutes);
 app.use("/api/exames", exameRoutes);
 app.use("/api/filas", filaRoutes);
+app.use("/api/atendimentos-domiciliares", atendimentoDomiciliarRoutes);
 
 // Rota inexistente
 app.use((req, res) => {

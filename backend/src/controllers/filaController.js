@@ -6,7 +6,8 @@ import {
     atualizarStatusFila,
     listarFilasDoPaciente,
     cancelarEntradaDoPaciente,
-    calcularEstimativaEspera
+    calcularEstimativaEspera,
+    realizarCheckinPaciente
 } from "../services/filaService.js";
 
 function idValido(id) {
@@ -239,5 +240,26 @@ export async function listarFilasAdmin(req, res, next) {
         });
     } catch (error) {
         next(error);
+    }
+}
+
+// Paciente realiza check-in na própria entrada
+export async function realizarCheckin(req, res, next) {
+    try {
+        const { id } = req.params;
+
+        if (!validarId(id, res)) return;
+
+        const resultado = await realizarCheckinPaciente(
+            req.paciente.id,
+            Number(id)
+        );
+
+        return res.status(200).json({
+            mensagem: "Check-in realizado com sucesso.",
+            fila: resultado
+        });
+    } catch (error) {
+        return erroResposta(res, error);
     }
 }

@@ -127,7 +127,8 @@ export async function listarFilaPorUnidadeSetor(unidadeId, setorId) {
             p.nome_completo AS paciente,
             f.unidade_id, f.setor_id, f.consulta_id,
             f.status, f.prioridade, f.posicao,
-            f.entrada_em, f.chamada_em, f.inicio_atendimento_em
+f.entrada_em, f.chamada_em, f.inicio_atendimento_em,
+f.checkin_realizado, f.checkin_em
      FROM filas f
      INNER JOIN pacientes p ON p.id = f.paciente_id
      WHERE f.unidade_id = ?
@@ -280,7 +281,8 @@ export async function listarFilasDoPaciente(pacienteId) {
             f.setor_id, s.nome AS setor,
             f.consulta_id, f.status, f.prioridade,
             f.posicao, f.entrada_em, f.chamada_em,
-            f.inicio_atendimento_em, f.fim_atendimento_em
+f.inicio_atendimento_em, f.fim_atendimento_em,
+f.checkin_realizado, f.checkin_em
      FROM filas f
      INNER JOIN unidades u ON u.id = f.unidade_id
      INNER JOIN setores s ON s.id = f.setor_id
@@ -429,4 +431,64 @@ export async function calcularEstimativaEspera(filaId, pacienteId) {
         media_atendimento_minutos: mediaMinutos,
         estimativa_atualizada_em: new Date().toISOString()
     };
+}
+
+export async function realizarCheckinPaciente(pacienteId, filaId) {
+    const conexao = await pool.getConnection();
+
+    try {
+        await conexao.beginTransaction();
+
+        const [filas] = await conexao.query(
+            `SELECT id, paciente_id, status, checkin_realizado
+             FROM filas
+             WHERE id = ? AND paciente_id = ?
+             FOR UPDATE`,
+            [filaId, pacienteId]
+        );
+
+        if (filas.length === 0) {
+            const erro = new Error("Entrada de fila não encontrada.");
+            erro.status = 404;
+            throw erro;
+        }
+
+        const fila = filas[0];
+
+        if (!["aguardando", "chamado"].includes(fila.status)) {
+            const erro = new Error(
+                "O check-in só pode ser realizado enquanto a entrada estiver aguardando ou tiver sido chamada."
+            );
+            erro.status = 409;
+            throw erro;
+        }
+
+        if (fila.checkin_realizado) {
+            const erro = new Error("O check-in já foi realizado.");
+            erro.status = 409;
+            throw erro;
+        }
+
+        await conexao.query(
+            `UPDATE filas
+             SET checkin_realizado = TRUE,
+                 checkin_em = NOW()
+             WHERE id = ?`,
+            [filaId]
+        );
+
+        await conexao.commit();
+
+        return {
+            id: Number(filaId),
+            checkin_realizado: true,
+            mensagem: "Check-in realizado com sucesso."
+        };
+
+    } catch (error) {
+        await conexao.rollback();
+        throw error;
+    } finally {
+        conexao.release();
+    }
 }
