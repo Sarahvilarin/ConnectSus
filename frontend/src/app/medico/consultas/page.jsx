@@ -10,7 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  FileText,
   Hospital,
+  Lock,
   Phone,
   Play,
   Search,
@@ -31,7 +33,15 @@ import {
   Cores: #3563A7 azul principal | #023E8A azul escuro | #0B1756 azul-marinho
          #EAF3F7 fundo suave    | #FFFFFF cards       | #EEF5F9 fundo geral
  
-  Em produção, MEDICO e as consultas vêm do login e da API.
+  PRONTUÁRIO
+  Cada consulta possui um prontuário (campo `prontuario`), acessado pela aba
+  "Prontuário" dentro da consulta. Ele só pode ser editado enquanto a consulta
+  está "Em atendimento". Ao concluir, o prontuário é fechado (somente leitura)
+  e registra data/hora e o médico responsável.
+ 
+  Em produção, MEDICO, as consultas e os prontuários vêm do login e da API.
+  O prontuário é dado sensível de saúde (LGPD): exigir autenticação, controle
+  de acesso por perfil e log de acessos/alterações no back-end.
 */
  
 /* =========================
@@ -54,6 +64,8 @@ const UNIDADES = [
  
 const statusLista = ["Agendada", "Em atendimento", "Concluída", "Faltou", "Cancelada"];
  
+const opcoesRetorno = ["Sem retorno", "15 dias", "30 dias", "60 dias", "90 dias", "6 meses"];
+ 
 /* Datas relativas a hoje, para a demonstração ficar sempre atual */
 function somarDias(iso, n) {
   const d = new Date(`${iso}T12:00:00`);
@@ -69,6 +81,65 @@ function dataAtualISO() {
     d.getDate()
   ).padStart(2, "0")}`;
 }
+ 
+/* Modelo de prontuário em branco (a queixa principal já vem do motivo agendado) */
+function prontuarioVazio(motivo = "") {
+  return {
+    queixa: motivo,
+    historia: "",
+    alergias: "",
+    medicamentos: "",
+    vitais: { pa: "", fc: "", temp: "", spo2: "", peso: "", altura: "" },
+    exameFisico: "",
+    hipotese: "",
+    cid: "",
+    conduta: "",
+    exames: "",
+    retorno: "Sem retorno",
+    registradoEm: null,
+    registradoPor: null,
+  };
+}
+ 
+/* Prontuários de exemplo para consultas já concluídas */
+const PRONTUARIOS_DEMO = {
+  "Patrícia Gomes": {
+    historia: "Paciente hipertensa em uso regular da medicação, sem queixas novas.",
+    alergias: "Nenhuma conhecida",
+    medicamentos: "Losartana 50 mg, 1x ao dia",
+    vitais: { pa: "128/82", fc: "74", temp: "36,5", spo2: "98", peso: "68", altura: "165" },
+    exameFisico: "Bom estado geral. Ausculta cardíaca e pulmonar sem alterações.",
+    hipotese: "Hipertensão arterial sistêmica controlada",
+    cid: "I10",
+    conduta: "Manter medicação. Reforçar dieta com baixo teor de sódio e atividade física.",
+    exames: "",
+    retorno: "90 dias",
+  },
+  "Fernanda Rocha": {
+    historia: "Cefaleia frequente há cerca de 1 mês, piora ao fim do dia, sem sinais de alarme.",
+    alergias: "Dipirona",
+    medicamentos: "Nenhum",
+    vitais: { pa: "118/76", fc: "80", temp: "36,6", spo2: "99", peso: "61", altura: "162" },
+    exameFisico: "Exame neurológico sem alterações. Sem rigidez de nuca.",
+    hipotese: "Cefaleia tensional",
+    cid: "G44.2",
+    conduta: "Orientações de higiene do sono e hidratação. Analgésico se necessário.",
+    exames: "Hemograma completo, glicemia de jejum, TSH",
+    retorno: "30 dias",
+  },
+  "Mariana Costa": {
+    historia: "Retorno para avaliação de exames laboratoriais solicitados anteriormente.",
+    alergias: "Nenhuma conhecida",
+    medicamentos: "Vitamina D 2.000 UI, 1x ao dia",
+    vitais: { pa: "122/78", fc: "70", temp: "36,4", spo2: "98", peso: "72", altura: "160" },
+    exameFisico: "Sem alterações relevantes.",
+    hipotese: "Exames dentro da normalidade",
+    cid: "Z00.0",
+    conduta: "Manter hábitos saudáveis e acompanhamento anual.",
+    exames: "",
+    retorno: "6 meses",
+  },
+};
  
 function gerarConsultas(hoje) {
   const base = [
@@ -86,22 +157,42 @@ function gerarConsultas(hoje) {
     [3, "14:00", "Marta Lima", 44, "(11) 96666-5566", "Check-up anual", "Primeira consulta", "Agendada", ""],
     [7, "09:00", "Rafael Torres", 38, "(11) 97777-3344", "Febre e mal-estar", "Primeira consulta", "Agendada", ""],
     [8, "10:30", "Cláudia Ribeiro", 63, "(11) 98888-1122", "Renovação de receita", "Retorno", "Cancelada", ""],
+    /* Atendimento antigo de uma paciente que volta hoje (aparece em "Atendimentos anteriores") */
+    [-30, "08:00", "Mariana Costa", 52, "(11) 97733-1204", "Avaliação inicial e coleta de exames", "Primeira consulta", "Concluída", "Solicitados exames laboratoriais."],
+    /* Atendimento antigo de um paciente em atendimento hoje */
+    [-45, "09:00", "João Pedro Alves", 68, "(11) 94408-6652", "Acompanhamento de diabetes", "Retorno", "Concluída", "Glicemia acima da meta. Ajuste de dieta."],
   ];
  
-  return base.map(([dia, horario, paciente, idade, telefone, motivo, tipo, status, notas], i) => ({
-    id: i + 1,
-    paciente,
-    idade,
-    telefone,
-    motivo,
-    tipo,
-    unidadeId: MEDICO.unidadeId,
-    data: somarDias(hoje, dia),
-    horario,
-    status,
-    notas,
-    historico: ["Consulta agendada", ...(status !== "Agendada" ? [status] : [])],
-  }));
+  return base.map(([dia, horario, paciente, idade, telefone, motivo, tipo, status, notas], i) => {
+    const prontuario = prontuarioVazio(motivo);
+    const demo = PRONTUARIOS_DEMO[paciente];
+ 
+    if (status === "Concluída") {
+      Object.assign(prontuario, demo || {}, {
+        historia: demo?.historia || "Atendimento realizado conforme motivo da consulta.",
+        conduta: demo?.conduta || notas,
+        hipotese: demo?.hipotese || "Conforme avaliação clínica",
+        registradoEm: `${somarDias(hoje, dia).split("-").reverse().join("/")} ${horario}`,
+        registradoPor: MEDICO.nome,
+      });
+    }
+ 
+    return {
+      id: i + 1,
+      paciente,
+      idade,
+      telefone,
+      motivo,
+      tipo,
+      unidadeId: MEDICO.unidadeId,
+      data: somarDias(hoje, dia),
+      horario,
+      status,
+      notas,
+      prontuario,
+      historico: ["Consulta agendada", ...(status !== "Agendada" ? [status] : [])],
+    };
+  });
 }
  
 /* Afastamentos do médico (definidos pela administração) */
@@ -119,7 +210,7 @@ function gerarAfastamentos(hoje) {
 const POR_PAGINA = 8;
  
 const inputCls =
-  "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15";
+  "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-600 disabled:hover:border-slate-200";
  
 /* =========================
    FUNÇÕES AUXILIARES
@@ -154,6 +245,14 @@ function paginasVisiveis(atual, total) {
     saida.push(n);
   });
   return saida;
+}
+ 
+/* IMC calculado a partir de peso (kg) e altura (cm) */
+function calcularImc(peso, altura) {
+  const p = parseFloat(String(peso).replace(",", "."));
+  const a = parseFloat(String(altura).replace(",", ".")) / 100;
+  if (!p || !a || a < 0.5 || a > 2.5) return null;
+  return (p / (a * a)).toFixed(1).replace(".", ",");
 }
  
 const nomesMeses = [
@@ -263,7 +362,7 @@ function Dropdown({
         onClick={alternar}
         className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 ${
           desabilitado
-            ? "cursor-not-allowed border-[#C8D8EC] opacity-60"
+            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-600"
             : aberto
               ? "border-[#0B1756] ring-4 ring-[#0B1756]/15"
               : "border-[#C8D8EC] hover:border-[#3563A7]"
@@ -609,6 +708,7 @@ function CardSecao({ titulo, subtitulo, acao, children, className = "" }) {
  
 function LinhaConsulta({ c, mostrarData = false, compacto = false, onAbrir }) {
   const badge = <Badge tipo={corStatus(c.status)}>{c.status}</Badge>;
+  const temProntuario = Boolean(c.prontuario?.registradoEm);
  
   return (
     <div className="flex items-center gap-3 py-3">
@@ -624,6 +724,12 @@ function LinhaConsulta({ c, mostrarData = false, compacto = false, onAbrir }) {
           <span className="truncate text-base font-semibold text-[#0B1756]">{c.paciente}</span>
           <span className="text-xs text-slate-400">{c.idade} anos</span>
           {compacto && badge}
+          {temProntuario && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#3563A7]">
+              <FileText size={13} />
+              Prontuário
+            </span>
+          )}
         </span>
         <span className="mt-0.5 block truncate text-sm text-slate-500">
           {c.motivo} · {c.tipo}
@@ -639,6 +745,193 @@ function LinhaConsulta({ c, mostrarData = false, compacto = false, onAbrir }) {
       >
         Abrir consulta
       </button>
+    </div>
+  );
+}
+ 
+/* ---------- Prontuário ---------- */
+ 
+function TituloBloco({ children }) {
+  return (
+    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">{children}</p>
+  );
+}
+ 
+function Prontuario({ consulta, editavel, onCampo, onVital, anteriores }) {
+  const p = consulta.prontuario;
+  const imc = calcularImc(p.vitais.peso, p.vitais.altura);
+  const fechado = Boolean(p.registradoEm);
+ 
+  const areaTexto = (campo, label, placeholder, linhas = 3) => (
+    <Campo label={label}>
+      <textarea
+        rows={linhas}
+        disabled={!editavel}
+        value={p[campo]}
+        onChange={(e) => onCampo(campo, e.target.value)}
+        placeholder={editavel ? placeholder : "Não informado"}
+        className={inputCls}
+      />
+    </Campo>
+  );
+ 
+  const vital = (campo, label, unidade, placeholder) => (
+    <Campo label={label}>
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="decimal"
+          disabled={!editavel}
+          value={p.vitais[campo]}
+          onChange={(e) => onVital(campo, e.target.value)}
+          placeholder={editavel ? placeholder : "—"}
+          className={`${inputCls} pr-12`}
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+          {unidade}
+        </span>
+      </div>
+    </Campo>
+  );
+ 
+  return (
+    <div className="space-y-6">
+      {/* Situação do prontuário */}
+      {fechado ? (
+        <div className="flex items-start gap-3 rounded-xl border border-[#023E8A]/20 bg-[#EAF3F7] p-4 text-sm text-[#0B1756]">
+          <Lock size={18} className="mt-0.5 shrink-0 text-[#023E8A]" />
+          <p>
+            <strong>Prontuário fechado.</strong> Registrado por {p.registradoPor} em {p.registradoEm}.
+            Não é possível editar após a conclusão do atendimento.
+          </p>
+        </div>
+      ) : consulta.status === "Em atendimento" ? (
+        <div className="rounded-xl border border-[#3563A7]/30 bg-[#EAF3F7] p-4 text-sm text-[#0B1756]">
+          Preencha o prontuário durante o atendimento. Queixa principal, hipótese diagnóstica e
+          conduta são obrigatórias para concluir.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+          {consulta.status === "Agendada"
+            ? "O prontuário fica disponível para preenchimento quando o atendimento for iniciado."
+            : "Esta consulta não possui prontuário preenchido."}
+        </div>
+      )}
+ 
+      {/* Atendimentos anteriores do mesmo paciente */}
+      {anteriores.length > 0 && (
+        <div>
+          <TituloBloco>Atendimentos anteriores deste paciente</TituloBloco>
+          <div className="divide-y divide-slate-100 rounded-xl border border-slate-100">
+            {anteriores.map((a) => (
+              <div key={a.id} className="space-y-1 px-4 py-3 text-sm">
+                <p className="font-semibold text-[#0B1756]">
+                  {formatarData(a.data)} · {a.tipo}
+                </p>
+                <p className="text-slate-600">
+                  <span className="font-semibold">Diagnóstico:</span>{" "}
+                  {a.prontuario.hipotese || "Não informado"}
+                  {a.prontuario.cid ? ` (${a.prontuario.cid})` : ""}
+                </p>
+                {a.prontuario.conduta && (
+                  <p className="text-slate-600">
+                    <span className="font-semibold">Conduta:</span> {a.prontuario.conduta}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+ 
+      {/* Anamnese */}
+      <div className="space-y-4">
+        <TituloBloco>Anamnese</TituloBloco>
+        {areaTexto("queixa", "Queixa principal *", "Motivo que levou o paciente à consulta...", 2)}
+        {areaTexto(
+          "historia",
+          "História da doença atual",
+          "Início, duração, evolução, fatores de piora e melhora...",
+          3
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {areaTexto("alergias", "Alergias", "Ex.: dipirona, penicilina ou nenhuma conhecida", 2)}
+          {areaTexto(
+            "medicamentos",
+            "Medicamentos em uso",
+            "Nome, dose e frequência...",
+            2
+          )}
+        </div>
+      </div>
+ 
+      {/* Sinais vitais */}
+      <div>
+        <TituloBloco>Sinais vitais</TituloBloco>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {vital("pa", "Pressão arterial", "mmHg", "120/80")}
+          {vital("fc", "Freq. cardíaca", "bpm", "72")}
+          {vital("temp", "Temperatura", "°C", "36,5")}
+          {vital("spo2", "Saturação", "%", "98")}
+          {vital("peso", "Peso", "kg", "70")}
+          {vital("altura", "Altura", "cm", "170")}
+        </div>
+        {imc && (
+          <p className="mt-3 text-sm text-slate-600">
+            <span className="font-semibold text-[#0B1756]">IMC:</span> {imc} kg/m²
+          </p>
+        )}
+      </div>
+ 
+      {/* Exame físico e diagnóstico */}
+      <div className="space-y-4">
+        <TituloBloco>Exame físico e diagnóstico</TituloBloco>
+        {areaTexto("exameFisico", "Exame físico", "Achados do exame físico...", 3)}
+        <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+          <Campo label="Hipótese diagnóstica *">
+            <input
+              type="text"
+              disabled={!editavel}
+              value={p.hipotese}
+              onChange={(e) => onCampo("hipotese", e.target.value)}
+              placeholder={editavel ? "Diagnóstico ou suspeita clínica" : "Não informado"}
+              className={inputCls}
+            />
+          </Campo>
+          <Campo label="CID-10">
+            <input
+              type="text"
+              disabled={!editavel}
+              value={p.cid}
+              onChange={(e) => onCampo("cid", e.target.value.toUpperCase())}
+              placeholder={editavel ? "Ex.: J06.9" : "—"}
+              maxLength={8}
+              className={inputCls}
+            />
+          </Campo>
+        </div>
+      </div>
+ 
+      {/* Conduta */}
+      <div className="space-y-4">
+        <TituloBloco>Conduta</TituloBloco>
+        {areaTexto(
+          "conduta",
+          "Conduta, prescrição e orientações *",
+          "Tratamento, medicações prescritas e orientações ao paciente...",
+          4
+        )}
+        {areaTexto("exames", "Exames solicitados", "Ex.: hemograma, raio-X de tórax...", 2)}
+        <Campo label="Retorno">
+          <Dropdown
+            rotulo="Retorno"
+            valor={p.retorno}
+            opcoes={opcoesRetorno}
+            onChange={(v) => onCampo("retorno", v)}
+            desabilitado={!editavel}
+          />
+        </Campo>
+      </div>
     </div>
   );
 }
@@ -675,6 +968,7 @@ export default function MinhasConsultas() {
   const listaRef = useRef(null);
  
   const [consultaId, setConsultaId] = useState(null);
+  const [abaModal, setAbaModal] = useState("consulta");
   const [aviso, setAviso] = useState(null);
  
   function mostrarAviso(texto) {
@@ -705,6 +999,21 @@ export default function MinhasConsultas() {
  
   const detalhe = consultas.find((c) => c.id === consultaId) || null;
   const nomeUnidade = UNIDADES.find((u) => u.id === MEDICO.unidadeId)?.nome || "";
+ 
+  /* Prontuários fechados de consultas anteriores do mesmo paciente (mais recentes primeiro) */
+  const anteriores = useMemo(() => {
+    if (!detalhe) return [];
+    return ordenadas
+      .filter(
+        (c) =>
+          c.id !== detalhe.id &&
+          c.paciente === detalhe.paciente &&
+          c.status === "Concluída" &&
+          c.prontuario.registradoEm &&
+          (c.data + c.horario).localeCompare(detalhe.data + detalhe.horario) < 0
+      )
+      .reverse();
+  }, [ordenadas, detalhe]);
  
   const situacaoAfast = (a) =>
     HOJE < a.dataInicio ? "Agendado" : HOJE > a.previsaoRetorno ? "Concluído" : "Em andamento";
@@ -792,7 +1101,69 @@ export default function MinhasConsultas() {
     setConsultas((atuais) => atuais.map((c) => (c.id === id ? { ...c, notas } : c)));
   }
  
-  const abrir = (id) => setConsultaId(id);
+  function atualizarProntuario(id, campo, valor) {
+    setConsultas((atuais) =>
+      atuais.map((c) =>
+        c.id === id ? { ...c, prontuario: { ...c.prontuario, [campo]: valor } } : c
+      )
+    );
+  }
+ 
+  function atualizarVital(id, campo, valor) {
+    setConsultas((atuais) =>
+      atuais.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              prontuario: {
+                ...c.prontuario,
+                vitais: { ...c.prontuario.vitais, [campo]: valor },
+              },
+            }
+          : c
+      )
+    );
+  }
+ 
+  /* Só conclui se o prontuário tiver os campos obrigatórios; depois, fecha o prontuário */
+  function concluirAtendimento(c) {
+    const p = c.prontuario;
+    const faltando = [
+      !p.queixa.trim() && "queixa principal",
+      !p.hipotese.trim() && "hipótese diagnóstica",
+      !p.conduta.trim() && "conduta",
+    ].filter(Boolean);
+ 
+    if (faltando.length) {
+      setAbaModal("prontuario");
+      mostrarAviso(`Preencha no prontuário: ${faltando.join(", ")}.`);
+      return;
+    }
+ 
+    const carimbo = new Date().toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+ 
+    setConsultas((atuais) =>
+      atuais.map((x) =>
+        x.id === c.id
+          ? {
+              ...x,
+              status: "Concluída",
+              historico: [...x.historico, "Concluída"],
+              prontuario: { ...x.prontuario, registradoEm: carimbo, registradoPor: MEDICO.nome },
+            }
+          : x
+      )
+    );
+    mostrarAviso("Atendimento concluído e prontuário registrado.");
+  }
+ 
+  const abrir = (id) => {
+    setAbaModal("consulta");
+    setConsultaId(id);
+  };
  
   const abas = [
     { id: "hoje", titulo: "Hoje", sub: "Atendimentos do dia" },
@@ -810,6 +1181,11 @@ export default function MinhasConsultas() {
     day: "numeric",
     month: "long",
   });
+ 
+  const abasModal = [
+    { id: "consulta", titulo: "Consulta" },
+    { id: "prontuario", titulo: "Prontuário" },
+  ];
  
   return (
     <div className="min-h-screen bg-[#EEF5F9] font-sans text-[#0B1756]">
@@ -830,7 +1206,7 @@ export default function MinhasConsultas() {
                   Minhas consultas
                 </h1>
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base lg:text-lg">
-                  Acompanhe seus atendimentos, registre o andamento de cada consulta e
+                  Acompanhe seus atendimentos, registre o prontuário de cada consulta e
                   consulte sua agenda.
                 </p>
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-white/80">
@@ -908,7 +1284,7 @@ export default function MinhasConsultas() {
               <CardSecao
                 className="xl:absolute xl:inset-0 xl:flex xl:flex-col"
                 titulo="Agenda do dia"
-                subtitulo="Toque em uma consulta para ver os detalhes e registrar o atendimento."
+                subtitulo="Toque em uma consulta para ver os detalhes e registrar o prontuário."
                 acao={<Badge tipo="azul">{hoje.length} consulta(s)</Badge>}
               >
                 {hoje.length ? (
@@ -958,7 +1334,7 @@ export default function MinhasConsultas() {
                           </button>
                         )}
                         <button type="button" onClick={() => abrir(proxima.id)} className={botaoSecundario}>
-                          Abrir consulta
+                          {proxima.status === "Em atendimento" ? "Abrir prontuário" : "Abrir consulta"}
                         </button>
                       </div>
                     </div>
@@ -1212,7 +1588,7 @@ export default function MinhasConsultas() {
         )}
       </main>
  
-      {/* MODAL: DETALHES DA CONSULTA */}
+      {/* MODAL: DETALHES DA CONSULTA + PRONTUÁRIO */}
  
       {detalhe && (
         <Portal>
@@ -1225,7 +1601,7 @@ export default function MinhasConsultas() {
               aria-modal="true"
               aria-labelledby="titulo-consulta"
               onClick={(e) => e.stopPropagation()}
-              className="max-h-[90vh] w-full max-w-xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+              className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
             >
               <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                 <div>
@@ -1233,7 +1609,8 @@ export default function MinhasConsultas() {
                     {detalhe.paciente}
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    {detalhe.idade} anos · {detalhe.tipo}
+                    {detalhe.idade} anos · {detalhe.tipo} · {formatarData(detalhe.data)} às{" "}
+                    {detalhe.horario}
                   </p>
                 </div>
  
@@ -1250,43 +1627,94 @@ export default function MinhasConsultas() {
                 </div>
               </div>
  
-              <div className="space-y-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                <p className="flex items-center gap-2">
-                  <CalendarDays size={16} className="shrink-0 text-[#3563A7]" />
-                  {formatarData(detalhe.data)}
-                  <Clock size={16} className="ml-2 shrink-0 text-[#3563A7]" />
-                  {detalhe.horario}
-                </p>
-                <p className="flex items-start gap-2">
-                  <Hospital size={16} className="mt-0.5 shrink-0 text-[#3563A7]" />
-                  {nomeUnidade}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone size={16} className="shrink-0 text-[#3563A7]" />
-                  {detalhe.telefone || "Não informado"}
-                </p>
-                <p>
-                  <strong>Motivo:</strong> {detalhe.motivo}
-                </p>
+              {/* Abas do modal */}
+              <div role="tablist" aria-label="Seções da consulta" className="flex gap-2">
+                {abasModal.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={abaModal === a.id}
+                    onClick={() => setAbaModal(a.id)}
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                      abaModal === a.id
+                        ? "bg-[#0B1756] text-white"
+                        : "bg-[#EAF3F7] text-[#0B1756] hover:bg-[#DCE8F8]"
+                    }`}
+                  >
+                    {a.id === "prontuario" && <FileText size={16} />}
+                    {a.titulo}
+                  </button>
+                ))}
               </div>
  
-              <Campo label="Anotações do atendimento">
-                <textarea
-                  rows={4}
-                  value={detalhe.notas}
-                  onChange={(e) => atualizarNotas(detalhe.id, e.target.value)}
-                  placeholder="Registre observações, condutas e orientações..."
-                  className={inputCls}
+              {abaModal === "consulta" && (
+                <>
+                  <div className="space-y-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                    <p className="flex items-center gap-2">
+                      <CalendarDays size={16} className="shrink-0 text-[#3563A7]" />
+                      {formatarData(detalhe.data)}
+                      <Clock size={16} className="ml-2 shrink-0 text-[#3563A7]" />
+                      {detalhe.horario}
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <Hospital size={16} className="mt-0.5 shrink-0 text-[#3563A7]" />
+                      {nomeUnidade}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone size={16} className="shrink-0 text-[#3563A7]" />
+                      {detalhe.telefone || "Não informado"}
+                    </p>
+                    <p>
+                      <strong>Motivo:</strong> {detalhe.motivo}
+                    </p>
+                  </div>
+ 
+                  <Campo label="Anotações rápidas">
+                    <textarea
+                      rows={3}
+                      value={detalhe.notas}
+                      onChange={(e) => atualizarNotas(detalhe.id, e.target.value)}
+                      placeholder="Lembretes e observações (o registro clínico oficial fica no prontuário)..."
+                      className={inputCls}
+                    />
+                  </Campo>
+ 
+                  <div className="border-t border-slate-100 pt-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Histórico
+                    </p>
+                    <ol className="space-y-2 border-l-2 border-[#DCE8F8] pl-4 text-xs text-slate-500">
+                      {detalhe.historico.map((h, i) => (
+                        <li key={i}>{h}</li>
+                      ))}
+                    </ol>
+                  </div>
+                </>
+              )}
+ 
+              {abaModal === "prontuario" && (
+                <Prontuario
+                  consulta={detalhe}
+                  editavel={detalhe.status === "Em atendimento"}
+                  onCampo={(campo, valor) => atualizarProntuario(detalhe.id, campo, valor)}
+                  onVital={(campo, valor) => atualizarVital(detalhe.id, campo, valor)}
+                  anteriores={anteriores}
                 />
-              </Campo>
+              )}
+ 
+              {/* Ações (sempre visíveis, em qualquer aba) */}
  
               {detalhe.status === "Agendada" && (
-                <div className="space-y-2">
+                <div className="space-y-2 border-t border-slate-100 pt-4">
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
                       disabled={detalhe.data > HOJE}
-                      onClick={() => mudarStatus(detalhe.id, "Em atendimento", "Atendimento iniciado.")}
+                      onClick={() => {
+                        mudarStatus(detalhe.id, "Em atendimento", "Atendimento iniciado.");
+                        setAbaModal("prontuario");
+                      }}
                       className={`${botaoPrimario} flex-1`}
                     >
                       <Play size={16} />
@@ -1311,26 +1739,17 @@ export default function MinhasConsultas() {
               )}
  
               {detalhe.status === "Em atendimento" && (
-                <button
-                  type="button"
-                  onClick={() => mudarStatus(detalhe.id, "Concluída", "Atendimento concluído.")}
-                  className={`${botaoPrimario} w-full`}
-                >
-                  <Check size={16} />
-                  Concluir atendimento
-                </button>
+                <div className="border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => concluirAtendimento(detalhe)}
+                    className={`${botaoPrimario} w-full`}
+                  >
+                    <Check size={16} />
+                    Concluir atendimento e fechar prontuário
+                  </button>
+                </div>
               )}
- 
-              <div className="border-t border-slate-100 pt-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Histórico
-                </p>
-                <ol className="space-y-2 border-l-2 border-[#DCE8F8] pl-4 text-xs text-slate-500">
-                  {detalhe.historico.map((h, i) => (
-                    <li key={i}>{h}</li>
-                  ))}
-                </ol>
-              </div>
             </div>
           </div>
         </Portal>

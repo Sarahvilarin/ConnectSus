@@ -1084,7 +1084,6 @@ export default function GestaoConsultas() {
           </div>
         </Portal>
       )}
- 
       {aviso && (
         <div
           role="status"
