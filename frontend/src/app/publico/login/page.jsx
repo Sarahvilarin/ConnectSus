@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -29,7 +30,7 @@ export default function LoginPage() {
   }
 
   function entrarGov() {
-    console.log("LOGIN GOV.BR");
+    window.location.href = "https://sso.acesso.gov.br/";
   }
 
   return (
@@ -314,39 +315,6 @@ export default function LoginPage() {
             <ArrowRight size={17} />
           </button>
         </form>
-
-        {/* CADASTRO */}
-
-        <div
-          className="
-            mt-5
-            rounded-xl
-            border
-            border-[#DCEAF8]
-            bg-[#F8FBFE]
-            p-4
-            text-center
-          "
-        >
-          <p className="text-sm text-slate-500">
-            Ainda não possui uma conta?
-          </p>
-
-          <Link
-            href="/publico/cadastro"
-            className="
-              mt-1
-              inline-block
-              text-sm
-              font-semibold
-              text-[#023E8A]
-              transition
-              hover:underline
-            "
-          >
-            Criar minha conta
-          </Link>
-        </div>
       </div>
     </AuthShell>
   );

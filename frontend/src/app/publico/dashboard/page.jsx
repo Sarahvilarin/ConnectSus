@@ -214,7 +214,7 @@ export default function Home() {
         <div className="relative grid items-center gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-8">
           {/* Texto principal */}
           
-<div className="relative z-10 max-w-[550px] lg:-translate-x-8">
+<div className="relative z-10 max-w-[550px] lg:-translate-x-8 ">
             <div className="mb-6 inline-flex items-center gap-3 rounded-full bg-white/80 px-5 py-3 text-sm font-semibold text-[#023E8A] shadow-sm">
               <span className="h-3 w-3 rounded-full bg-[#3563A7]" />
               SUS digital

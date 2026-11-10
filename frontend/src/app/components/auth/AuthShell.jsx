@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -19,15 +20,32 @@ export default function AuthShell({
   return (
     <main
       className="
+        relative
+        isolate
         min-h-[calc(100vh-96px)]
+        overflow-hidden
         bg-[#EAF3F7]
         px-4
         py-6
         sm:px-6
       "
     >
+      {/* FUNDO COM ILUSTRAÇÕES DE CÍRCULOS */}
+
+      <div className="pointer-events-none absolute -right-24 -top-28 z-0 h-[340px] w-[340px] rounded-full bg-[#B8D6FC]/50" />
+
+      <div className="pointer-events-none absolute -left-32 top-8 z-0 h-[260px] w-[260px] rounded-full border-2 border-[#C8DEFF]/60" />
+
+      <div className="pointer-events-none absolute -bottom-28 -left-20 z-0 h-[280px] w-[280px] rounded-full bg-white/50" />
+
+      <div className="pointer-events-none absolute -bottom-32 -right-20 z-0 h-[340px] w-[340px] rounded-full border-[55px] border-[#C5DFFF]/50" />
+
+      {/* CARTÃO PRINCIPAL */}
+
       <div
         className="
+          relative
+          z-10
           mx-auto
           flex
           min-h-[calc(100vh-144px)]
@@ -208,19 +226,6 @@ export default function AuthShell({
               xl:px-14
             "
           >
-            <div
-              className="
-                pointer-events-none
-                absolute
-                -right-24
-                -top-24
-                h-64
-                w-64
-                rounded-full
-                bg-[#EAF3F7]/80
-              "
-            />
-
             <div
               className="
                 relative
