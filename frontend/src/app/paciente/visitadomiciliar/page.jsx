@@ -83,7 +83,7 @@ const inputCls =
 
 // Use as MESMAS classes de largura/padding do container do seu header,
 // assim logo e conteúdo da página ficam alinhados na mesma margem.
-const CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
+const CONTAINER = "mx-auto w-full max-w-[1550px] px-4 sm:px-6 2xl:px-14";
 
 /* =========================
    MÁSCARAS E VALIDAÇÕES
@@ -618,19 +618,13 @@ export default function MinhasVisitasPage() {
           </div>
         </section>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* INFORMAÇÕES DO PACIENTE */}
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#0B1756]">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
-                </svg>
-              </span>
               <h2 className="text-lg font-bold text-[#0B1756]">Suas informações</h2>
             </div>
-            <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
               {[
                 ["Paciente", PACIENTE.nome],
                 ["CNS", PACIENTE.cns],
@@ -654,12 +648,6 @@ export default function MinhasVisitasPage() {
               <span className="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#023E8A] to-[#3563A7]" />
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex gap-4">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#DCE9FB] text-[#023E8A]">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 3 2.5 20h19L12 3Z" />
-                      <path d="M12 10v4M12 17h.01" />
-                    </svg>
-                  </span>
                   <div className="min-w-0">
                     <Badge status="Aguardando correção" />
                     <h2 className="mt-2 text-xl font-bold text-[#0B1756]">Precisamos de uma correção na sua solicitação</h2>
