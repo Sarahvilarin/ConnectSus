@@ -7,7 +7,8 @@ import {
   cancelarMinhaConsulta,
   confirmarConsulta,
   listarConsultasDoMedico,
-  concluirConsulta
+  concluirConsulta,
+  buscarTriagemDaConsulta
 } from "../controllers/consultaController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
@@ -24,5 +25,6 @@ router.patch("/:id/cancelar", autenticarPaciente, cancelarMinhaConsulta);
 router.patch("/:id/confirmar", autenticarMedico, confirmarConsulta);
 router.get("/medico/me", autenticarMedico, listarConsultasDoMedico);
 router.patch("/:id/concluir", autenticarMedico, concluirConsulta);
+router.get("/:id/triagem", autenticarMedico, buscarTriagemDaConsulta);
 
 export default router;

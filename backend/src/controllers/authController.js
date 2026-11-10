@@ -78,51 +78,68 @@ export async function loginAdmin(req, res, next) {
 
 
 // LOGIN DO MÉDICO
+
 export async function loginMedico(req, res, next) {
   try {
-    const { crm, uf_crm, senha } = req.body ?? {};
+    const { crm, coren, uf_crm, uf_coren, senha } = req.body ?? {};
 
     if (
-      typeof crm !== "string" ||
-      !/^\d{1,20}$/.test(crm) ||
-      typeof uf_crm !== "string" ||
-      !/^[A-Z]{2}$/.test(uf_crm) ||
       typeof senha !== "string" ||
-      !senha
+      !senha ||
+      typeof (crm ?? coren) !== "string" ||
+      !/^\d{1,20}$/.test(crm ?? coren) ||
+      typeof (uf_crm ?? uf_coren) !== "string" ||
+      !/^[A-Z]{2}$/.test(uf_crm ?? uf_coren)
     ) {
       return res.status(400).json({
-        mensagem: "Informe CRM, UF e senha válidos."
+        mensagem: "Informe CRM ou COREN, UF e senha válidos."
       });
     }
 
-    // Buscar médico ativo no banco
-    const [medicos] = await pool.query(
-      `SELECT
-        id,
-        nome_completo,
-        crm,
-        uf_crm,
-        senha_hash
-       FROM medicos
-       WHERE crm = ?
-         AND uf_crm = ?
-         AND ativo = TRUE
-       LIMIT 1`,
-      [crm, uf_crm]
-    );
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET não configurada.");
+    }
 
-    if (medicos.length === 0) {
+    const identificador = crm ?? coren;
+    const uf = uf_crm ?? uf_coren;
+    const ehMedico = typeof crm === "string";
+
+    let profissional;
+    let tipo;
+
+    if (ehMedico) {
+      const [medicos] = await pool.query(
+        `SELECT id, nome_completo, crm, uf_crm, senha_hash
+         FROM medicos
+         WHERE crm = ? AND uf_crm = ? AND ativo = TRUE
+         LIMIT 1`,
+        [identificador, uf]
+      );
+
+      profissional = medicos[0];
+      tipo = "medico";
+    } else {
+      const [enfermeiros] = await pool.query(
+        `SELECT id, nome_completo, coren, uf_coren, senha_hash
+         FROM enfermeiros
+         WHERE coren = ? AND uf_coren = ? AND ativo = TRUE
+         LIMIT 1`,
+        [identificador, uf]
+      );
+
+      profissional = enfermeiros[0];
+      tipo = "enfermeiro";
+    }
+
+    if (!profissional) {
       return res.status(401).json({
         mensagem: "Credenciais inválidas."
       });
     }
 
-    const medico = medicos[0];
-
-    // Comparar senha com o hash
     const senhaValida = await bcrypt.compare(
       senha,
-      medico.senha_hash
+      profissional.senha_hash
     );
 
     if (!senhaValida) {
@@ -131,16 +148,11 @@ export async function loginMedico(req, res, next) {
       });
     }
 
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET não configurada.");
-    }
-
-    // Criar token JWT exclusivo do médico
     const token = jwt.sign(
-      { tipo: "medico" },
+      { tipo },
       process.env.JWT_SECRET,
       {
-        subject: String(medico.id),
+        subject: String(profissional.id),
         expiresIn: "2h",
         algorithm: "HS256"
       }
@@ -149,18 +161,26 @@ export async function loginMedico(req, res, next) {
     return res.status(200).json({
       mensagem: "Login realizado com sucesso!",
       token,
-      medico: {
-        id: medico.id,
-        nome_completo: medico.nome_completo,
-        crm: medico.crm,
-        uf_crm: medico.uf_crm
-      }
+      tipo,
+      profissional: ehMedico
+        ? {
+            id: profissional.id,
+            nome_completo: profissional.nome_completo,
+            crm: profissional.crm,
+            uf_crm: profissional.uf_crm
+          }
+        : {
+            id: profissional.id,
+            nome_completo: profissional.nome_completo,
+            coren: profissional.coren,
+            uf_coren: profissional.uf_coren
+          }
     });
-
   } catch (error) {
     next(error);
   }
 }
+
 
 
 export async function loginPaciente(req, res, next) {
