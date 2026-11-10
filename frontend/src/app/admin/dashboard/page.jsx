@@ -27,6 +27,33 @@ const unidades = [
   { nome: "UBS Sul", total: 54, status: "Normal" },
 ];
 
+const atividadesRecentes = [
+  {
+    titulo: "Novo paciente cadastrado",
+    descricao: "Maria Oliveira · UBS Centro",
+    horario: "Há 5 minutos",
+    icone: "users",
+  },
+  {
+    titulo: "Consulta agendada",
+    descricao: "João Santos · UBS Norte",
+    horario: "Há 18 minutos",
+    icone: "clock",
+  },
+  {
+    titulo: "Atendimento finalizado",
+    descricao: "Ana Costa · UBS Centro",
+    horario: "Há 32 minutos",
+    icone: "check",
+  },
+  {
+    titulo: "Novo exame solicitado",
+    descricao: "Carlos Mendes · UBS Sul",
+    horario: "Há 46 minutos",
+    icone: "hospital",
+  },
+];
+
 function Icone({ tipo, className = "h-6 w-6" }) {
   const props = {
     className,
@@ -204,9 +231,6 @@ export default function DashboardAdmin() {
           {/* Unidades */}
           <article className="rounded-2xl border border-[#3563A7]/10 bg-white p-5 shadow-sm sm:p-7">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A]">
-                <Icone tipo="hospital" className="h-7 w-7" />
-              </div>
 
               <div>
                 <h2 className="text-lg font-extrabold">
@@ -269,10 +293,7 @@ export default function DashboardAdmin() {
             <article className="flex-1 rounded-2xl border border-[#3563A7]/10 bg-white p-5 shadow-sm sm:p-7">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A]">
-                    <Icone tipo="bell" className="h-6 w-6" />
-                  </div>
-
+                
                   <div>
                     <h2 className="text-lg font-extrabold">
                       Alertas importantes
@@ -323,7 +344,75 @@ export default function DashboardAdmin() {
               </span>
             </article>
           </div>
-        </section>
+                  </section>
+
+        
+{/* ATIVIDADE RECENTE */}
+<section className="relative overflow-hidden rounded-2xl border border-[#DCE6F0] bg-white p-5 shadow-[0_4px_18px_rgba(11,23,86,0.05)] sm:p-7">
+
+  {/* CABEÇALHO */}
+  <div className="mb-7 flex items-center justify-between gap-3">
+    <div>
+      <h2 className="text-lg font-extrabold tracking-tight text-[#0B1756]">
+        Atividade recente
+      </h2>
+      <p className="mt-1 text-sm text-[#718096]">
+        Acompanhe as últimas movimentações do sistema.
+      </p>
+    </div>
+
+    <span className="rounded-full border border-[#D8E8F5] bg-[#F1F7FC] px-4 py-2 text-xs font-bold text-[#356B9E]">
+      Hoje
+    </span>
+  </div>
+
+  
+
+  {/* LISTA */}
+  <div className="space-y-3">
+    {atividadesRecentes.map((atividade, index) => (
+      <div
+        key={index}
+        className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-[#E8EEF5] bg-white p-4 transition-all duration-200 hover:border-[#BBD3E9] hover:bg-[#F8FBFE]"
+      >
+        {/* MARCADOR LATERAL */}
+        <div className="absolute bottom-0 left-0 top-0 w-1 bg-[#B7D5EC] transition-colors group-hover:bg-[#2875B5]" />
+
+        {/* CONTEÚDO */}
+        <div className="min-w-0 flex-1 pl-2">
+          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <p className="text-sm font-bold text-[#172B4D]">
+              {atividade.titulo}
+            </p>
+
+            {index === 0 && (
+              <span className="rounded-md bg-[#EAF4FB] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3475A8]">
+                Mais recente
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs leading-relaxed text-[#718096] sm:text-sm">
+            {atividade.descricao}
+          </p>
+        </div>
+
+        {/* HORÁRIO */}
+        <div className="shrink-0 border-l border-[#E8EEF5] pl-3 text-right">
+          <p className="text-sm font-bold tabular-nums text-[#356B9E]">
+            {atividade.horario}
+          </p>
+          <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-[#A0AEC0]">
+            Horário
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+
+
+</section>
+
       </div>
     </main>
   );
