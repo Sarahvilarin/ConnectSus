@@ -86,6 +86,8 @@ const menus = {
 
     { nome: "Epidemiologia", href: "/admin/epidemiologico" },
 
+    { nome: "Unidades", href: "/admin/unidades" },
+
     { nome: "Exames", href: "/admin/gestaoexame" },
 
     { nome: "Visitas", href: "/admin/gestaovisitas" },
