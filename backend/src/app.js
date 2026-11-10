@@ -16,6 +16,8 @@ import exameRoutes from "./routes/exameRoutes.js";
 import filaRoutes from "./routes/filaRoutes.js";
 import atendimentoDomiciliarRoutes from "./routes/atendimentoDomiciliarRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import enfermeiroRoutes from "./routes/enfermeiroRoutes.js";
+import triagemRoutes from "./routes/triagemRoutes.js";
 
 const app = express();
 
@@ -36,6 +38,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/especialidades", especialidadeRoutes);
 app.use("/api/setores", setorRoutes);
 app.use("/api/medicos", medicoRoutes);
+app.use("/api/enfermeiros", enfermeiroRoutes);
+app.use("/api/triagens", triagemRoutes);
 app.use("/api/pacientes", pacienteRoutes);
 app.use("/api/consultas", consultaRoutes);
 app.use("/api/exames", exameRoutes);

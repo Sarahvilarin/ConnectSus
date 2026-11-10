@@ -462,3 +462,63 @@ export async function concluirConsulta(req, res, next) {
     return next(error);
   }
 }
+
+
+// BUSCAR TRIAGEM VINCULADA À CONSULTA
+export async function buscarTriagemDaConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        mensagem: "ID da consulta inválido."
+      });
+    }
+
+    const [triagens] = await pool.query(
+      `SELECT
+        t.id,
+        t.paciente_id,
+        t.consulta_id,
+        t.enfermeiro_id,
+        p.nome_completo AS paciente,
+        e.nome_completo AS enfermeiro,
+        t.queixa_principal,
+        t.sintomas,
+        t.inicio_sintomas,
+        t.intensidade_dor,
+        t.pressao_arterial,
+        t.temperatura,
+        t.frequencia_cardiaca,
+        t.frequencia_respiratoria,
+        t.saturacao_oxigenio,
+        t.glicemia,
+        t.peso,
+        t.altura,
+        t.classificacao_risco,
+        t.observacoes,
+        t.criado_em
+       FROM consultas c
+       INNER JOIN triagens t
+         ON t.paciente_id = c.paciente_id
+        AND t.consulta_id = c.id
+       INNER JOIN pacientes p ON p.id = t.paciente_id
+       INNER JOIN enfermeiros e ON e.id = t.enfermeiro_id
+       WHERE c.id = ?
+         AND c.medico_id = ?
+       LIMIT 1`,
+      [id, req.medico.id]
+    );
+
+    if (triagens.length === 0) {
+      return res.status(404).json({
+        mensagem: "Triagem não encontrada para esta consulta."
+      });
+    }
+
+    return res.status(200).json(triagens[0]);
+  } catch (error) {
+    return next(error);
+  }
+}
+

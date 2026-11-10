@@ -30,4 +30,3 @@ router.delete("/:id", excluirMedico);
 router.patch("/:id/reativar", reativarMedico);
 
 export default router;
-    

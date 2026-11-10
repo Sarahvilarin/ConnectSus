@@ -41,20 +41,13 @@ const menus = {
   ],
 
   paciente: [
-
-    { nome: "Home", href: "/paciente/dashboard" },
-
-    { nome: "Triagem", href: "/paciente/triagem" },
-
-    { nome: "Fila Online", href: "/paciente/fila" },
-
-    { nome: "Visita Domiciliar", href: "/paciente/visita" },
-
-    { nome: "Exames", href: "/paciente/exames" },
-
-    { nome: "Consultas", href: "/paciente/consultas" },
-
-  ],
+  { nome: "Dashboard", href: "/paciente/dashboard" },
+  { nome: "Triagem", href: "/paciente/triagem" },
+  { nome: "Fila Online", href: "/paciente/filaOnline" },
+  { nome: "Visita Domiciliar", href: "/paciente/visitadomiciliar" },
+  { nome: "Exames", href: "/paciente/exames" },
+  { nome: "Consultas", href: "/paciente/consultas" },
+],
 
   medico: [
 
@@ -209,6 +202,7 @@ export default function Header() {
           : "publico";
 
   const areaAtual = areas[tipo];
+  const menuAtual = menus[tipo] || [];
 
   const IconePerfil = areaAtual.icone;
 
@@ -630,7 +624,7 @@ export default function Header() {
 
         <div className="flex min-w-0 items-center justify-center gap-1 xl:gap-1.5">
 
-          {menus[tipo].map((item) => {
+          {menuAtual.map((item) => {
 
             const ativo = estaAtivo(item.href);
 
