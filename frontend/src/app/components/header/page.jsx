@@ -89,7 +89,7 @@ const menus = {
 
     { nome: "Equipe", href: "/admin/gestaoequipe" },
 
-    { nome: "Consultas", href: "/admin/consultas" },
+    { nome: "Consultas", href: "/admin/gestaoconsultas" },
 
   ],
 
