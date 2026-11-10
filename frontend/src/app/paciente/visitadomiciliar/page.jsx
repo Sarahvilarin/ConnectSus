@@ -81,6 +81,10 @@ const PARENTESCOS = ["Filho(a)", "Cônjuge", "Neto(a)", "Irmão(ã)", "Cuidador(
 const inputCls =
   "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15";
 
+// Use as MESMAS classes de largura/padding do container do seu header,
+// assim logo e conteúdo da página ficam alinhados na mesma margem.
+const CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
+
 /* =========================
    MÁSCARAS E VALIDAÇÕES
 ========================= */
@@ -104,6 +108,30 @@ function formatarData(data) {
   if (!data) return "Data não definida";
   const [a, m, d] = data.split("-");
   return `${d}/${m}/${a}`;
+}
+
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+function BlocoData({ data }) {
+  return (
+    <div className="flex h-[76px] w-[76px] shrink-0 flex-col items-center justify-center rounded-[24px] bg-[#EAF3F7] text-[#0B1756]">
+      <span className="text-3xl font-extrabold leading-none">
+        {data.slice(8)}
+      </span>
+
+      <span className="mt-1 text-sm font-bold lowercase">
+        {MESES[Number(data.slice(5, 7)) - 1]}
+      </span>
+    </div>
+  );
+}
+
+function Chip({ children }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-medium text-[#0B1756]">
+      {children}
+    </span>
+  );
 }
 
 function diaDaSemana(data) {
@@ -557,120 +585,184 @@ export default function MinhasVisitasPage() {
 
   return (
     <div className="min-h-screen bg-[#EEF5F9] font-sans text-[#0B1756]">
-      <div className="pointer-events-none fixed -right-36 -top-36 h-96 w-96 rounded-full border-[64px] border-[#D9E8FA]/60" />
+      <div className="pointer-events-none fixed -right-40 -top-24 h-[420px] w-[420px] rounded-full bg-[#DCE9FB]/70" />
+      <div className="pointer-events-none fixed -left-24 top-24 h-80 w-80 rounded-full border border-[#C8D8EC]/70" />
 
-      <main className="relative z-10 mx-auto w-full max-w-4xl space-y-6 px-4 py-7 sm:px-6">
-        {/* CABEÇALHO */}
-        <section className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#084B9A] to-[#0B1756] px-7 py-8 shadow-[0_22px_60px_rgba(2,62,138,0.18)] sm:px-10">
-          <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-white/10" />
-          <div className="relative z-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-sm text-white/75">Olá, {PACIENTE.nome}</p>
-              <h1 className="mt-1 text-3xl font-bold tracking-tight text-white sm:text-4xl">Minhas visitas domiciliares</h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-white/85">
-                Peça uma visita da equipe de saúde em casa e acompanhe cada etapa por aqui.
-              </p>
-            </div>
+      <main className={`relative z-10 py-8 ${CONTAINER}`}>
+        {/* TOPO */}
+        <section className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#DCE9FB] px-3 py-1.5 text-xs font-bold text-[#0B1756]">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 11.5 12 4l9 7.5" />
+                <path d="M5 10v10h14V10" />
+              </svg>
+              Visita domiciliar
+            </span>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px] lg:leading-tight">
+              Minhas visitas
+            </h1>
+            <p className="mt-3 text-base leading-7 text-slate-600">
+              Peça uma visita da equipe de saúde em casa e acompanhe cada etapa por aqui.
+            </p>
+          </div>
+
+          <div className="flex max-w-md flex-col gap-3 lg:mt-10 lg:items-end">
             <button
               type="button"
               onClick={() => setModal({ tipo: "nova" })}
-              className="shrink-0 rounded-2xl bg-white px-5 py-3.5 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7]"
+              className="rounded-2xl bg-[#023E8A] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756]"
             >
               + Solicitar visita
             </button>
           </div>
         </section>
 
-        {/* CORREÇÃO PENDENTE */}
-        {pendentes.map((v) => (
-          <section key={v.id} className="rounded-2xl border border-[#3563A7] bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-6">
+          {/* INFORMAÇÕES DO PACIENTE */}
+          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#0B1756]">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+                </svg>
+              </span>
+              <h2 className="text-lg font-bold text-[#0B1756]">Suas informações</h2>
+            </div>
+            <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["Paciente", PACIENTE.nome],
+                ["CNS", PACIENTE.cns],
+                ["Telefone", PACIENTE.telefone],
+                ["Endereço", `${PACIENTE.rua}, ${PACIENTE.numero} · ${PACIENTE.bairro}`],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-xl bg-[#F4F8FC] px-4 py-3">
+                  <dt className="text-xs font-semibold text-slate-500">{k}</dt>
+                  <dd className="mt-1 font-medium text-[#0B1756]">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          {/* CORREÇÃO PENDENTE */}
+          {pendentes.map((v) => (
+            <section
+              key={v.id}
+              className="relative overflow-hidden rounded-2xl border border-[#3563A7]/40 bg-white p-5 pl-7 shadow-[0_10px_30px_rgba(2,62,138,0.10)] sm:p-6 sm:pl-8"
+            >
+              <span className="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#023E8A] to-[#3563A7]" />
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#DCE9FB] text-[#023E8A]">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3 2.5 20h19L12 3Z" />
+                      <path d="M12 10v4M12 17h.01" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <Badge status="Aguardando correção" />
+                    <h2 className="mt-2 text-xl font-bold text-[#0B1756]">Precisamos de uma correção na sua solicitação</h2>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Chip>{v.tipo}</Chip>
+                      <Chip>{formatarData(v.data)} às {v.horario}</Chip>
+                    </div>
+                    <blockquote className="mt-4 rounded-xl border-l-4 border-[#3563A7] bg-[#EAF3F7] px-4 py-3 text-sm leading-6 text-[#0B1756]">
+                      <span className="mb-1 block text-xs font-bold text-[#3563A7]">Mensagem da equipe</span>
+                      {v.mensagemCorrecao}
+                    </blockquote>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModal({ tipo: "corrigir", id: v.id })}
+                  className="shrink-0 rounded-xl bg-[#023E8A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756]"
+                >
+                  Corrigir agora
+                </button>
+              </div>
+            </section>
+          ))}
+
+          {/* LISTA */}
+          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Badge status="Aguardando correção" />
-                <h2 className="mt-3 text-lg font-bold text-[#0B1756]">Precisamos de uma correção na sua solicitação</h2>
+                <h2 className="text-2xl font-bold text-[#0B1756]">Suas solicitações</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {v.tipo} · {formatarData(v.data)} às {v.horario}
-                </p>
-                <p className="mt-3 rounded-xl bg-[#EAF3F7] p-3 text-sm leading-6 text-[#0B1756]">
-                  <strong>Mensagem da equipe:</strong> {v.mensagemCorrecao}
+                  {lista.length} {lista.length === 1 ? "solicitação" : "solicitações"} nesta lista
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setModal({ tipo: "corrigir", id: v.id })}
-                className="shrink-0 rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0B1756]"
-              >
-                Corrigir agora
-              </button>
+              <div className="flex rounded-xl bg-slate-100 p-1">
+                {[
+                  ["ativas", "Em andamento"],
+                  ["historico", "Encerradas"],
+                ].map(([val, rotulo]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setFiltro(val)}
+                    className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${
+                      filtro === val ? "bg-white text-[#17418E] shadow-sm" : "text-slate-500 hover:text-[#17418E]"
+                    }`}
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
             </div>
-          </section>
-        ))}
 
-        {/* LISTA */}
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-bold text-[#0B1756]">Suas solicitações</h2>
-            <div className="flex rounded-xl bg-slate-100 p-1">
-              {[
-                ["ativas", "Em andamento"],
-                ["historico", "Encerradas"],
-              ].map(([val, rotulo]) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setFiltro(val)}
-                  className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${
-                    filtro === val ? "bg-white text-[#17418E] shadow-sm" : "text-slate-500 hover:text-[#17418E]"
-                  }`}
-                >
-                  {rotulo}
-                </button>
-              ))}
-            </div>
-          </div>
+            {lista.length ? (
+              <ul className="space-y-3">
+                {lista.map((v) => {
+                  return (
+                    <li
+                      key={v.id}
+                      className="group flex flex-col gap-4 rounded-2xl border border-[#E1EAF4] bg-[#FAFCFE] p-4 transition hover:border-[#3563A7]/50 hover:bg-white hover:shadow-md sm:flex-row sm:items-center"
+                    >
+                      <BlocoData data={v.data} />
 
-          {lista.length ? (
-            <ul className="divide-y divide-slate-100">
-              {lista.map((v) => (
-                <li key={v.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold text-[#0B1756]">{v.tipo}</p>
-                      <Badge status={v.status} />
-                    </div>
-                    <p className="mt-1 text-sm text-slate-600">{v.motivo}</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {formatarData(v.data)} às {v.horario}
-                      {v.profissional !== "Não definido" && ` · com ${v.profissional}`}
-                    </p>
-                  </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-lg font-bold text-[#0B1756]">{v.tipo}</p>
+                          <Badge status={v.status} />
+                        </div>
+                        <p className="mt-1 text-sm text-slate-600">{v.motivo}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Chip>Às {v.horario}</Chip>
+                          <Chip>{v.profissional === "Não definido" ? "Profissional a definir" : v.profissional}</Chip>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setModal({ tipo: "detalhe", id: v.id })}
+                        className="shrink-0 rounded-xl border border-[#C8D8EC] bg-white px-5 py-2.5 text-sm font-semibold text-[#17418E] transition group-hover:border-[#023E8A] hover:bg-[#EAF3F7]"
+                      >
+                        Ver detalhes
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
+                <p className="text-sm font-medium text-slate-600">
+                  {filtro === "ativas" ? "Nenhuma solicitação em andamento" : "Nenhuma visita encerrada ainda"}
+                </p>
+                {filtro === "ativas" && (
                   <button
                     type="button"
-                    onClick={() => setModal({ tipo: "detalhe", id: v.id })}
-                    className="shrink-0 rounded-lg border border-[#D5E0ED] px-4 py-2.5 text-sm font-semibold text-[#17418E] hover:bg-[#F2F6FB]"
+                    onClick={() => setModal({ tipo: "nova" })}
+                    className="mt-3 text-sm font-semibold text-[#17418E] hover:underline"
                   >
-                    Ver detalhes
+                    Solicitar uma visita
                   </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
-              <p className="text-sm font-medium text-slate-600">
-                {filtro === "ativas" ? "Nenhuma solicitação em andamento" : "Nenhuma visita encerrada ainda"}
-              </p>
-              {filtro === "ativas" && (
-                <button
-                  type="button"
-                  onClick={() => setModal({ tipo: "nova" })}
-                  className="mt-3 text-sm font-semibold text-[#17418E] hover:underline"
-                >
-                  Solicitar uma visita
-                </button>
-              )}
-            </div>
-          )}
-        </section>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
       </main>
 
       {/* MODAIS */}
