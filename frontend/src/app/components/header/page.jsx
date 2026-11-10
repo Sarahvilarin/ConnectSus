@@ -24,7 +24,7 @@ const menus = {
   cliente: [
     { nome: "Dashboard", href: "/cliente/dashboard" },
     { nome: "Triagem", href: "/cliente/triagem" },
-    { nome: "Fila Online", href: "/cliente/fila" },
+    { nome: "Fila Online", href: "/cliente/filaOnline" },
     { nome: "Visita Domiciliar", href: "/cliente/visita" },
     { nome: "Exames", href: "/cliente/exames" },
     { nome: "Consultas", href: "/cliente/consultas" },
@@ -41,7 +41,7 @@ const menus = {
   ],
   admin: [
     { nome: "Dashboard", href: "/admin/dashboard" },
-    { nome: "Filas", href: "/admin/filas" },
+    { nome: "Filas", href: "/admin/filaOnline" },
     { nome: "Epidemiologia", href: "/admin/epidemiologico" },
     { nome: "Exames", href: "/admin/gestaoexame" },
     { nome: "Visitas", href: "/admin/gestaovisitas" },

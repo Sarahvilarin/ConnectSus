@@ -1619,13 +1619,14 @@ export default function GestaoVisitasPage() {
       <div className="pointer-events-none fixed -right-36 -top-36 h-96 w-96 rounded-full border-[64px] border-[#D9E8FA]/60" />
       <div className="pointer-events-none fixed -bottom-40 -left-32 h-96 w-96 rounded-full bg-white/70" />
 
-      <main className="relative z-10 mx-auto max-w-[1400px] space-y-7 px-4 py-7 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-[1480px] space-y-7 px-4 py-7 sm:px-6 xl:px-8">
         {/* CABEÇALHO E NAVEGAÇÃO */}
 
         <section className="relative pb-0">
-          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-20 pt-7 shadow-sm sm:px-10 sm:pt-9 sm:pb-22">
-            <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
-            <div className="pointer-events-none absolute right-[25%] top-20 h-72 w-72 rounded-full border-[45px] border-white/[0.05]" />
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#084B9A] to-[#0B1756] px-7 pb-20 pt-7 shadow-[0_22px_60px_rgba(2,62,138,0.18)] sm:px-10 sm:pt-9 sm:pb-22">
+            <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-white/10" />
+
+<div className="pointer-events-none absolute -bottom-28 right-[30%] h-64 w-64 rounded-full border-[45px] border-white/[0.04]" />
 
             <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
               <div className="max-w-3xl">
@@ -2062,29 +2063,12 @@ export default function GestaoVisitasPage() {
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-white p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#0B1756]">
-                  <svg
-                    width="21"
-                    height="21"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="10" cy="7" r="4" />
-                    <path d="M20 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
 
                 <div>
-                  <h2 className="text-base font-bold text-[#0B1756]">
+                  <h2 className="text-2xl font-bold text-[#0B1756]">
                     Todas as visitas
                   </h2>
-                  <p className="mt-1 text-xs text-[#0B1756]">
+                  <p className="mt-1 text-2xs text-[#0B1756]">
                     Pesquise e gerencie solicitações e atendimentos registrados.
                   </p>
                 </div>
@@ -2165,7 +2149,7 @@ export default function GestaoVisitasPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
-                <thead className="border-y border-slate-100 bg-slate-50 text-xs uppercase text-slate-600">
+                <thead className="border-y border-slate-100 bg-[#EAF3F7] text-xs uppercase text-slate-600">
                   <tr>
                     {[
                       "Paciente",
@@ -2330,207 +2314,212 @@ export default function GestaoVisitasPage() {
 
         {/* AGENDA */}
 
-        {aba === "agenda" && (
-          <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-            <CardSecao
-              titulo="Calendário de visitas"
-              subtitulo="Selecione um dia para consultar os atendimentos programados."
-              acao={
-                <select
-                  value={filtroAgendaProf}
-                  onChange={(e) =>
-                    setFiltroAgendaProf(e.target.value)
-                  }
-                  className="max-w-44 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-600"
-                >
-                  <option value="Todos">Todas as equipes</option>
-                  {equipe.map((p) => (
-                    <option key={p.id} value={p.nome}>
-                      {p.nome}
-                    </option>
-                  ))}
-                </select>
-              }
+       {/* AGENDA */}
+
+{aba === "agenda" && (
+  <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+    <CardSecao
+      titulo="Calendário de visitas"
+      subtitulo="Selecione um dia para consultar os atendimentos programados."
+      acao={
+        <div className="w-45 shrink-0">
+          <FiltroSelect
+            value={filtroAgendaProf}
+            onChange={setFiltroAgendaProf}
+            placeholder="Todas as equipes"
+            options={[
+              {
+                value: "Todos",
+                label: "Todas as equipes",
+              },
+              ...equipe.map((p) => ({
+                value: p.nome,
+                label: p.nome,
+              })),
+            ]}
+          />
+        </div>
+      }
+    >
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() =>
+            setMesCalendario(
+              (d) =>
+                new Date(
+                  d.getFullYear(),
+                  d.getMonth() - 1,
+                  1
+                )
+            )
+          }
+          className="rounded-xl border border-[#0B1756]/25 px-3 py-2 text-sm font-semibold text-[#0B1756] transition hover:bg-[#0B1756]/10"
+          aria-label="Mês anterior"
+        >
+          ←
+        </button>
+
+        <h3 className="text-base font-bold capitalize text-[#0B1756]">
+          {mesCalendario.toLocaleDateString("pt-BR", {
+            month: "long",
+            year: "numeric",
+          })}
+        </h3>
+
+        <button
+          type="button"
+          onClick={() =>
+            setMesCalendario(
+              (d) =>
+                new Date(
+                  d.getFullYear(),
+                  d.getMonth() + 1,
+                  1
+                )
+            )
+          }
+          className="rounded-xl border border-[#0B1756]/25 px-3 py-2 text-sm font-semibold text-[#0B1756] transition hover:bg-[#0B1756]/10"
+          aria-label="Próximo mês"
+        >
+          →
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5">
+        {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(
+          (d) => (
+            <div
+              key={d}
+              className="py-2 text-center text-xs font-semibold text-[#0B1756]"
             >
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setMesCalendario(
-                      (d) =>
-                        new Date(
-                          d.getFullYear(),
-                          d.getMonth() - 1,
-                          1
-                        )
-                    )
-                  }
-                  className="rounded-xl border border-[#0B1756]/25 px-3 py-2 text-sm font-semibold text-[#0B1756] transition hover:bg-[#0B1756]/10"
-                  aria-label="Mês anterior"
-                >
-                  ←
-                </button>
+              {d}
+            </div>
+          )
+        )}
 
-                <h3 className="text-base font-bold capitalize text-[#0B1756]">
-                  {mesCalendario.toLocaleDateString("pt-BR", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </h3>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setMesCalendario(
-                      (d) =>
-                        new Date(
-                          d.getFullYear(),
-                          d.getMonth() + 1,
-                          1
-                        )
-                    )
-                  }
-                  className="rounded-xl border border-[#0B1756]/25 px-3 py-2 text-sm font-semibold text-[#0B1756] transition hover:bg-[#0B1756]/10"
-                  aria-label="Próximo mês"
-                >
-                  →
-                </button>
-              </div>
-
-              <div className="grid grid-cols-7 gap-1.5">
-                {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(
-                  (d) => (
-                    <div
-                      key={d}
-                      className="py-2 text-center text-xs font-semibold text-[#0B1756]"
-                    >
-                      {d}
-                    </div>
-                  )
-                )}
-
-                {diasCalendario.map((d) =>
-                  d.vazio ? (
-                    <div key={d.chave} />
-                  ) : (
-                    <button
-                      key={d.chave}
-                      type="button"
-                      onClick={() => setDiaSelecionado(d.data)}
-                      className={`flex min-h-[66px] flex-col items-center rounded-xl border p-2 transition sm:min-h-[78px] ${
-                        diaSelecionado === d.data
-                          ? "border-[#0B1756] bg-[#0B1756] text-white shadow-sm ring-1 ring-[#0B1756]/20"
-                          : "border-slate-200 bg-white hover:border-[#0B1756] hover:bg-[#0B1756]/5"
-                      }`}
-                    >
-                      <span
-                        className={`text-sm ${
-                          diaSelecionado === d.data
-                            ? "font-bold text-white"
-                            : "text-slate-700"
-                        }`}
-                      >
-                        {d.dia}
-                      </span>
-
-                      {d.qtd > 0 && (
-                        <>
-                          <span
-                            className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                              diaSelecionado === d.data
-                                ? "bg-white text-[#0B1756]"
-                                : "bg-[#0B1756] text-white"
-                            }`}
-                          >
-                            {d.qtd}
-                          </span>
-
-                          <span
-                            className={`mt-1 hidden text-[9px] sm:block ${
-                              diaSelecionado === d.data
-                                ? "text-white/80"
-                                : "text-slate-400"
-                            }`}
-                          >
-                            {d.qtd === 1 ? "visita" : "visitas"}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  )
-                )}
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#0B1756]" />
-                  Quantidade de visitas no dia
-                </span>
-                <span>
-                  Selecione uma data para ver a lista ao lado.
-                </span>
-              </div>
-            </CardSecao>
-
-            <CardSecao
-              titulo="Visitas do dia"
-              subtitulo={formatarData(diaSelecionado)}
-              acao={
-                <Badge tipo="azul">
-                  {visitasDoDia.length} visita(s)
-                </Badge>
-              }
+        {diasCalendario.map((d) =>
+          d.vazio ? (
+            <div key={d.chave} />
+          ) : (
+            <button
+              key={d.chave}
+              type="button"
+              onClick={() => setDiaSelecionado(d.data)}
+              className={`flex min-h-[66px] flex-col items-center rounded-xl border p-2 transition sm:min-h-[78px] ${
+                diaSelecionado === d.data
+                  ? "border-[#0B1756] bg-[#0B1756] text-white shadow-sm ring-1 ring-[#0B1756]/20"
+                  : "border-slate-200 bg-white hover:border-[#0B1756] hover:bg-[#0B1756]/5"
+              }`}
             >
-              {visitasDoDia.length ? (
-                <div className="divide-y divide-slate-100">
-                  {visitasDoDia.map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => {
-                        setMensagemCorrecao("");
-                        setVisitaId(v.id);
-                      }}
-                      className="flex w-full gap-3 py-4 text-left hover:bg-slate-50/70"
-                    >
-                      <span className="min-w-[58px] rounded-lg bg-[#EAF1FC] px-2 py-2 text-center text-xs font-bold text-[#17418E]">
-                        {v.horario}
-                      </span>
+              <span
+                className={`text-sm ${
+                  diaSelecionado === d.data
+                    ? "font-bold text-white"
+                    : "text-slate-700"
+                }`}
+              >
+                {d.dia}
+              </span>
 
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-semibold text-[#0B1756]">
-                          {v.paciente}
-                        </span>
+              {d.qtd > 0 && (
+                <>
+                  <span
+                    className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      diaSelecionado === d.data
+                        ? "bg-white text-[#0B1756]"
+                        : "bg-[#0B1756] text-white"
+                    }`}
+                  >
+                    {d.qtd}
+                  </span>
 
-                        <span className="mt-1 block text-sm text-slate-500">
-                          {v.tipo} · {v.bairro}
-                        </span>
-
-                        <span className="mt-1 block text-xs text-slate-400">
-                          {v.profissional}
-                        </span>
-
-                        <span className="mt-2 inline-flex">
-                          <Badge tipo={corStatus(v.status)}>
-                            {v.status}
-                          </Badge>
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
-                  <p className="text-sm font-medium text-slate-600">
-                    Nenhuma visita nesta data
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Selecione outro dia ou altere o filtro de equipe.
-                  </p>
-                </div>
+                  <span
+                    className={`mt-1 hidden text-[9px] sm:block ${
+                      diaSelecionado === d.data
+                        ? "text-white/80"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {d.qtd === 1 ? "visita" : "visitas"}
+                  </span>
+                </>
               )}
-            </CardSecao>
-          </div>
+            </button>
+          )
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+        <span className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#0B1756]" />
+          Quantidade de visitas no dia
+        </span>
+        <span>
+          Selecione uma data para ver a lista ao lado.
+        </span>
+      </div>
+    </CardSecao>
+
+    <CardSecao
+      titulo="Visitas do dia"
+      subtitulo={formatarData(diaSelecionado)}
+      acao={
+        <Badge tipo="azul">
+          {visitasDoDia.length} visita(s)
+        </Badge>
+      }
+    >
+      {visitasDoDia.length ? (
+        <div className="divide-y divide-slate-100">
+          {visitasDoDia.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => {
+                setMensagemCorrecao("");
+                setVisitaId(v.id);
+              }}
+              className="flex w-full gap-3 py-4 text-left hover:bg-slate-50/70"
+            >
+              <span className="min-w-[58px] rounded-lg bg-[#EAF1FC] px-2 py-2 text-center text-xs font-bold text-[#17418E]">
+                {v.horario}
+              </span>
+
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-[#0B1756]">
+                  {v.paciente}
+                </span>
+
+                <span className="mt-1 block text-sm text-slate-500">
+                  {v.tipo} · {v.bairro}
+                </span>
+
+                <span className="mt-1 block text-xs text-slate-400">
+                  {v.profissional}
+                </span>
+
+                <span className="mt-2 inline-flex">
+                  <Badge tipo={corStatus(v.status)}>
+                    {v.status}
+                  </Badge>
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
+          <p className="text-sm font-medium text-slate-600">
+            Nenhuma visita nesta data
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Selecione outro dia ou altere o filtro de equipe.
+          </p>
+        </div>
+      )}
+    </CardSecao>
+  </div>
         )}
 
         {/* EQUIPE */}
@@ -3105,7 +3094,7 @@ export default function GestaoVisitasPage() {
                       onClick={() =>
                         solicitarCorrecao(visitaDetalhe)
                       }
-                      className="w-full rounded-xl bg-[#3563A7] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A]"
+                      className="w-full rounded-xl bg-[#0B1756] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A]"
                     >
                       Solicitar correção ao cliente
                     </button>
