@@ -28,35 +28,35 @@ const menus = {
   ],
 
   cliente: [
-    { nome: "Dashboard", href: "/cliente/dashboard" },
-    { nome: "Triagem", href: "/cliente/triagem" },
-    { nome: "Fila Online", href: "/cliente/fila" },
-    { nome: "Visita Domiciliar", href: "/cliente/visita" },
-    { nome: "Exames", href: "/cliente/exames" },
-    { nome: "Consultas", href: "/cliente/consultas" },
+    { nome: "Home", href: "/paciente/dashboard" },
+    { nome: "Triagem", href: "/paciente/triagem" },
+    { nome: "Fila Online", href: "/paciente/fila" },
+    { nome: "Visita Domiciliar", href: "/paciente/visita" },
+    { nome: "Exames", href: "/paciente/exames" },
+    { nome: "Consultas", href: "/paciente/consultas" },
   ],
 
   medico: [
-    { nome: "Dashboard", href: "/medico/dashboard" },
+    { nome: "Home", href: "/medico/dashboard" },
     { nome: "Pacientes", href: "/medico/pacientes" },
     { nome: "Exames", href: "/medico/gestaoexame" },
     { nome: "Consultas", href: "/medico/consultas" },
   ],
 
   enfermeiro: [
-    { nome: "Dashboard", href: "/enfermeiro/dashboard" },
+    { nome: "Home", href: "/enfermeiro/dashboard" },
     { nome: "Visita domiciliar", href: "/enfermeiro/visita" },
     { nome: "Triagem", href: "/enfermeiro/triagem" },
   ],
 
   admin: [
-    { nome: "Dashboard", href: "/admin/dashboard" },
+    { nome: "Home", href: "/admin/dashboard" },
     { nome: "Filas", href: "/admin/filas" },
     { nome: "Epidemiologia", href: "/admin/epidemiologico" },
     { nome: "Exames", href: "/admin/gestaoexame" },
     { nome: "Visitas", href: "/admin/gestaovisitas" },
     { nome: "Relatórios", href: "/admin/relatorios" },
-    { nome: "Equipe", href: "/admin/equipe" },
+    { nome: "Equipe", href: "/admin/gestaoequipe" },
     { nome: "Consultas", href: "/admin/consultas" },
   ],
 };
