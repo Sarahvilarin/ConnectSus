@@ -1,5 +1,7 @@
 "use client";
 
+console.log("ARQUIVO PACIENTE FILA ONLINE CARREGADO");
+
 import { api } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -564,6 +566,7 @@ function MapaUnidades({ unidades, onSelecionar }) {
 // ======================================================
 
 function FilaOnlineConteudo() {
+  console.log("TESTE: FilaOnlineConteudo está sendo executado");
   const [unidades, setUnidades] = useState([]);
   const [carregandoUnidades, setCarregandoUnidades] = useState(true);
   const [erroUnidades, setErroUnidades] = useState("");
@@ -579,10 +582,13 @@ function FilaOnlineConteudo() {
 
   useEffect(() => {
     async function carregarUnidades() {
+      console.log("FILA ONLINE: componente carregado");
       try {
         setCarregandoUnidades(true);
         setErroUnidades("");
 
+        console.log("FILA ONLINE: chamando API de unidades");
+        console.log("URL da API:", process.env.NEXT_PUBLIC_API_URL);
         const resposta = await api("/unidades");
 
         console.log("Resposta da API de unidades:", resposta);
