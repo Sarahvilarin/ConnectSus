@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UserRound, Pencil } from "lucide-react";
+import { UserRound, Pencil, Eye } from "lucide-react";
 
 export default function PerfilPage() {
   const [nome, setNome] = useState("Giovana de Andrade Martini");
@@ -11,13 +11,20 @@ export default function PerfilPage() {
   const [foto, setFoto] = useState("");
   const [modal, setModal] = useState("");
   const [mensagem, setMensagem] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  const [senhasVisiveis, setSenhasVisiveis] = useState({
+    "senha-atual": false,
+    "nova-senha": false,
+    "confirmar-senha": false,
+  });
+
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [novoEmail, setNovoEmail] = useState(email);
   const [nomeEditado, setNomeEditado] = useState(nome);
   const [telefoneEditado, setTelefoneEditado] = useState(telefone);
+
   const inputFoto = useRef(null);
 
   function mostrarMensagem(texto) {
@@ -57,6 +64,23 @@ export default function PerfilPage() {
     mostrarMensagem("Foto de perfil atualizada!");
   }
 
+  function alternarVisibilidade(id) {
+    setSenhasVisiveis((estadoAnterior) => ({
+      ...estadoAnterior,
+      [id]: !estadoAnterior[id],
+    }));
+  }
+
+  function abrirModalSenha() {
+    setSenhasVisiveis({
+      "senha-atual": false,
+      "nova-senha": false,
+      "confirmar-senha": false,
+    });
+
+    setModal("senha");
+  }
+
   function alterarSenha(e) {
     e.preventDefault();
 
@@ -76,9 +100,17 @@ export default function PerfilPage() {
     }
 
     mostrarMensagem("Demonstração: senha validada com sucesso!");
+
     setSenhaAtual("");
     setNovaSenha("");
     setConfirmarSenha("");
+
+    setSenhasVisiveis({
+      "senha-atual": false,
+      "nova-senha": false,
+      "confirmar-senha": false,
+    });
+
     setModal("");
   }
 
@@ -100,15 +132,15 @@ export default function PerfilPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7] font-sans text-[#0B1756]">
+      {/* Elemento decorativo do fundo */}
+      <div className="pointer-events-none absolute -right-[120px] -top-[150px] h-[435px] w-[435px] rounded-full bg-[#023E8A]/[0.13]" />
 
-       <div className="pointer-events-none absolute -right-[120px] -top-[150px] h-[435px] w-[435px] rounded-full bg-[#023E8A]/[0.13]" />
-    
       <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#3563A7]/20" />
       <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute bottom-[-170px] right-[-100px] h-[430px] w-[430px] rounded-full border-[70px] border-[#023E8A]/15" />
 
       {/* Conteúdo principal */}
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-10 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-10 pt-3 sm:px-6 sm:pt-4 lg:pt-5 2xl:px-10">
         <header className="mb-6 text-left sm:mb-7">
           <h1 className="text-4xl font-bold tracking-tight text-[#0B1756] sm:text-[40px] md:text-[42px]">
             Gerenciar seu <span className="text-[#3563A7]">Perfil</span>
@@ -295,7 +327,7 @@ export default function PerfilPage() {
 
                 <button
                   type="button"
-                  onClick={() => setModal("senha")}
+                  onClick={abrirModalSenha}
                   className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#023E8A] bg-white/60 px-5 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#023E8A] hover:text-white"
                 >
                   Alterar senha
@@ -415,21 +447,29 @@ export default function PerfilPage() {
                     <div className="flex items-center rounded-xl border border-[#3563A7]/35 bg-[#EAF3F7] pr-3 focus-within:border-[#023E8A] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                       <input
                         id={campo.id}
-                        type={mostrarSenha ? "text" : "password"}
+                        type={
+                          senhasVisiveis[campo.id] ? "text" : "password"
+                        }
                         value={campo.value}
                         onChange={(e) => campo.setValue(e.target.value)}
                         autoComplete="new-password"
-                        className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm font-normal text-[#0B1756] outline-none"
+                        className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm font-normal text-[#0B1756] outline-none [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
                         placeholder="Digite sua senha"
                         required
                       />
+
                       <button
                         type="button"
-                        onClick={() => setMostrarSenha(!mostrarSenha)}
-                        aria-label={mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"}
-                        className="rounded-lg px-2 py-1 text-xs font-semibold text-[#023E8A] hover:text-[#3563A7]"
+                        onClick={() => alternarVisibilidade(campo.id)}
+                        aria-label={
+                          senhasVisiveis[campo.id]
+                            ? "Ocultar senha"
+                            : "Mostrar senha"
+                        }
+                        aria-pressed={senhasVisiveis[campo.id]}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#3563A7] transition hover:bg-[#DCEAF2] hover:text-[#023E8A]"
                       >
-                        {mostrarSenha ? "Ocultar" : "Mostrar"}
+                        <Eye size={19} strokeWidth={1.8} />
                       </button>
                     </div>
                   </div>

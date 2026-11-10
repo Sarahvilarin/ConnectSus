@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -10,7 +11,6 @@ import {
   Pencil,
   Save,
   Eye,
-  EyeOff,
   CheckCircle2,
   X,
   ChevronDown,
@@ -134,7 +134,7 @@ function SelectPersonalizado({
           ref={opcoesRef}
           role="listbox"
           aria-labelledby={id}
-         className="custom-scrollbar absolute left-0 top-[calc(100%+8px)] z-50 max-h-60 w-full overflow-y-auto overscroll-contain rounded-2xl border border-[#D1DFEA] bg-white p-2 pr-4 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+          className="custom-scrollbar absolute left-0 top-[calc(100%+8px)] z-50 max-h-60 w-full overflow-y-auto overscroll-contain rounded-2xl border border-[#D1DFEA] bg-white p-2 pr-4 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
         >
           {options.map((opcao, index) => {
             const selecionada = value === opcao;
@@ -187,7 +187,9 @@ export default function PerfilEnfermeiroPage() {
 
   const [modal, setModal] = useState("");
   const [mensagem, setMensagem] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  // Cada campo de senha possui sua própria visualização.
+  const [senhasVisiveis, setSenhasVisiveis] = useState({});
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -316,6 +318,7 @@ export default function PerfilEnfermeiroPage() {
     setSenhaAtual("");
     setNovaSenha("");
     setConfirmarSenha("");
+    setSenhasVisiveis({});
     setModal("");
   }
 
@@ -335,6 +338,13 @@ export default function PerfilEnfermeiroPage() {
     mostrarMensagem("E-mail atualizado na demonstração!");
   }
 
+  function alternarVisibilidadeSenha(id) {
+    setSenhasVisiveis((atual) => ({
+      ...atual,
+      [id]: !atual[id],
+    }));
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7] font-sans text-[#0B1756]">
       {/* Elementos decorativos */}
@@ -346,7 +356,7 @@ export default function PerfilEnfermeiroPage() {
 
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#023E8A]/15" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-12 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 pb-12 pt-3 sm:pt-4 2xl:px-10 2xl:pt-5">
         {/* Cabeçalho */}
         <header className="mb-6 text-left sm:mb-7">
           <h1 className="text-4xl font-bold tracking-tight text-[#0B1756] sm:text-[40px]">
@@ -439,8 +449,8 @@ export default function PerfilEnfermeiroPage() {
                 <div className="flex items-center gap-3 text-left sm:col-span-2 lg:col-span-1">
                   <div className="min-w-0">
                     <p className="text-sm font-normal text-[#3563A7]">
-                    E-mail profissional
-                  </p>
+                      E-mail profissional
+                    </p>
                     <p className="mt-1 break-all text-base font-semibold text-[#023E8A]">
                       {email}
                     </p>
@@ -700,7 +710,10 @@ export default function PerfilEnfermeiroPage() {
 
                 <button
                   type="button"
-                  onClick={() => setModal("senha")}
+                  onClick={() => {
+                    setSenhasVisiveis({});
+                    setModal("senha");
+                  }}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#D1DFEA] bg-white px-5 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#3563A7] hover:text-white"
                 >
                   <LockKeyhole size={18} />
@@ -766,7 +779,7 @@ export default function PerfilEnfermeiroPage() {
             aria-labelledby="modal-title"
             className="my-auto w-full max-w-md rounded-[28px] border border-[#D1DFEA] bg-white p-6 shadow-2xl sm:p-8"
           >
-            {/* Título centralizado, sem ícone */}
+            {/* Título centralizado */}
             <div className="relative mb-6 flex items-center justify-center">
               <div className="text-center">
                 <h2 id="modal-title" className="text-xl font-bold">
@@ -821,31 +834,31 @@ export default function PerfilEnfermeiroPage() {
                       {campo.label}
                     </label>
 
-                    <div className="flex items-center rounded-xl border border-[#C8D8E8] bg-[#EAF3F7] pr-3 focus-within:border-[#023E8A] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
+                    <div className="flex items-center rounded-xl border border-[#C8D8E8] bg-[#EAF3F7] pr-3 transition focus-within:border-[#023E8A] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                       <input
                         id={campo.id}
-                        type={mostrarSenha ? "text" : "password"}
+                        type={senhasVisiveis[campo.id] ? "text" : "password"}
                         value={campo.value}
                         onChange={(e) => campo.setValue(e.target.value)}
                         autoComplete={campo.autoComplete}
-                        className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm font-normal outline-none"
+                        spellCheck={false}
+                        className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm font-normal text-[#0B1756] outline-none"
                         placeholder="Digite sua senha"
                         required
                       />
 
                       <button
                         type="button"
-                        onClick={() => setMostrarSenha(!mostrarSenha)}
+                        onClick={() => alternarVisibilidadeSenha(campo.id)}
                         aria-label={
-                          mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"
+                          senhasVisiveis[campo.id]
+                            ? `Ocultar ${campo.label.toLowerCase()}`
+                            : `Mostrar ${campo.label.toLowerCase()}`
                         }
-                        className="rounded-lg p-1 text-[#3563A7] hover:text-[#0B1756]"
+                        aria-pressed={!!senhasVisiveis[campo.id]}
+                        className="flex shrink-0 items-center justify-center rounded-lg p-2 text-[#3563A7] transition hover:bg-[#D5E6F0] hover:text-[#023E8A]"
                       >
-                        {mostrarSenha ? (
-                          <EyeOff size={19} />
-                        ) : (
-                          <Eye size={19} />
-                        )}
+                        <Eye size={19} strokeWidth={1.8} />
                       </button>
                     </div>
                   </div>
