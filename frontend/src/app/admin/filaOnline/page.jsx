@@ -1,3 +1,18 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -146,17 +161,17 @@ function Indicador({ titulo, valor, descricao, variacao }) {
 
 function StatusBadge({ status }) {
   const estilos = {
-    Ativa: "bg-green-50 text-green-700",
-    Inativa: "bg-slate-100 text-slate-600",
-    Concluído: "bg-green-50 text-green-700",
-    Aguardando: "bg-blue-50 text-blue-700",
-    Cancelado: "bg-red-50 text-red-700",
+    Ativa: "bg-[#3563A7] text-white",
+    Inativa: "border border-[#3563A7]/30 bg-[#EAF3F7] text-[#3563A7]",
+    "Concluído": "bg-[#0B1756] text-white",
+    Aguardando: "bg-[#023E8A] text-white",
+    Cancelado: "bg-[#3563A7] text-white",
   };
 
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${
-        estilos[status] || "bg-slate-100 text-slate-600"
+        estilos[status] || "bg-[#EAF3F7] text-[#0B1756]"
       }`}
     >
       {status}
@@ -179,6 +194,68 @@ function SecaoTitulo({ titulo, descricao }) {
 // ======================================================
 // MODAL DE CADASTRO E EDIÇÃO
 // ======================================================
+
+function FiltroSelect({ value, onChange, placeholder, options }) {
+  const [aberto, setAberto] = useState(false);
+
+  const selecionado = options.find((option) => option.value === value);
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setAberto((atual) => !atual)}
+        className="flex w-full items-center justify-between rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition hover:border-[#3563A7] focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15"
+      >
+        <span>{selecionado?.label || placeholder}</span>
+
+        <svg
+          className={`h-4 w-4 transition-transform ${
+            aberto ? "rotate-180" : ""
+          }`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      {aberto && (
+        <>
+          <button
+            type="button"
+            aria-label="Fechar opções"
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setAberto(false)}
+          />
+
+          <div className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#C8D8EC] bg-white p-1.5 shadow-lg">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setAberto(false);
+                }}
+                className={`w-full rounded-xl px-4 py-3 text-left text-sm transition ${
+                  value === option.value
+                    ? "bg-[#0B1756] font-semibold text-white"
+                    : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 
 function ModalCadastro({ tipo, item, onFechar, onSalvar }) {
   const [nome, setNome] = useState(item?.nome || "");
@@ -1260,3 +1337,7 @@ export default function FilaOnlineAdminPage() {
     </div>
   );
 }
+
+
+
+

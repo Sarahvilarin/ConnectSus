@@ -40,20 +40,13 @@ const menus = {
 
   ],
 
-  paciente: [
-
-    { nome: "Home", href: "/paciente/dashboard" },
-
-    { nome: "Triagem", href: "/paciente/triagem" },
-
-    { nome: "Fila Online", href: "/paciente/fila" },
-
-    { nome: "Visita Domiciliar", href: "/paciente/visita" },
-
-    { nome: "Exames", href: "/paciente/exames" },
-
-    { nome: "Consultas", href: "/paciente/consultas" },
-
+  cliente: [
+    { nome: "Dashboard", href: "/cliente/dashboard" },
+    { nome: "Triagem", href: "/cliente/triagem" },
+    { nome: "Fila Online", href: "/cliente/filaOnline" },
+    { nome: "Visita Domiciliar", href: "/cliente/visitadomiciliar" },
+    { nome: "Exames", href: "/cliente/exames" },
+    { nome: "Consultas", href: "/cliente/consultas" },
   ],
 
   medico: [
