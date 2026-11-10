@@ -375,8 +375,6 @@ export default function DashboardCliente() {
             </div>
           </div>
         </section>
-
-
                 
 {/* ORIENTAÇÕES AO PACIENTE */}
 <section className="mt-20 sm:mt-22">
