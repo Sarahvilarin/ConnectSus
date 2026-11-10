@@ -1,5 +1,6 @@
 "use client";
 
+import { api } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import {
   APIProvider,
@@ -39,36 +40,45 @@ const LIMITE_UNIDADES = 5;
 // UNIDADES DE SAÚDE
 // ======================================================
 
-const unidades = [
-  {
-    id: 1,
-    nome: "UPA Bangu",
-    espera: 12,
-    servicos: ["Clínico geral", "Pediatria", "Ginecologia"],
-    tipo: "normal",
-    endereco: "Rua Avaré, 107 — Vila São Pedro, Santo André",
-  },
-  {
-    id: 2,
-    nome: "UBS Vila Aliança",
-    espera: 25,
-    servicos: ["Clínico geral", "Odontologia", "Pediatria"],
-    tipo: "rapida",
-    endereco: "Rua do Governo, 450 — Bangu, Rio de Janeiro",
-  },
-  {
-    id: 3,
-    nome: "UPA Realengo",
-    espera: 45,
-    servicos: ["Clínico geral", "Ortopedia", "Pediatria"],
-    tipo: "normal",
-    endereco: "Av. Brasil, 28000 — Realengo, Rio de Janeiro",
-  }
-];
+function formatarEndereco(unidade) {
+  return [
+    unidade.rua,
+    unidade.bairro,
+    "São Caetano do Sul - SP",
+    unidade.cep,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
 
-// TODO: trocar pelo retorno do banco de dados
-// (por enquanto é montada a partir das unidades acima)
-const todasEspecialidades = [...new Set(unidades.flatMap((u) => u.servicos))];
+function converterServicos(valor) {
+  if (Array.isArray(valor)) return valor;
+
+  if (!valor || typeof valor !== "string") return [];
+
+  try {
+    const dados = JSON.parse(valor);
+
+    if (Array.isArray(dados)) return dados;
+  } catch {
+    // Se não for JSON, trata como texto.
+  }
+
+  return valor
+    .split(/[,;|]/)
+    .map((servico) => servico.trim())
+    .filter(Boolean);
+}
+
+function adaptarUnidade(unidade) {
+  return {
+    ...unidade,
+    endereco: formatarEndereco(unidade),
+    servicos: converterServicos(unidade.servicos_disponiveis),
+    espera: null,
+    tipo: "normal",
+  };
+}
 
 // ======================================================
 // CAMPO DE ESPECIALIDADES (busca + chips)
@@ -102,8 +112,9 @@ function EspecialidadeSelect({ opcoes, selecionadas, onChange }) {
   );
 
   function adicionar(op) {
-    onChange([...selecionadas, op]);
+    onChange([op]);
     setTexto("");
+    setAberto(false);
   }
 
   function remover(op) {
@@ -126,9 +137,8 @@ function EspecialidadeSelect({ opcoes, selecionadas, onChange }) {
     <div ref={caixaRef} className="relative">
       <div
         onClick={() => setAberto(true)}
-        className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-xl border bg-white px-2.5 py-2 transition ${
-          aberto ? "border-[#023E8A]" : "border-[#D4E1F5]"
-        }`}
+        className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-xl border bg-white px-2.5 py-2 transition ${aberto ? "border-[#023E8A]" : "border-[#D4E1F5]"
+          }`}
       >
         {selecionadas.map((servico) => (
           <span
@@ -167,9 +177,8 @@ function EspecialidadeSelect({ opcoes, selecionadas, onChange }) {
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#304A7D] transition ${
-            aberto ? "rotate-180" : ""
-          }`}
+          className={`shrink-0 text-[#304A7D] transition ${aberto ? "rotate-180" : ""
+            }`}
         />
       </div>
 
@@ -243,9 +252,9 @@ function UnidadeFoto({ unidade, destaque = false }) {
           setAtribuicao(
             autor
               ? {
-                  nome: autor.displayName || "Google Maps",
-                  url: autor.uri || "",
-                }
+                nome: autor.displayName || "Google Maps",
+                url: autor.uri || "",
+              }
               : { nome: "Google Maps", url: "" }
           );
         }
@@ -305,7 +314,7 @@ function UnidadeFoto({ unidade, destaque = false }) {
 
         {/* Texto da unidade */}
         <div className="relative z-10 min-w-0 px-5 sm:max-w-[48%] sm:px-8">
-          
+
 
           <h2 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-white sm:mt-2.5 sm:text-[clamp(25px,2.4vw,36px)]">
             {unidade.nome}
@@ -528,23 +537,23 @@ function MapaUnidades({ unidades, onSelecionar }) {
   return (
     <div className="absolute inset-0 overflow-hidden rounded-xl border border-[#D8E5F8]">
       <Map
-          defaultCenter={{
-            lat: -23.6229,
-            lng: -46.5511,
-          }}
-          defaultZoom={13}
-          mapId="DEMO_MAP_ID"
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-        >
-          <MapaComMarcadores
-            unidades={unidades}
-            onSelecionar={onSelecionar}
-          />
+        defaultCenter={{
+          lat: -23.6229,
+          lng: -46.5511,
+        }}
+        defaultZoom={13}
+        mapId="DEMO_MAP_ID"
+        style={{
+          width: "100%",
+          height: "100%",
+        }}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
+      >
+        <MapaComMarcadores
+          unidades={unidades}
+          onSelecionar={onSelecionar}
+        />
       </Map>
     </div>
   );
@@ -555,6 +564,60 @@ function MapaUnidades({ unidades, onSelecionar }) {
 // ======================================================
 
 function FilaOnlineConteudo() {
+  const [unidades, setUnidades] = useState([]);
+  const [carregandoUnidades, setCarregandoUnidades] = useState(true);
+  const [erroUnidades, setErroUnidades] = useState("");
+
+  const [setoresUnidade, setSetoresUnidade] = useState([]);
+  const [carregandoSetores, setCarregandoSetores] = useState(false);
+  const [erroSetores, setErroSetores] = useState("");
+
+  const todasEspecialidades = [
+    ...new Set(unidades.flatMap((unidade) => unidade.servicos)),
+  ];
+
+
+  useEffect(() => {
+    async function carregarUnidades() {
+      try {
+        setCarregandoUnidades(true);
+        setErroUnidades("");
+
+        const resposta = await api("/unidades");
+
+        console.log("Resposta da API de unidades:", resposta);
+
+        const listaUnidades = Array.isArray(resposta)
+          ? resposta
+          : Array.isArray(resposta?.unidades)
+            ? resposta.unidades
+            : Array.isArray(resposta?.data)
+              ? resposta.data
+              : null;
+
+        if (!listaUnidades) {
+          throw new Error(
+            "A API respondeu, mas não retornou uma lista de unidades."
+          );
+        }
+
+        const unidadesAdaptadas = listaUnidades.map(adaptarUnidade);
+
+        setUnidades(unidadesAdaptadas);
+      } catch (erro) {
+        console.error("Erro ao carregar unidades:", erro);
+        setErroUnidades(
+          erro.message || "Não foi possível carregar as unidades."
+        );
+      } finally {
+        setCarregandoUnidades(false);
+      }
+    }
+
+    carregarUnidades();
+  }, []);
+
+
   const [unidadeSelecionada, setUnidadeSelecionada] = useState(null);
 
   const [unidadeParaConfirmar, setUnidadeParaConfirmar] =
@@ -590,7 +653,7 @@ function FilaOnlineConteudo() {
 
   const unidadesOrdenadas = [...unidadesFiltradas].sort((a, b) => {
     if (ordenacao === "espera") {
-      return a.espera - b.espera;
+      return (a.espera ?? Infinity) - (b.espera ?? Infinity);
     }
 
     return a.id - b.id;
@@ -603,10 +666,24 @@ function FilaOnlineConteudo() {
     (unidade) => unidade.id === unidadeSelecionada
   );
 
-  function abrirConfirmacao(unidade) {
+  async function abrirConfirmacao(unidade) {
     setUnidadeParaConfirmar(unidade);
-    setEspecialidadesSelecionadas([unidade.servicos[0]]);
+    setEspecialidadesSelecionadas([]);
     setEntrouNaFila(false);
+
+    setSetoresUnidade([]);
+    setErroSetores("");
+    setCarregandoSetores(true);
+
+    try {
+      const resposta = await api(`/setores/unidade/${unidade.id}`);
+      setSetoresUnidade(Array.isArray(resposta) ? resposta : []);
+    } catch (erro) {
+      console.error("Erro ao carregar setores:", erro);
+      setErroSetores(erro.message || "Não foi possível carregar os setores.");
+    } finally {
+      setCarregandoSetores(false);
+    }
   }
 
   function fecharModal() {
@@ -833,11 +910,10 @@ function FilaOnlineConteudo() {
                   return (
                     <article
                       key={unidade.id}
-                      className={`flex flex-col gap-4 py-5 first:pt-1 last:pb-1 sm:flex-row sm:items-center ${
-                        selecionada
-                          ? "rounded-xl bg-[#F7FAFF] px-3"
-                          : ""
-                      }`}
+                      className={`flex flex-col gap-4 py-5 first:pt-1 last:pb-1 sm:flex-row sm:items-center ${selecionada
+                        ? "rounded-xl bg-[#F7FAFF] px-3"
+                        : ""
+                        }`}
                     >
                       <UnidadeFoto unidade={unidade} />
 
@@ -872,21 +948,19 @@ function FilaOnlineConteudo() {
                             </p>
 
                             <p
-                              className={`text-xl font-bold leading-tight ${
-                                unidade.tipo === "rapida"
-                                  ? "text-[#17418E]"
-                                  : "text-[#17418E]"
-                              }`}
+                              className={`text-xl font-bold leading-tight ${unidade.tipo === "rapida"
+                                ? "text-[#17418E]"
+                                : "text-[#17418E]"
+                                }`}
                             >
                               {unidade.espera} min
                             </p>
 
                             <span
-                              className={`mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-medium ${
-                                unidade.tipo === "rapida"
-                                  ? "bg-green-100 text-[#17418E]"
-                                  : "bg-[#E8F0FD] text-[#17418E]"
-                              }`}
+                              className={`mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-medium ${unidade.tipo === "rapida"
+                                ? "bg-green-100 text-[#17418E]"
+                                : "bg-[#E8F0FD] text-[#17418E]"
+                                }`}
                             >
                               Fila{" "}
                               {unidade.tipo === "rapida"
@@ -900,11 +974,10 @@ function FilaOnlineConteudo() {
                       <button
                         type="button"
                         onClick={() => abrirConfirmacao(unidade)}
-                        className={`flex shrink-0 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-colors sm:min-w-[116px] ${
-                          selecionada
-                            ? "border border-[#023E8A] bg-white text-[#023E8A] hover:bg-blue-50"
-                            : "bg-[#023E8A] text-white hover:bg-[#002B66]"
-                        }`}
+                        className={`flex shrink-0 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-colors sm:min-w-[116px] ${selecionada
+                          ? "border border-[#023E8A] bg-white text-[#023E8A] hover:bg-blue-50"
+                          : "bg-[#023E8A] text-white hover:bg-[#002B66]"
+                          }`}
                       >
                         {selecionada ? "Selecionada" : "Selecionar"}
 
@@ -952,59 +1025,59 @@ function FilaOnlineConteudo() {
             }
           }}
         >
-          
-<div
-  role="alertdialog"
-  aria-modal="true"
-  aria-labelledby="titulo-sair-fila"
-  aria-describedby="descricao-sair-fila"
-  className="w-full max-w-sm overflow-hidden rounded-2xl border border-[#D9E6F8] bg-white text-center shadow-2xl"
->
-  <div className="relative flex flex-col items-center px-6 py-8 sm:px-7">
-    <button
-      type="button"
-      onClick={() => setMostrarConfirmacaoSaida(false)}
-      aria-label="Fechar confirmação"
-      className="absolute right-4 top-4 rounded-lg p-2 text-[#7183A0] transition hover:bg-[#F1F6FD] hover:text-[#142F68]"
-    >
-      <X size={20} />
-    </button>
 
-    <h2
-      id="titulo-sair-fila"
-      className="text-xl font-bold text-[#142F68]"
-    >
-      Deseja sair da fila?
-    </h2>
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="titulo-sair-fila"
+            aria-describedby="descricao-sair-fila"
+            className="w-full max-w-sm overflow-hidden rounded-2xl border border-[#D9E6F8] bg-white text-center shadow-2xl"
+          >
+            <div className="relative flex flex-col items-center px-6 py-8 sm:px-7">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacaoSaida(false)}
+                aria-label="Fechar confirmação"
+                className="absolute right-4 top-4 rounded-lg p-2 text-[#7183A0] transition hover:bg-[#F1F6FD] hover:text-[#142F68]"
+              >
+                <X size={20} />
+              </button>
 
-    <p
-      id="descricao-sair-fila"
-      className="mt-3 max-w-sm text-sm leading-6 text-[#526987]"
-    >
-      Se você sair agora, sua posição atual será encerrada.
-      Para acompanhar o atendimento novamente, será necessário
-      entrar na fila outra vez.
-    </p>
-  </div>
+              <h2
+                id="titulo-sair-fila"
+                className="text-xl font-bold text-[#142F68]"
+              >
+                Deseja sair da fila?
+              </h2>
 
-  <div className="flex flex-col justify-center gap-3 border-t border-[#E6EDF7] bg-[#F8FAFE] px-5 py-5 sm:flex-row">
-    <button
-      type="button"
-      onClick={() => setMostrarConfirmacaoSaida(false)}
-      className="rounded-xl border border-[#C9D7EA] bg-white px-5 py-3 text-sm font-semibold text-[#24466F] transition hover:bg-[#EDF4FD]"
-    >
-      Continuar na fila
-    </button>
+              <p
+                id="descricao-sair-fila"
+                className="mt-3 max-w-sm text-sm leading-6 text-[#526987]"
+              >
+                Se você sair agora, sua posição atual será encerrada.
+                Para acompanhar o atendimento novamente, será necessário
+                entrar na fila outra vez.
+              </p>
+            </div>
 
-    <button
-      type="button"
-      onClick={confirmarSaidaDaFila}
-      className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002B66] focus:outline-none focus:ring-4 focus:ring-[#023E8A]/20"
-    >
-      Sim, sair da fila
-    </button>
-  </div>
-</div>
+            <div className="flex flex-col justify-center gap-3 border-t border-[#E6EDF7] bg-[#F8FAFE] px-5 py-5 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacaoSaida(false)}
+                className="rounded-xl border border-[#C9D7EA] bg-white px-5 py-3 text-sm font-semibold text-[#24466F] transition hover:bg-[#EDF4FD]"
+              >
+                Continuar na fila
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmarSaidaDaFila}
+                className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002B66] focus:outline-none focus:ring-4 focus:ring-[#023E8A]/20"
+              >
+                Sim, sair da fila
+              </button>
+            </div>
+          </div>
 
         </div>
       )}
@@ -1024,11 +1097,10 @@ function FilaOnlineConteudo() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="titulo-confirmacao"
-            className={`my-auto w-full ${
-              entrouNaFila
-                ? "max-w-[440px] p-5 sm:p-6"
-                : "max-w-md p-5 sm:p-6"
-            } rounded-2xl bg-white shadow-2xl`}
+            className={`my-auto w-full ${entrouNaFila
+              ? "max-w-[440px] p-5 sm:p-6"
+              : "max-w-md p-5 sm:p-6"
+              } rounded-2xl bg-white shadow-2xl`}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -1059,7 +1131,7 @@ function FilaOnlineConteudo() {
             {entrouNaFila ? (
               <div>
                 <div className="text-center">
-                  
+
 
                   <h2
                     id="titulo-confirmacao"
@@ -1135,16 +1207,16 @@ function FilaOnlineConteudo() {
                       </h3>
 
                       <div className="mt-2.5 flex items-start gap-2 text-sm leading-5 text-[#304A7D]">
-                    
 
-                    <span>{unidadeParaConfirmar.endereco}</span>
-                  </div>
+
+                        <span>{unidadeParaConfirmar.endereco}</span>
+                      </div>
                     </div>
                   </div>
 
-                  
 
-                  
+
+
 
                   {/* ESPECIALIDADES */}
 
@@ -1154,14 +1226,14 @@ function FilaOnlineConteudo() {
                     </p>
 
                     <EspecialidadeSelect
-                      opcoes={todasEspecialidades}
+                      opcoes={setoresUnidade.map((setor) => setor.nome)}
                       selecionadas={especialidadesSelecionadas}
                       onChange={setEspecialidadesSelecionadas}
                     />
                   </div>
                 </div>
 
-                
+
 
                 {/* CONFIRMAÇÃO */}
 

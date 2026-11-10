@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   ArrowRight,
@@ -14,19 +15,44 @@ import {
 } from "lucide-react";
 
 import AuthShell from "../../components/auth/AuthShell";
+import { api } from "../../../lib/api";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
 
   const [dados, setDados] = useState({
-    login: "",
+    email: "",
     senha: "",
   });
 
-  function enviarLogin(event) {
+  async function enviarLogin(event) {
     event.preventDefault();
 
-    console.log("LOGIN:", dados);
+    setErro("");
+    setCarregando(true);
+
+    try {
+      const resposta = await api("/auth/paciente/login", {
+        method: "POST",
+        body: JSON.stringify(dados),
+      });
+
+      localStorage.setItem("unesus_token", resposta.token);
+      localStorage.setItem(
+        "unesus_paciente",
+        JSON.stringify(resposta.paciente)
+      );
+
+      router.push("/paciente/dashboard");
+    } catch (error) {
+      setErro(error.message || "Não foi possível realizar o login.");
+    } finally {
+      setCarregando(false);
+    }
   }
 
   function entrarGov() {
@@ -41,22 +67,12 @@ export default function LoginPage() {
       <div className="w-full max-w-[530px]">
         <div
           className="
-            mb-4
-            flex
-            w-fit
-            items-center
-            gap-2
-            rounded-full
-            bg-[#EAF3F7]
-            px-3
-            py-1.5
-            text-xs
-            font-semibold
+            mb-4 flex w-fit items-center gap-2 rounded-full
+            bg-[#EAF3F7] px-3 py-1.5 text-xs font-semibold
             text-[#023E8A]
           "
         >
           <ShieldCheck size={15} />
-
           Área do Paciente
         </div>
 
@@ -65,49 +81,24 @@ export default function LoginPage() {
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Entre com seu login e senha para acessar sua conta.
+          Entre com seu e-mail e senha para acessar sua conta.
         </p>
-
-        {/* GOV.BR */}
 
         <button
           type="button"
           onClick={entrarGov}
           className="
-            mt-6
-            flex
-            h-12
-            w-full
-            items-center
-            justify-center
-            gap-3
-            rounded-xl
-            border
-            border-[#1351B4]
-            bg-white
-            px-4
-            text-sm
-            font-semibold
-            text-[#1351B4]
-            transition-all
-            duration-200
-            hover:-translate-y-0.5
-            hover:bg-[#F3F7FC]
+            mt-6 flex h-12 w-full items-center justify-center gap-3
+            rounded-xl border border-[#1351B4] bg-white px-4
+            text-sm font-semibold text-[#1351B4] transition-all
+            duration-200 hover:-translate-y-0.5 hover:bg-[#F3F7FC]
             hover:shadow-sm
           "
         >
           <span
             className="
-              flex
-              h-7
-              w-7
-              items-center
-              justify-center
-              rounded-full
-              bg-[#1351B4]
-              text-xs
-              font-bold
-              text-white
+              flex h-7 w-7 items-center justify-center rounded-full
+              bg-[#1351B4] text-xs font-bold text-white
             "
           >
             g
@@ -115,8 +106,6 @@ export default function LoginPage() {
 
           Entrar com Gov.br
         </button>
-
-        {/* DIVISOR */}
 
         <div className="my-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-slate-200" />
@@ -129,53 +118,40 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={enviarLogin}>
-          {/* LOGIN */}
-
           <div>
             <label
-              htmlFor="login"
-              className="
-                mb-1.5
-                block
-                text-sm
-                font-semibold
-                text-[#0B1756]
-              "
+              htmlFor="email"
+              className="mb-1.5 block text-sm font-semibold text-[#0B1756]"
             >
-              Login
+              E-mail
             </label>
 
             <div className="relative">
               <UserRound
                 size={18}
                 className="
-                  absolute
-                  left-4
-                  top-1/2
-                  -translate-y-1/2
+                  absolute left-4 top-1/2 -translate-y-1/2
                   text-slate-400
                 "
               />
 
               <input
-                id="login"
-                type="text"
-                value={dados.login}
+                id="email"
+                type="email"
+                value={dados.email}
                 onChange={(event) =>
                   setDados({
                     ...dados,
-                    login: event.target.value,
+                    email: event.target.value,
                   })
                 }
-                placeholder="Digite seu login"
+                placeholder="Digite seu e-mail"
                 required
                 autoComplete="username"
                 className={inputClass}
               />
             </div>
           </div>
-
-          {/* SENHA */}
 
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between">
@@ -189,11 +165,8 @@ export default function LoginPage() {
               <Link
                 href="/publico/recuperar-senha"
                 className="
-                  text-xs
-                  font-semibold
-                  text-[#023E8A]
-                  transition
-                  hover:underline
+                  text-xs font-semibold text-[#023E8A]
+                  transition hover:underline
                 "
               >
                 Esqueci minha senha
@@ -204,10 +177,7 @@ export default function LoginPage() {
               <LockKeyhole
                 size={18}
                 className="
-                  absolute
-                  left-4
-                  top-1/2
-                  -translate-y-1/2
+                  absolute left-4 top-1/2 -translate-y-1/2
                   text-slate-400
                 "
               />
@@ -230,22 +200,13 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setMostrarSenha(!mostrarSenha)
-                }
+                onClick={() => setMostrarSenha(!mostrarSenha)}
                 aria-label={
-                  mostrarSenha
-                    ? "Ocultar senha"
-                    : "Mostrar senha"
+                  mostrarSenha ? "Ocultar senha" : "Mostrar senha"
                 }
                 className="
-                  absolute
-                  right-4
-                  top-1/2
-                  -translate-y-1/2
-                  text-slate-400
-                  transition
-                  hover:text-[#023E8A]
+                  absolute right-4 top-1/2 -translate-y-1/2
+                  text-slate-400 transition hover:text-[#023E8A]
                 "
               >
                 {mostrarSenha ? (
@@ -257,62 +218,46 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* MANTER CONECTADO */}
-
           <label
             className="
-              mt-3
-              flex
-              w-fit
-              cursor-pointer
-              items-center
-              gap-2
-              text-sm
-              text-slate-500
+              mt-3 flex w-fit cursor-pointer items-center gap-2
+              text-sm text-slate-500
             "
           >
             <input
               type="checkbox"
               className="
-                h-4
-                w-4
-                cursor-pointer
-                accent-[#023E8A]
+                h-4 w-4 cursor-pointer accent-[#023E8A]
               "
             />
 
             Manter-me conectado
           </label>
 
-          {/* BOTÃO */}
+          {erro && (
+            <p
+              role="alert"
+              className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700"
+            >
+              {erro}
+            </p>
+          )}
 
           <button
             type="submit"
+            disabled={carregando}
             className="
-              mt-6
-              flex
-              h-12
-              w-full
-              items-center
-              justify-center
-              gap-2
-              rounded-xl
-              bg-[#023E8A]
-              px-5
-              text-sm
-              font-semibold
-              text-white
-              shadow-sm
-              transition-all
-              duration-200
-              hover:-translate-y-0.5
-              hover:bg-[#0B1756]
-              hover:shadow-md
+              mt-6 flex h-12 w-full items-center justify-center gap-2
+              rounded-xl bg-[#023E8A] px-5 text-sm font-semibold
+              text-white shadow-sm transition-all duration-200
+              hover:-translate-y-0.5 hover:bg-[#0B1756]
+              hover:shadow-md disabled:cursor-not-allowed
+              disabled:opacity-60
             "
           >
-            Entrar no UneSUS
+            {carregando ? "Entrando..." : "Entrar no UneSUS"}
 
-            <ArrowRight size={17} />
+            {!carregando && <ArrowRight size={17} />}
           </button>
         </form>
       </div>
@@ -334,7 +279,6 @@ const inputClass = `
   outline-none
   transition
   placeholder:text-slate-400
-
   focus:border-[#3563A7]
   focus:bg-white
   focus:ring-4
