@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -8,7 +9,6 @@ import {
   ChevronDown,
   Check,
   Eye,
-  EyeOff,
 } from "lucide-react";
 
 function SelectPersonalizado({
@@ -157,7 +157,11 @@ function SelectPersonalizado({
                 <span>{opcao}</span>
 
                 {selecionada && (
-                  <Check size={19} strokeWidth={2.2} className="shrink-0 text-white" />
+                  <Check
+                    size={19}
+                    strokeWidth={2.2}
+                    className="shrink-0 text-white"
+                  />
                 )}
               </button>
             );
@@ -186,7 +190,13 @@ export default function PerfilMedicoPage() {
 
   const [modal, setModal] = useState("");
   const [mensagem, setMensagem] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  // Controle independente da visibilidade de cada senha.
+  const [senhasVisiveis, setSenhasVisiveis] = useState({
+    atual: false,
+    nova: false,
+    confirmar: false,
+  });
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -295,6 +305,11 @@ export default function PerfilMedicoPage() {
     setSenhaAtual("");
     setNovaSenha("");
     setConfirmarSenha("");
+    setSenhasVisiveis({
+      atual: false,
+      nova: false,
+      confirmar: false,
+    });
     setModal("");
   }
 
@@ -312,6 +327,13 @@ export default function PerfilMedicoPage() {
     setEmail(novoEmail.trim());
     setModal("");
     mostrarMensagem("E-mail atualizado na demonstração!");
+  }
+
+  function alternarVisibilidade(chave) {
+    setSenhasVisiveis((atual) => ({
+      ...atual,
+      [chave]: !atual[chave],
+    }));
   }
 
   const camposProfissionais = [
@@ -358,7 +380,7 @@ export default function PerfilMedicoPage() {
       <div className="pointer-events-none absolute -bottom-36 -left-24 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#023E8A]/15" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-12 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-12 pt-3 sm:px-6 sm:pt-4 lg:pt-5 2xl:px-10">
         {/* Cabeçalho */}
         <header className="mb-6 text-left sm:mb-7">
           <h1 className="text-4xl font-bold tracking-tight text-[#0B1756] sm:text-[40px]">
@@ -657,7 +679,14 @@ export default function PerfilMedicoPage() {
 
                   <button
                     type="button"
-                    onClick={() => setModal("senha")}
+                    onClick={() => {
+                      setSenhasVisiveis({
+                        atual: false,
+                        nova: false,
+                        confirmar: false,
+                      });
+                      setModal("senha");
+                    }}
                     className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#D1DFEA] bg-white px-5 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#3563A7] hover:text-white"
                   >
                     <LockKeyhole size={18} />
@@ -751,6 +780,7 @@ export default function PerfilMedicoPage() {
                 {[
                   {
                     id: "senha-atual",
+                    chave: "atual",
                     label: "Senha atual",
                     value: senhaAtual,
                     setValue: setSenhaAtual,
@@ -758,6 +788,7 @@ export default function PerfilMedicoPage() {
                   },
                   {
                     id: "nova-senha",
+                    chave: "nova",
                     label: "Nova senha",
                     value: novaSenha,
                     setValue: setNovaSenha,
@@ -765,6 +796,7 @@ export default function PerfilMedicoPage() {
                   },
                   {
                     id: "confirmar-senha",
+                    chave: "confirmar",
                     label: "Confirmar nova senha",
                     value: confirmarSenha,
                     setValue: setConfirmarSenha,
@@ -779,7 +811,11 @@ export default function PerfilMedicoPage() {
                     <div className="flex items-center rounded-xl border border-[#C8D8E8] bg-[#EAF3F7] pr-3 transition focus-within:border-[#023E8A] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
                       <input
                         id={campo.id}
-                        type={mostrarSenha ? "text" : "password"}
+                        type={
+                          senhasVisiveis[campo.chave]
+                            ? "text"
+                            : "password"
+                        }
                         value={campo.value}
                         onChange={(e) => campo.setValue(e.target.value)}
                         autoComplete={campo.autoComplete}
@@ -790,15 +826,20 @@ export default function PerfilMedicoPage() {
 
                       <button
                         type="button"
-                        onClick={() => setMostrarSenha(!mostrarSenha)}
-                        aria-label={mostrarSenha ? "Ocultar senhas" : "Mostrar senhas"}
-                        className="flex shrink-0 items-center justify-center rounded-lg p-2 text-[#3563A7] transition hover:bg-[#D5E6F0] hover:text-[#023E8A]"
+                        onClick={() => alternarVisibilidade(campo.chave)}
+                        aria-label={
+                          senhasVisiveis[campo.chave]
+                            ? "Ocultar senha"
+                            : "Mostrar senha"
+                        }
+                        title={
+                          senhasVisiveis[campo.chave]
+                            ? "Ocultar senha"
+                            : "Mostrar senha"
+                        }
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#3563A7] transition hover:bg-[#D5E6F0] hover:text-[#023E8A] focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30"
                       >
-                        {mostrarSenha ? (
-                          <EyeOff size={20} strokeWidth={1.8} />
-                        ) : (
-                          <Eye size={20} strokeWidth={1.8} />
-                        )}
+                        <Eye size={20} strokeWidth={1.8} />
                       </button>
                     </div>
                   </div>
@@ -863,6 +904,20 @@ export default function PerfilMedicoPage() {
           </section>
         </div>
       )}
+
+      {/* Impede que o navegador exiba um segundo ícone de senha. */}
+      <style jsx global>{`
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+          display: none;
+        }
+
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+          visibility: hidden;
+          display: none !important;
+          pointer-events: none;
+        }
+      `}</style>
     </main>
   );
 }

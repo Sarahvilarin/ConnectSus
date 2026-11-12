@@ -54,3 +54,9 @@ body {
   display: block;
   height: 14px;
 }
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-password-reveal-button {
+  display: none;
+}

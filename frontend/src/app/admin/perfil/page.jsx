@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UserRound, Pencil, Eye, EyeOff } from "lucide-react";
+import { UserRound, Pencil, Eye } from "lucide-react";
 
 export default function PerfilAdminPage() {
   const [nome, setNome] = useState("Administrador UneSUS");
@@ -114,7 +114,7 @@ export default function PerfilAdminPage() {
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#023E8A]/15" />
 
       {/* Conteúdo principal */}
-      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-5 pb-10 pt-3 sm:px-8 sm:pt-4 lg:px-12 lg:pt-5">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 pb-10 pt-3 sm:pt-4 2xl:px-10 2xl:pt-5">
 
         {/* Cabeçalho */}
         <header className="mb-6 text-left sm:mb-7">
@@ -344,7 +344,10 @@ export default function PerfilAdminPage() {
 
                 <button
                   type="button"
-                  onClick={() => setModal("senha")}
+                  onClick={() => {
+                    setMostrarSenhas({});
+                    setModal("senha");
+                  }}
                   className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#3563A7] bg-white/60 px-5 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#023E8A] hover:text-white"
                 >
                   Alterar senha
@@ -450,18 +453,21 @@ export default function PerfilAdminPage() {
                     label: "Senha atual",
                     value: senhaAtual,
                     setValue: setSenhaAtual,
+                    autoComplete: "current-password",
                   },
                   {
                     id: "nova-senha-admin",
                     label: "Nova senha",
                     value: novaSenha,
                     setValue: setNovaSenha,
+                    autoComplete: "new-password",
                   },
                   {
                     id: "confirmar-senha-admin",
                     label: "Confirmar nova senha",
                     value: confirmarSenha,
                     setValue: setConfirmarSenha,
+                    autoComplete: "new-password",
                   },
                 ].map((campo) => (
                   <div key={campo.id}>
@@ -480,7 +486,7 @@ export default function PerfilAdminPage() {
                         type={mostrarSenhas[campo.id] ? "text" : "password"}
                         value={campo.value}
                         onChange={(e) => campo.setValue(e.target.value)}
-                        autoComplete="new-password"
+                        autoComplete={campo.autoComplete}
                         className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm font-normal text-[#0B1756] outline-none"
                         placeholder="Digite sua senha"
                         required
@@ -499,13 +505,10 @@ export default function PerfilAdminPage() {
                             ? "Ocultar senha"
                             : "Mostrar senha"
                         }
+                        aria-pressed={!!mostrarSenhas[campo.id]}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#3563A7] transition hover:bg-[#D8E7F2]"
                       >
-                        {mostrarSenhas[campo.id] ? (
-                          <Eye size={19} />
-                        ) : (
-                          <EyeOff size={19} />
-                        )}
+                        <Eye size={19} />
                       </button>
 
                     </div>

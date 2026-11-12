@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Activity,
   ArrowLeft,
@@ -19,13 +20,16 @@ import {
   ClipboardList,
   Clock,
   Eye,
+  FileText,
   HeartPulse,
   Hospital,
   Info,
+  Lock,
   MapPin,
   RefreshCw,
   ShieldCheck,
   Stethoscope,
+  UserRound,
   X,
 } from "lucide-react";
 
@@ -34,6 +38,15 @@ import {
   Texto:            #0B1756
   Botões:           #023E8A  (hover: #3563A7)
   Destaques/apoio:  #3563A7
+
+  PRONTUÁRIO NO PORTAL DO PACIENTE
+  O paciente vê o prontuário em modo somente leitura, e apenas das consultas
+  "Concluída" (quando o médico já fechou o registro). As anotações rápidas do
+  médico são internas e nunca são exibidas aqui.
+
+  Em produção, os dados vêm da API do próprio paciente autenticado.
+  O prontuário é dado sensível de saúde (LGPD): o back-end deve devolver apenas
+  os registros do paciente logado e registrar log de acesso.
 */
 
 const especialidades = [
@@ -98,6 +111,7 @@ const horarios = ["08:00", "09:00", "10:30", "14:00", "15:30", "17:00"];
 
 const etapas = ["Agendamento", "Revisão", "Confirmação"];
 
+/* Cada consulta tem `medico` e `prontuario` (nulo quando ainda não há registro) */
 const consultasIniciais = [
   {
     id: 1,
@@ -107,6 +121,8 @@ const consultasIniciais = [
     horario: "09:00",
     modalidade: "Presencial",
     status: "Agendada",
+    medico: null,
+    prontuario: null,
   },
   {
     id: 2,
@@ -116,6 +132,8 @@ const consultasIniciais = [
     horario: "14:00",
     modalidade: "Presencial",
     status: "Agendada",
+    medico: null,
+    prontuario: null,
   },
   {
     id: 3,
@@ -125,6 +143,32 @@ const consultasIniciais = [
     horario: "10:30",
     modalidade: "Presencial",
     status: "Concluída",
+    medico: "Dr. Rafael Menezes",
+    prontuario: {
+      queixa: "Visão embaçada ao longe há algumas semanas",
+      historia:
+        "Dificuldade para enxergar placas e a TV à distância, com piora ao fim do dia.",
+      alergias: "Nenhuma conhecida",
+      medicamentos: "Nenhum",
+      vitais: {
+        pa: "120/80",
+        fc: "72",
+        temp: "36,5",
+        spo2: "98",
+        peso: "70",
+        altura: "172",
+      },
+      exameFisico:
+        "Acuidade visual reduzida em ambos os olhos. Fundo de olho sem alterações.",
+      hipotese: "Miopia",
+      cid: "H52.1",
+      conduta:
+        "Prescrição de óculos para uso contínuo. Orientação para pausas ao usar telas por longos períodos.",
+      exames: "Mapeamento de retina",
+      retorno: "6 meses",
+      registradoEm: "02/09/2026 10:30",
+      registradoPor: "Dr. Rafael Menezes",
+    },
   },
   {
     id: 4,
@@ -134,6 +178,42 @@ const consultasIniciais = [
     horario: "17:00",
     modalidade: "Presencial",
     status: "Cancelada",
+    medico: null,
+    prontuario: null,
+  },
+  {
+    id: 5,
+    especialidade: "Clínica geral",
+    unidade: "Atende Fácil Saúde Pedro Kassab",
+    data: "10 de out, 2026",
+    horario: "08:00",
+    modalidade: "Presencial",
+    status: "Concluída",
+    medico: "Dra. Helena Duarte",
+    prontuario: {
+      queixa: "Dor de cabeça frequente",
+      historia:
+        "Cefaleia há cerca de 1 mês, piora ao fim do dia, sem sinais de alarme.",
+      alergias: "Dipirona",
+      medicamentos: "Nenhum",
+      vitais: {
+        pa: "118/76",
+        fc: "80",
+        temp: "36,6",
+        spo2: "99",
+        peso: "61",
+        altura: "162",
+      },
+      exameFisico: "Exame neurológico sem alterações. Sem rigidez de nuca.",
+      hipotese: "Cefaleia tensional",
+      cid: "G44.2",
+      conduta:
+        "Orientações de higiene do sono e hidratação. Analgésico se necessário.",
+      exames: "Hemograma completo, glicemia de jejum, TSH",
+      retorno: "30 dias",
+      registradoEm: "10/10/2026 08:40",
+      registradoPor: "Dra. Helena Duarte",
+    },
   },
 ];
 
@@ -180,6 +260,18 @@ function textoData(iso) {
     .toLocaleDateString("pt-BR", { month: "short" })
     .replace(".", "");
   return `${String(d.getDate()).padStart(2, "0")} de ${mes}, ${d.getFullYear()}`;
+}
+
+/* IMC calculado a partir de peso (kg) e altura (cm) */
+function calcularImc(peso, altura) {
+  const p = parseFloat(String(peso).replace(",", "."));
+  const a = parseFloat(String(altura).replace(",", ".")) / 100;
+  if (!p || !a || a < 0.5 || a > 2.5) return null;
+  return (p / (a * a)).toFixed(1).replace(".", ",");
+}
+
+function Portal({ children }) {
+  return createPortal(children, document.body);
 }
 
 /* Calendário com posição fixa. valor/onChange usam AAAA-MM-DD.
@@ -384,6 +476,103 @@ function DatePicker({
   );
 }
 
+/* ---------- Prontuário (somente leitura) ---------- */
+
+function TituloBloco({ children }) {
+  return (
+    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">
+      {children}
+    </p>
+  );
+}
+
+function Dado({ label, valor, className = "" }) {
+  const texto = String(valor ?? "").trim();
+  return (
+    <div className={className}>
+      <p className="mb-1 text-xs font-semibold text-[#3563A7]">{label}</p>
+      <p className="whitespace-pre-wrap break-words text-sm leading-6">
+        {texto || <span className="opacity-60">Não informado</span>}
+      </p>
+    </div>
+  );
+}
+
+function ProntuarioPaciente({ consulta }) {
+  const p = consulta.prontuario;
+  const imc = calcularImc(p.vitais.peso, p.vitais.altura);
+
+  const sinais = [
+    ["Pressão arterial", p.vitais.pa, "mmHg"],
+    ["Freq. cardíaca", p.vitais.fc, "bpm"],
+    ["Temperatura", p.vitais.temp, "°C"],
+    ["Saturação", p.vitais.spo2, "%"],
+    ["Peso", p.vitais.peso, "kg"],
+    ["Altura", p.vitais.altura, "cm"],
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start gap-3 rounded-xl border border-[#023E8A]/20 bg-[#3563A7]/10 p-4 text-sm">
+        <Lock size={18} className="mt-0.5 shrink-0 text-[#023E8A]" />
+        <p>
+          <strong>Prontuário fechado.</strong> Registrado por {p.registradoPor}{" "}
+          em {p.registradoEm}. Este registro é somente para consulta.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <TituloBloco>Anamnese</TituloBloco>
+        <Dado label="Queixa principal" valor={p.queixa} />
+        <Dado label="História da doença atual" valor={p.historia} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Dado label="Alergias" valor={p.alergias} />
+          <Dado label="Medicamentos em uso" valor={p.medicamentos} />
+        </div>
+      </div>
+
+      <div>
+        <TituloBloco>Sinais vitais</TituloBloco>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {sinais.map(([label, valor, unidade]) => (
+            <div key={label} className="rounded-xl border border-blue-100 p-3">
+              <p className="text-xs font-semibold text-[#3563A7]">{label}</p>
+              <p className="mt-1 text-sm font-semibold">
+                {valor ? `${valor} ${unidade}` : "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+        {imc && (
+          <p className="mt-3 text-sm">
+            <span className="font-semibold">IMC:</span> {imc} kg/m²
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <TituloBloco>Exame físico e diagnóstico</TituloBloco>
+        <Dado label="Exame físico" valor={p.exameFisico} />
+        <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+          <Dado label="Hipótese diagnóstica" valor={p.hipotese} />
+          <Dado label="CID-10" valor={p.cid} />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <TituloBloco>Conduta</TituloBloco>
+        <Dado label="Conduta, prescrição e orientações" valor={p.conduta} />
+        <Dado label="Exames solicitados" valor={p.exames} />
+        <Dado label="Retorno" valor={p.retorno} />
+      </div>
+    </div>
+  );
+}
+
+/* =========================
+   PÁGINA PRINCIPAL
+========================= */
+
 export default function Consultas() {
   const [aba, setAba] = useState("agendar");
   const [etapaAtual, setEtapaAtual] = useState(1);
@@ -396,6 +585,23 @@ export default function Consultas() {
   const [consultas, setConsultas] = useState(consultasIniciais);
   const [filtro, setFiltro] = useState("Todas");
   const [erro, setErro] = useState("");
+
+  const [prontuarioId, setProntuarioId] = useState(null);
+  const consultaProntuario =
+    consultas.find((c) => c.id === prontuarioId && c.prontuario) || null;
+
+  useEffect(() => {
+    document.body.style.overflow = consultaProntuario ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [consultaProntuario]);
+
+  useEffect(() => {
+    const aoTeclar = (e) => e.key === "Escape" && setProntuarioId(null);
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, []);
 
   const diaSelecionado = dia ? { texto: textoData(dia) } : null;
 
@@ -456,6 +662,8 @@ export default function Consultas() {
         horario,
         modalidade,
         status: "Agendada",
+        medico: null,
+        prontuario: null,
       },
       ...atuais,
     ]);
@@ -519,7 +727,7 @@ export default function Consultas() {
 
             <p className="mt-3 max-w-2xl text-sm leading-7 sm:text-base">
               {aba === "acompanhar" &&
-                "Veja o status dos seus atendimentos, reagende ou cancele quando precisar."}
+                "Veja o status dos seus atendimentos, consulte o prontuário das consultas concluídas, reagende ou cancele quando precisar."}
               {aba === "agendar" &&
                 etapaAtual === 1 &&
                 "Escolha a especialidade, a unidade mais próxima e o melhor dia e horário para você."}
@@ -931,7 +1139,8 @@ export default function Consultas() {
                           },
                           {
                             titulo: "Acompanhe sua consulta",
-                            descricao: "Veja o status em Minhas consultas.",
+                            descricao:
+                              "Veja o status e o prontuário em Minhas consultas.",
                           },
                         ].map((item, i) => (
                           <div
@@ -1176,6 +1385,16 @@ export default function Consultas() {
 
                           <p className="mt-1 text-sm">{c.unidade}</p>
 
+                          {c.medico && (
+                            <p className="mt-1 flex items-center gap-1.5 text-sm">
+                              <UserRound
+                                size={15}
+                                className="shrink-0 text-[#3563A7]"
+                              />
+                              {c.medico}
+                            </p>
+                          )}
+
                           <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                             <span className="inline-flex items-center gap-1.5">
                               <CalendarDays size={15} />
@@ -1198,6 +1417,17 @@ export default function Consultas() {
                           >
                             <X size={17} />
                             Cancelar
+                          </button>
+                        )}
+
+                        {c.status === "Concluída" && c.prontuario && (
+                          <button
+                            type="button"
+                            onClick={() => setProntuarioId(c.id)}
+                            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#023E8A] bg-white px-4 py-2 text-sm font-bold text-[#023E8A] transition hover:bg-[#3563A7]/10 focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30"
+                          >
+                            <FileText size={17} />
+                            Ver prontuário
                           </button>
                         )}
 
@@ -1231,6 +1461,59 @@ export default function Consultas() {
           </section>
         )}
       </div>
+
+      {/* MODAL: PRONTUÁRIO (SOMENTE LEITURA) */}
+      {consultaProntuario && (
+        <Portal>
+          <div
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/40 p-4 backdrop-blur-sm"
+            onClick={() => setProntuarioId(null)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="titulo-prontuario"
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 text-[#0B1756] shadow-xl"
+            >
+              <div className="flex items-start justify-between border-b border-blue-100 pb-4">
+                <div>
+                  <h3 id="titulo-prontuario" className="text-2xl font-bold">
+                    Prontuário · {consultaProntuario.especialidade}
+                  </h3>
+                  <p className="mt-1 text-sm">
+                    {consultaProntuario.data} às {consultaProntuario.horario} ·{" "}
+                    {consultaProntuario.medico}
+                  </p>
+                  <p className="mt-1 text-sm opacity-80">
+                    {consultaProntuario.unidade}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  onClick={() => setProntuarioId(null)}
+                  className="rounded-lg p-2 transition hover:bg-[#3563A7]/10"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <ProntuarioPaciente consulta={consultaProntuario} />
+
+              <div className="border-t border-blue-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setProntuarioId(null)}
+                  className={`${botaoSecundario} w-full`}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </main>
   );
 }

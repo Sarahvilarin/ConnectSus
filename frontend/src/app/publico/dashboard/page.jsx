@@ -385,9 +385,7 @@ export default function Home() {
                     {etapa.numero}
                   </span>
 
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A]">
-                    <Icone tipo={etapa.icone} className="h-8 w-8" />
-                  </div>
+                  
                 </div>
 
                 <h3 className="mt-5 text-xl font-extrabold">
