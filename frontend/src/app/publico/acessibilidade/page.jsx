@@ -164,36 +164,34 @@ export default function AcessibilidadePage() {
             </div>
           </div>
 
-        
-{/* IMAGEM À DIREITA */}
-<div className="relative flex min-h-[380px] items-center justify-center lg:min-h-[540px] lg:-mr-8">
-  <div
-    className="absolute inset-0 mix-blend-multiply"
-    style={{
-      WebkitMaskImage:
-  "linear-gradient(to right, transparent 0%, black 22%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 6%, black 85%, transparent 100%)",
-      WebkitMaskComposite: "source-in",
-      maskImage:
-  "linear-gradient(to right, transparent 0%, black 22%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 6%, black 85%, transparent 100%)",
-      maskComposite: "intersect",
-    }}
-  >
-    <div className="relative h-full min-h-[380px] w-full lg:min-h-[540px]">
-      <Image
-        src="/conectasus_imagem.svg"
-        alt="Profissional de saúde acompanhando uma pessoa idosa"
-        fill
-        priority
-        sizes="(max-width: 1024px) 100vw, 55vw"
-        className="object-cover object-center"
-      />
-    </div>
-  </div>
+          {/* IMAGEM À DIREITA */}
+          <div className="relative flex min-h-[380px] items-center justify-center lg:min-h-[540px] lg:-mr-8">
+            <div
+              className="absolute inset-0 mix-blend-multiply"
+              style={{
+                WebkitMaskImage:
+                  "linear-gradient(to right, transparent 0%, black 22%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 6%, black 85%, transparent 100%)",
+                WebkitMaskComposite: "source-in",
+                maskImage:
+                  "linear-gradient(to right, transparent 0%, black 22%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 6%, black 85%, transparent 100%)",
+                maskComposite: "intersect",
+              }}
+            >
+              <div className="relative h-full min-h-[380px] w-full lg:min-h-[540px]">
+                <Image
+                  src="/conectasus_imagem.svg"
+                  alt="Profissional de saúde acompanhando uma pessoa idosa"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 55vw"
+                  className="object-cover object-center"
+                />
+              </div>
+            </div>
 
-  {/* círculos decorativos continuam iguais */}
-  <div className="pointer-events-none absolute -left-8 top-16 z-10 hidden h-56 w-56 rounded-full border-[18px] border-white/50 lg:block" />
-  <div className="pointer-events-none absolute -bottom-10 -right-10 z-10 h-[240px] w-[240px] rounded-full bg-[#3563A7]/75 sm:h-[280px] sm:w-[280px]" />
-</div>
+            {/* CÍRCULO DECORATIVO SUPERIOR */}
+            <div className="pointer-events-none absolute -left-8 top-16 z-10 hidden h-56 w-56 rounded-full border-[18px] border-white/50 lg:block" />
+          </div>
         </div>
       </section>
 
@@ -298,7 +296,7 @@ export default function AcessibilidadePage() {
 
               <div className="absolute -bottom-14 right-20 h-36 w-36 rounded-full bg-white/5" />
 
-              <div className="relative">
+              <div className="relative flex h-full flex-col">
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#EAF3F7]">
                   Atendimento mais próximo
                 </p>
@@ -315,8 +313,8 @@ export default function AcessibilidadePage() {
                   rede de saúde.
                 </p>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                <div className="mt-8 grid flex-1 grid-rows-2 gap-3">
+                  <div className="flex flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4">
                     <Footprints
                       size={24}
                       className="text-[#EAF3F7]"
@@ -332,7 +330,7 @@ export default function AcessibilidadePage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                  <div className="flex flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4">
                     <HeartHandshake
                       size={24}
                       className="text-[#EAF3F7]"

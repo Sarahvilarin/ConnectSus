@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -6,13 +7,9 @@ import {
   FlaskConical,
   BriefcaseMedical,
   Download,
-  CalendarDays,
-  ArrowRight,
-  Clock3,
   UserRound,
   Activity,
   Stethoscope,
-  ClipboardList,
 } from "lucide-react";
 
 const indicadores = [
@@ -50,6 +47,20 @@ const tiposAtendimento = [
   { nome: "Outros", percentual: "1,7%", valor: 1.7 },
 ];
 
+const coresTipos = ["#023E8A", "#3563A7", "#0B1756", "#9BBCEB", "#C8D8EC"];
+
+const gradienteTipos = (() => {
+  let acumulado = 0;
+
+  const trechos = tiposAtendimento.map((tipo, i) => {
+    const inicio = acumulado;
+    acumulado += tipo.valor;
+    return `${coresTipos[i]} ${inicio}% ${acumulado}%`;
+  });
+
+  return `conic-gradient(${trechos.join(", ")})`;
+})();
+
 const unidades = [
   { nome: "UBS Centro", valor: "3.482", largura: "79%" },
   { nome: "UBS Vila Madalena", valor: "2.971", largura: "65%" },
@@ -65,6 +76,10 @@ const exames = [
   { nome: "Eletrocardiograma", valor: "321", largura: "42%" },
   { nome: "Colesterol e triglicerídeos", valor: "298", largura: "38%" },
 ];
+
+function HeartIcon(props) {
+  return <Activity {...props} />;
+}
 
 const especialidades = [
   { nome: "Clínica médica", tempo: "32 min", Icone: Stethoscope },
@@ -82,48 +97,40 @@ const faixasEtarias = [
   { faixa: "60+", valor: "2.101", altura: "65%" },
 ];
 
-function HeartIcon(props) {
-  return <Activity {...props} />;
-}
-
 function PainelCard({ titulo, children, className = "" }) {
   return (
     <section
-      className={`flex min-w-0 flex-col rounded-xl border border-[#C7D9EA] bg-white/65 p-4 sm:p-5 ${className}`}
+      className={`flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 ${className}`}
     >
-      <h2 className="mb-5 text-sm font-bold tracking-tight text-[#0B1756] sm:text-base">
+      <h2 className="mb-5 text-2xl font-bold leading-tight tracking-tight text-[#0B1756]">
         {titulo}
       </h2>
 
-      <div className="flex flex-1 flex-col">
-        {children}
-      </div>
+      <div className="flex flex-1 flex-col">{children}</div>
     </section>
   );
 }
 
 function IndicadorCard({ titulo, valor, crescimento, Icone }) {
   return (
-    <article className="rounded-xl border border-[#C7D9EA] bg-white/60 p-4 sm:p-5">
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#EAF3F7] text-[#3563A7]">
           <Icone size={25} />
         </div>
 
-        <p className="text-sm font-medium text-[#023E8A]">
-          {titulo}
-        </p>
+        <p className="text-base font-semibold text-[#0B1756]">{titulo}</p>
       </div>
 
-      <p className="mt-3 text-2xl font-extrabold tracking-tight text-[#0B1756] sm:text-3xl">
+      <p className="mt-4 text-2xl font-bold tracking-tight text-[#0B1756]">
         {valor}
       </p>
 
-      <p className="mt-2 text-sm font-semibold text-[#3563A7]">
+      <p className="mt-2 text-base font-semibold text-[#3563A7]">
         ↑ {crescimento}
       </p>
 
-      <p className="mt-1 text-[11px] text-[#3563A7]">
+      <p className="mt-1 text-xs font-normal text-slate-500">
         em relação ao mês anterior
       </p>
     </article>
@@ -136,9 +143,9 @@ function BarrasHorizontais({ itens }) {
       {itens.map((item) => (
         <div
           key={item.nome}
-          className="grid grid-cols-[minmax(0,1fr)_minmax(70px,1.2fr)_42px] items-center gap-3 text-xs text-[#023E8A]"
+          className="grid grid-cols-[minmax(0,1fr)_minmax(70px,1.2fr)_48px] items-center gap-3 text-sm"
         >
-          <span className="min-w-0 leading-snug">
+          <span className="min-w-0 font-normal leading-snug text-slate-600">
             {item.nome}
           </span>
 
@@ -149,7 +156,7 @@ function BarrasHorizontais({ itens }) {
             />
           </div>
 
-          <span className="text-right font-medium">
+          <span className="text-right font-semibold text-[#0B1756]">
             {item.valor}
           </span>
         </div>
@@ -160,44 +167,37 @@ function BarrasHorizontais({ itens }) {
 
 export default function RelatoriosPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-gradient-to-br from-[#EAF3F7] via-[#FFFFFF] to-[#EAF3F7] text-[#0B1756]">
+    <main className="min-h-screen overflow-hidden bg-[#EEF5F9] font-sans text-[#0B1756]">
       {/* Banner principal */}
-      <section className="relative overflow-hidden border-b border-[#EAF3F7] bg-gradient-to-r from-[#EAF3F7] via-[#EAF3F7] to-[#EAF3F7]">
-        {/* Formas decorativas */}
-        <div className="pointer-events-none absolute -right-24 -top-36 h-[380px] w-[380px] rounded-full border-[55px] border-white/25" />
+      <div className="mx-auto w-full max-w-[1440px] px-5 pt-7 sm:px-6 lg:px-[30px]">
+        <section className="relative">
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 py-7 shadow-sm sm:px-10 sm:py-9">
+            <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
+            <div className="pointer-events-none absolute right-[25%] top-20 h-72 w-72 rounded-full border-[45px] border-white/[0.05]" />
 
-        <div className="pointer-events-none absolute -right-10 -bottom-40 h-[300px] w-[300px] rounded-full border-[45px] border-[#C7D9EA]/25" />
-
-        <div className="pointer-events-none absolute right-[25%] top-0 h-full w-px bg-white/20" />
-
-        <div className="relative mx-auto w-full max-w-[1400px] px-5 py-8 sm:px-8 sm:py-10 lg:px-0 lg:py-11">
-          <div className="relative z-10 max-w-4xl">
-            <h1 className="text-3xl font-extrabold leading-[1.04] tracking-tight text-[#0B1756] sm:text-4xl lg:text-5xl">
-              Relatórios
-
-              <span className="block text-[#3563A7]">
-                Dados e estatísticas
-              </span>
-
-              <span className="block">
-                dos atendimentos
-              </span>
-            </h1>
-
-            <div className="mt-5 h-1 w-16 rounded-full bg-[#3563A7]" />
+            <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
+              <div className="max-w-3xl">
+                <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">
+                  Relatórios
+                </h1>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base lg:text-lg">
+                  Dados e estatísticas dos atendimentos.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* Conteúdo dos relatórios */}
-      <div className="mx-auto w-full max-w-[1400px] px-5 py-5 sm:px-8 lg:px-0">
+      <div className="mx-auto w-full max-w-[1440px] px-5 py-5 sm:px-6 lg:px-[30px]">
         <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#3563A7] to-[#023E8A] px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#3563A7] to-[#023E8A] px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30"
           >
-            <Download size={16} />
+            <Download size={18} />
             Exportar relatório
           </button>
         </div>
@@ -214,18 +214,15 @@ export default function RelatoriosPage() {
           <PainelCard titulo="Atendimentos por tipo">
             <div className="flex flex-1 flex-col items-center justify-center gap-5 sm:flex-row">
               <div
-                className="relative h-40 w-40 shrink-0 rounded-full"
-                style={{
-                  background:
-                    "conic-gradient(#023E8A 0% 71.5%, #3563A7 71.5% 90.2%, #8FAED6 90.2% 96.6%, #3563A7 96.6% 98.3%, #C7D9EA 98.3% 100%)",
-                }}
+                className="relative flex h-44 w-44 shrink-0 items-center justify-center rounded-full"
+                style={{ background: gradienteTipos }}
               >
-                <div className="absolute inset-[28%] flex flex-col items-center justify-center rounded-full bg-[#FFFFFF] text-center">
-                  <strong className="text-xl text-[#0B1756]">
+                <div className="flex h-[112px] w-[112px] flex-col items-center justify-center rounded-full bg-white text-center">
+                  <strong className="text-xl font-bold leading-tight text-[#0B1756]">
                     12.487
                   </strong>
 
-                  <span className="text-[10px] text-[#3563A7]">
+                  <span className="mt-1 text-[11px] font-semibold leading-none text-slate-500">
                     atendimentos
                   </span>
                 </div>
@@ -235,26 +232,18 @@ export default function RelatoriosPage() {
                 {tiposAtendimento.map((item, i) => (
                   <div
                     key={item.nome}
-                    className="flex items-center gap-2 text-[11px] text-[#023E8A]"
+                    className="flex items-center gap-2 text-sm"
                   >
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{
-                        background: [
-                          "#023E8A",
-                          "#3563A7",
-                          "#8FAED6",
-                          "#3563A7",
-                          "#C7D9EA",
-                        ][i],
-                      }}
+                      style={{ background: coresTipos[i] }}
                     />
 
-                    <span className="min-w-0 flex-1">
+                    <span className="min-w-0 flex-1 font-normal text-slate-600">
                       {item.nome}
                     </span>
 
-                    <span className="font-medium">
+                    <span className="font-semibold text-[#0B1756]">
                       {item.percentual}
                     </span>
                   </div>
@@ -265,16 +254,13 @@ export default function RelatoriosPage() {
 
           <PainelCard titulo="Evolução dos atendimentos">
             <div className="relative h-44 flex-1 pt-2">
-              <div className="absolute inset-x-8 inset-y-3 flex flex-col justify-between">
+              <div className="absolute inset-x-10 inset-y-3 flex flex-col justify-between">
                 {[0, 1, 2, 3, 4].map((n) => (
-                  <div
-                    key={n}
-                    className="border-t border-[#EAF3F7]"
-                  />
+                  <div key={n} className="border-t border-slate-100" />
                 ))}
               </div>
 
-              <div className="absolute left-0 top-1 flex h-[90%] flex-col justify-between text-[10px] text-[#3563A7]">
+              <div className="absolute left-0 top-1 flex h-[90%] flex-col justify-between text-xs font-normal text-slate-500">
                 <span>20.000</span>
                 <span>15.000</span>
                 <span>10.000</span>
@@ -284,7 +270,7 @@ export default function RelatoriosPage() {
 
               <svg
                 viewBox="0 0 400 170"
-                className="absolute inset-x-8 top-2 h-[85%] w-[calc(100%-2.5rem)] overflow-visible"
+                className="absolute inset-x-10 top-2 h-[85%] w-[calc(100%-3rem)] overflow-visible"
                 role="img"
                 aria-label="Gráfico de evolução mensal dos atendimentos"
               >
@@ -340,7 +326,7 @@ export default function RelatoriosPage() {
                 ))}
               </svg>
 
-              <div className="absolute bottom-0 left-8 right-0 flex justify-between text-[10px] text-[#023E8A]">
+              <div className="absolute bottom-0 left-10 right-0 flex justify-between text-xs font-normal text-slate-600">
                 {["Jan", "Fev", "Mar", "Abr", "Mai"].map((mes) => (
                   <span key={mes}>{mes}</span>
                 ))}
@@ -360,7 +346,7 @@ export default function RelatoriosPage() {
           </PainelCard>
 
           <PainelCard titulo="Tempo médio de espera por especialidade">
-            <div className="mb-2 grid grid-cols-[1fr_auto] border-b border-[#D7E4F1] pb-2 text-[10px] font-semibold text-[#3563A7]">
+            <div className="mb-2 grid grid-cols-[1fr_auto] border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500">
               <span>Especialidade</span>
               <span>Tempo médio</span>
             </div>
@@ -369,17 +355,17 @@ export default function RelatoriosPage() {
               {especialidades.map(({ nome, tempo, Icone }) => (
                 <div
                   key={nome}
-                  className="grid grid-cols-[1fr_auto] items-center border-b border-[#EAF3F7] py-2 last:border-0"
+                  className="grid grid-cols-[1fr_auto] items-center border-b border-slate-100 py-2 last:border-0"
                 >
-                  <div className="flex items-center gap-2 text-xs text-[#023E8A]">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF3F7] text-[#3563A7]">
-                      <Icone size={13} />
+                  <div className="flex items-center gap-3 text-sm font-normal text-slate-600">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF3F7] text-[#3563A7]">
+                      <Icone size={15} />
                     </span>
 
                     {nome}
                   </div>
 
-                  <span className="text-xs font-medium text-[#023E8A]">
+                  <span className="text-sm font-semibold text-[#0B1756]">
                     {tempo}
                   </span>
                 </div>
@@ -388,13 +374,13 @@ export default function RelatoriosPage() {
           </PainelCard>
 
           <PainelCard titulo="Faixa etária dos pacientes">
-            <div className="flex h-48 flex-1 items-end justify-around gap-3 border-b border-[#D7E4F1] px-2 pt-3">
+            <div className="flex h-48 flex-1 items-end justify-around gap-3 border-b border-slate-200 px-2 pt-3">
               {faixasEtarias.map((item) => (
                 <div
                   key={item.faixa}
                   className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
                 >
-                  <span className="mb-1 text-[10px] font-medium text-[#023E8A]">
+                  <span className="mb-1 text-xs font-semibold text-[#0B1756]">
                     {item.valor}
                   </span>
 
@@ -403,7 +389,7 @@ export default function RelatoriosPage() {
                     style={{ height: item.altura }}
                   />
 
-                  <span className="mt-2 text-center text-[9px] leading-tight text-[#023E8A]">
+                  <span className="mt-2 text-center text-xs font-normal leading-tight text-slate-600">
                     {item.faixa}
                     <br />
                     anos
