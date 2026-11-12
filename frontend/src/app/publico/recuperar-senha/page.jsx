@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -17,12 +18,18 @@ import {
 } from "lucide-react";
 
 import AuthShell from "../../components/auth/AuthShell";
+import { api } from "../../../lib/api";
 
 export default function RecuperarSenhaPage() {
   const [etapa, setEtapa] = useState(1);
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
+
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  const [resetToken, setResetToken] = useState("");
 
   const [dados, setDados] = useState({
     identificacao: "",
@@ -31,33 +38,136 @@ export default function RecuperarSenhaPage() {
     confirmarSenha: "",
   });
 
-  function enviarIdentificacao(event) {
+  // ETAPA 1 - SOLICITAR CÓDIGO
+
+  async function enviarIdentificacao(event) {
     event.preventDefault();
 
-    console.log("RECUPERAÇÃO:", dados.identificacao);
+    setErro("");
+    setCarregando(true);
 
-    setEtapa(2);
+    try {
+      await api("/auth/admin/recuperar-senha", {
+        method: "POST",
+        body: JSON.stringify({
+          email: dados.identificacao.trim().toLowerCase(),
+        }),
+      });
+
+      setEtapa(2);
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setCarregando(false);
+    }
   }
 
-  function confirmarCodigo(event) {
+  // ETAPA 2 - VERIFICAR CÓDIGO
+
+  async function confirmarCodigo(event) {
     event.preventDefault();
 
-    console.log("CÓDIGO:", dados.codigo);
+    setErro("");
+    setCarregando(true);
 
-    setEtapa(3);
+    try {
+      const resposta = await api("/auth/admin/verificar-codigo", {
+        method: "POST",
+        body: JSON.stringify({
+          email: dados.identificacao.trim().toLowerCase(),
+          codigo: dados.codigo,
+        }),
+      });
+
+      setResetToken(resposta.resetToken);
+      setEtapa(3);
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setCarregando(false);
+    }
   }
 
-  function alterarSenha(event) {
+  // REENVIAR CÓDIGO
+
+  async function reenviarCodigo() {
+    setErro("");
+    setCarregando(true);
+
+    try {
+      await api("/auth/admin/recuperar-senha", {
+        method: "POST",
+        body: JSON.stringify({
+          email: dados.identificacao.trim().toLowerCase(),
+        }),
+      });
+
+      setDados((anterior) => ({
+        ...anterior,
+        codigo: "",
+      }));
+
+      setErro("");
+      alert("Se o e-mail estiver cadastrado, um novo código será enviado.");
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  // ETAPA 3 - REDEFINIR SENHA
+
+  async function alterarSenha(event) {
     event.preventDefault();
 
-    if (dados.novaSenha !== dados.confirmarSenha) {
-      alert("As senhas não coincidem.");
+    setErro("");
+
+    if (dados.novaSenha.length < 8) {
+      setErro("A nova senha deve ter pelo menos 8 caracteres.");
       return;
     }
 
-    console.log("NOVA SENHA:", dados.novaSenha);
+    if (dados.novaSenha !== dados.confirmarSenha) {
+      setErro("As senhas não coincidem.");
+      return;
+    }
 
-    setEtapa(4);
+    setCarregando(true);
+
+    try {
+      await api("/auth/admin/redefinir-senha", {
+        method: "POST",
+        body: JSON.stringify({
+          resetToken,
+          novaSenha: dados.novaSenha,
+        }),
+      });
+
+      setDados((anterior) => ({
+        ...anterior,
+        novaSenha: "",
+        confirmarSenha: "",
+        codigo: "",
+      }));
+
+      setResetToken("");
+      setEtapa(4);
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  function voltarParaIdentificacao() {
+    setErro("");
+    setDados((anterior) => ({
+      ...anterior,
+      codigo: "",
+    }));
+    setResetToken("");
+    setEtapa(1);
   }
 
   return (
@@ -71,7 +181,7 @@ export default function RecuperarSenhaPage() {
 
         {etapa !== 4 && (
           <Link
-            href="/publico/login"
+            href="/admin/loginAdmin"
             className="
               mb-5
               flex
@@ -87,7 +197,6 @@ export default function RecuperarSenhaPage() {
             "
           >
             <ArrowLeft size={17} />
-
             Voltar para o login
           </Link>
         )}
@@ -120,6 +229,29 @@ export default function RecuperarSenhaPage() {
           </div>
         )}
 
+        {/* MENSAGEM DE ERRO */}
+
+        {erro && (
+          <div
+            role="alert"
+            className="
+              mb-5
+              rounded-xl
+              border
+              border-red-200
+              bg-red-50
+              px-4
+              py-3
+              text-sm
+              font-medium
+              leading-5
+              text-red-700
+            "
+          >
+            {erro}
+          </div>
+        )}
+
         {/* ETAPA 1 */}
 
         {etapa === 1 && (
@@ -141,7 +273,6 @@ export default function RecuperarSenhaPage() {
               "
             >
               <ShieldCheck size={16} />
-
               Recuperação de acesso
             </div>
 
@@ -150,14 +281,11 @@ export default function RecuperarSenhaPage() {
             </h2>
 
             <p className="mt-3 text-base leading-6 text-slate-500">
-              Informe seu login ou e-mail cadastrado para receber
-              um código de recuperação.
+              Informe o e-mail cadastrado na sua conta de administrador
+              para receber um código de recuperação.
             </p>
 
-            <form
-              onSubmit={enviarIdentificacao}
-              className="mt-7"
-            >
+            <form onSubmit={enviarIdentificacao} className="mt-7">
               <label
                 htmlFor="identificacao"
                 className="
@@ -168,7 +296,7 @@ export default function RecuperarSenhaPage() {
                   text-[#0B1756]
                 "
               >
-                Login ou e-mail
+                E-mail cadastrado
               </label>
 
               <div className="relative">
@@ -185,7 +313,7 @@ export default function RecuperarSenhaPage() {
 
                 <input
                   id="identificacao"
-                  type="text"
+                  type="email"
                   value={dados.identificacao}
                   onChange={(event) =>
                     setDados({
@@ -193,19 +321,21 @@ export default function RecuperarSenhaPage() {
                       identificacao: event.target.value,
                     })
                   }
-                  placeholder="Digite seu login ou e-mail"
+                  placeholder="Digite seu e-mail"
                   required
+                  disabled={carregando}
                   className={inputClass}
                 />
               </div>
 
               <button
                 type="submit"
+                disabled={carregando}
                 className={botaoPrincipal}
               >
-                Enviar código
+                {carregando ? "Enviando..." : "Enviar código"}
 
-                <ArrowRight size={18} />
+                {!carregando && <ArrowRight size={18} />}
               </button>
             </form>
 
@@ -222,11 +352,7 @@ export default function RecuperarSenhaPage() {
               <div className="flex items-start gap-3">
                 <ShieldCheck
                   size={20}
-                  className="
-                    mt-0.5
-                    shrink-0
-                    text-[#023E8A]
-                  "
+                  className="mt-0.5 shrink-0 text-[#023E8A]"
                 />
 
                 <div>
@@ -235,8 +361,8 @@ export default function RecuperarSenhaPage() {
                   </p>
 
                   <p className="mt-1 text-sm leading-5 text-slate-500">
-                    O código será enviado apenas para um contato
-                    já vinculado à sua conta.
+                    O código será enviado para o e-mail vinculado
+                    à sua conta administrativa.
                   </p>
                 </div>
               </div>
@@ -265,7 +391,6 @@ export default function RecuperarSenhaPage() {
               "
             >
               <KeyRound size={16} />
-
               Verificação de identidade
             </div>
 
@@ -274,14 +399,11 @@ export default function RecuperarSenhaPage() {
             </h2>
 
             <p className="mt-3 text-base leading-6 text-slate-500">
-              Digite o código de 6 dígitos enviado para o contato
-              associado à sua conta.
+              Se o e-mail estiver cadastrado, você receberá um código
+              de 6 dígitos. Digite-o abaixo.
             </p>
 
-            <form
-              onSubmit={confirmarCodigo}
-              className="mt-7"
-            >
+            <form onSubmit={confirmarCodigo} className="mt-7">
               <label
                 htmlFor="codigo"
                 className="
@@ -299,6 +421,7 @@ export default function RecuperarSenhaPage() {
                 id="codigo"
                 type="text"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 value={dados.codigo}
                 onChange={(event) =>
                   setDados({
@@ -311,6 +434,7 @@ export default function RecuperarSenhaPage() {
                 placeholder="000000"
                 maxLength={6}
                 required
+                disabled={carregando}
                 className="
                   h-[58px]
                   w-full
@@ -327,7 +451,6 @@ export default function RecuperarSenhaPage() {
                   outline-none
                   transition
                   placeholder:text-slate-300
-
                   focus:border-[#3563A7]
                   focus:bg-white
                   focus:ring-4
@@ -337,11 +460,12 @@ export default function RecuperarSenhaPage() {
 
               <button
                 type="submit"
+                disabled={carregando || dados.codigo.length !== 6}
                 className={botaoPrincipal}
               >
-                Confirmar código
+                {carregando ? "Verificando..." : "Confirmar código"}
 
-                <ArrowRight size={18} />
+                {!carregando && <ArrowRight size={18} />}
               </button>
             </form>
 
@@ -362,21 +486,26 @@ export default function RecuperarSenhaPage() {
 
               <button
                 type="button"
+                onClick={reenviarCodigo}
+                disabled={carregando}
                 className="
                   mt-1
                   text-sm
                   font-semibold
                   text-[#023E8A]
                   hover:underline
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
                 "
               >
-                Reenviar código
+                {carregando ? "Aguarde..." : "Reenviar código"}
               </button>
             </div>
 
             <button
               type="button"
-              onClick={() => setEtapa(1)}
+              onClick={voltarParaIdentificacao}
+              disabled={carregando}
               className="
                 mt-5
                 w-full
@@ -388,7 +517,7 @@ export default function RecuperarSenhaPage() {
                 hover:text-[#023E8A]
               "
             >
-              Usar outro login ou e-mail
+              Usar outro e-mail
             </button>
           </>
         )}
@@ -414,7 +543,6 @@ export default function RecuperarSenhaPage() {
               "
             >
               <LockKeyhole size={16} />
-
               Nova senha
             </div>
 
@@ -423,13 +551,11 @@ export default function RecuperarSenhaPage() {
             </h2>
 
             <p className="mt-3 text-base leading-6 text-slate-500">
-              Escolha uma nova senha para acessar sua conta UneSUS.
+              Escolha uma nova senha para acessar sua conta
+              administrativa. Ela deve ter pelo menos 8 caracteres.
             </p>
 
-            <form
-              onSubmit={alterarSenha}
-              className="mt-7"
-            >
+            <form onSubmit={alterarSenha} className="mt-7">
               {/* NOVA SENHA */}
 
               <div>
@@ -469,15 +595,15 @@ export default function RecuperarSenhaPage() {
                       })
                     }
                     placeholder="Digite sua nova senha"
+                    minLength={8}
                     required
+                    disabled={carregando}
                     className={`${inputClass} pr-12`}
                   />
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setMostrarSenha(!mostrarSenha)
-                    }
+                    onClick={() => setMostrarSenha(!mostrarSenha)}
                     className={botaoOlho}
                   >
                     {mostrarSenha ? (
@@ -520,9 +646,7 @@ export default function RecuperarSenhaPage() {
                   <input
                     id="confirmarSenha"
                     type={
-                      mostrarConfirmacao
-                        ? "text"
-                        : "password"
+                      mostrarConfirmacao ? "text" : "password"
                     }
                     value={dados.confirmarSenha}
                     onChange={(event) =>
@@ -532,16 +656,16 @@ export default function RecuperarSenhaPage() {
                       })
                     }
                     placeholder="Repita sua nova senha"
+                    minLength={8}
                     required
+                    disabled={carregando}
                     className={`${inputClass} pr-12`}
                   />
 
                   <button
                     type="button"
                     onClick={() =>
-                      setMostrarConfirmacao(
-                        !mostrarConfirmacao
-                      )
+                      setMostrarConfirmacao(!mostrarConfirmacao)
                     }
                     className={botaoOlho}
                   >
@@ -556,11 +680,12 @@ export default function RecuperarSenhaPage() {
 
               <button
                 type="submit"
+                disabled={carregando}
                 className={botaoPrincipal}
               >
-                Alterar senha
+                {carregando ? "Alterando senha..." : "Alterar senha"}
 
-                <ArrowRight size={18} />
+                {!carregando && <ArrowRight size={18} />}
               </button>
             </form>
 
@@ -577,11 +702,7 @@ export default function RecuperarSenhaPage() {
               <div className="flex items-start gap-3">
                 <ShieldCheck
                   size={20}
-                  className="
-                    mt-0.5
-                    shrink-0
-                    text-[#023E8A]
-                  "
+                  className="mt-0.5 shrink-0 text-[#023E8A]"
                 />
 
                 <div>
@@ -655,12 +776,11 @@ export default function RecuperarSenhaPage() {
               "
             >
               <Check size={17} />
-
               Acesso recuperado
             </div>
 
             <Link
-              href="/publico/login"
+              href="/admin/loginAdmin"
               className="
                 mt-7
                 flex
@@ -677,14 +797,12 @@ export default function RecuperarSenhaPage() {
                 shadow-sm
                 transition-all
                 duration-200
-
                 hover:-translate-y-0.5
                 hover:bg-[#0B1756]
                 hover:shadow-md
               "
             >
               Ir para o login
-
               <ArrowRight size={18} />
             </Link>
           </div>
@@ -708,7 +826,6 @@ const inputClass = `
   outline-none
   transition
   placeholder:text-slate-400
-
   focus:border-[#3563A7]
   focus:bg-white
   focus:ring-4
@@ -731,10 +848,12 @@ const botaoPrincipal = `
   shadow-sm
   transition-all
   duration-200
-
   hover:-translate-y-0.5
   hover:bg-[#0B1756]
   hover:shadow-md
+  disabled:cursor-not-allowed
+  disabled:opacity-60
+  disabled:hover:translate-y-0
 `;
 
 const botaoOlho = `
@@ -765,7 +884,6 @@ function Etapa({
         text-sm
         font-bold
         transition
-
         ${
           ativa
             ? "bg-[#023E8A] text-white"
@@ -773,11 +891,7 @@ function Etapa({
         }
       `}
     >
-      {concluida ? (
-        <Check size={15} />
-      ) : (
-        numero
-      )}
+      {concluida ? <Check size={15} /> : numero}
     </div>
   );
 }
@@ -790,7 +904,6 @@ function Linha({ ativa }) {
         h-[2px]
         flex-1
         transition
-
         ${
           ativa
             ? "bg-[#023E8A]"

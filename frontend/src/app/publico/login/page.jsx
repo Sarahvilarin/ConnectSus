@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -10,7 +9,6 @@ import {
   Eye,
   EyeOff,
   LockKeyhole,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 
@@ -64,23 +62,22 @@ export default function LoginPage() {
       titulo="Sua saúde, mais próxima de você."
       descricao="Acesse consultas, exames, filas e outros serviços da rede pública de saúde em um único lugar."
     >
-      <div className="w-full max-w-[530px]">
+      <div className="w-full max-w-[530px] font-sans">
         <div
           className="
-            mb-4 flex w-fit items-center gap-2 rounded-full
+            mb-5 flex w-fit items-center gap-2 rounded-full
             bg-[#EAF3F7] px-3 py-1.5 text-xs font-semibold
             text-[#023E8A]
           "
         >
-          <ShieldCheck size={15} />
           Área do Paciente
         </div>
 
-        <h2 className="text-3xl font-bold text-[#0B1756]">
-          Bem-vindo de volta
+        <h2 className="text-4xl font-bold text-[#0B1756]">
+          Bem-vindo ao UneSus
         </h2>
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
+        <p className="mt-3 text-sm font-normal leading-6 text-slate-500">
           Entre com seu e-mail e senha para acessar sua conta.
         </p>
 
@@ -110,7 +107,7 @@ export default function LoginPage() {
         <div className="my-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-slate-200" />
 
-          <span className="text-xs text-slate-400">
+          <span className="text-xs font-normal text-slate-400">
             ou use sua conta UneSUS
           </span>
 
@@ -121,7 +118,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1.5 block text-sm font-semibold text-[#0B1756]"
+              className="mb-2 block text-xs font-semibold text-[#0B1756]"
             >
               E-mail
             </label>
@@ -153,11 +150,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="mt-4">
-            <div className="mb-1.5 flex items-center justify-between">
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
               <label
                 htmlFor="senha"
-                className="text-sm font-semibold text-[#0B1756]"
+                className="text-xs font-semibold text-[#0B1756]"
               >
                 Senha
               </label>
@@ -220,8 +217,8 @@ export default function LoginPage() {
 
           <label
             className="
-              mt-3 flex w-fit cursor-pointer items-center gap-2
-              text-sm text-slate-500
+              mt-5 flex w-fit cursor-pointer items-center gap-2
+              text-sm font-normal text-slate-500
             "
           >
             <input
@@ -247,7 +244,7 @@ export default function LoginPage() {
             type="submit"
             disabled={carregando}
             className="
-              mt-6 flex h-12 w-full items-center justify-center gap-2
+              mt-8 flex h-12 w-full items-center justify-center gap-2
               rounded-xl bg-[#023E8A] px-5 text-sm font-semibold
               text-white shadow-sm transition-all duration-200
               hover:-translate-y-0.5 hover:bg-[#0B1756]
@@ -275,6 +272,7 @@ const inputClass = `
   pl-11
   pr-4
   text-sm
+  font-normal
   text-[#0B1756]
   outline-none
   transition

@@ -11,6 +11,7 @@ import {
   Pencil,
   Save,
   Eye,
+  EyeOff,
   CheckCircle2,
   X,
   ChevronDown,
@@ -858,7 +859,11 @@ export default function PerfilEnfermeiroPage() {
                         aria-pressed={!!senhasVisiveis[campo.id]}
                         className="flex shrink-0 items-center justify-center rounded-lg p-2 text-[#3563A7] transition hover:bg-[#D5E6F0] hover:text-[#023E8A]"
                       >
-                        <Eye size={19} strokeWidth={1.8} />
+                        {senhasVisiveis[campo.id] ? (
+                          <EyeOff size={19} strokeWidth={1.8} />
+                        ) : (
+                          <Eye size={19} strokeWidth={1.8} />
+                        )}
                       </button>
                     </div>
                   </div>

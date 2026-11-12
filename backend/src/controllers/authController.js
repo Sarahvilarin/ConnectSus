@@ -1,7 +1,12 @@
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomInt } from "node:crypto";
 import { pool } from "../config/database.js";
+import { enviarCodigoRecuperacao } from "../services/emailService.js";
+
+
+// LOGIN DO ADMINISTRADOR
 
 export async function loginAdmin(req, res, next) {
   try {
@@ -50,9 +55,7 @@ export async function loginAdmin(req, res, next) {
     }
 
     const token = jwt.sign(
-      {
-        tipo: "admin"
-      },
+      { tipo: "admin" },
       process.env.JWT_SECRET,
       {
         subject: String(admin.id),
@@ -182,6 +185,7 @@ export async function loginMedico(req, res, next) {
 }
 
 
+// LOGIN DO PACIENTE
 
 export async function loginPaciente(req, res, next) {
   try {
@@ -256,3 +260,271 @@ export async function loginPaciente(req, res, next) {
   }
 }
 
+
+// RECUPERAÇÃO DE SENHA DO ADMINISTRADOR
+
+// 1. Solicitar código de recuperação
+
+export async function solicitarRecuperacaoAdmin(req, res, next) {
+  try {
+    const { email } = req.body ?? {};
+
+    if (typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({
+        mensagem: "Informe um e-mail válido."
+      });
+    }
+
+    const emailLimpo = email.trim().toLowerCase();
+
+    const [administradores] = await pool.query(
+      `SELECT id, email
+       FROM administradores
+       WHERE LOWER(email) = ? AND ativo = TRUE
+       LIMIT 1`,
+      [emailLimpo]
+    );
+
+    // Não revela se o e-mail está cadastrado.
+    if (administradores.length === 0) {
+      return res.status(200).json({
+        mensagem: "Se o e-mail estiver cadastrado, você receberá um código de recuperação."
+      });
+    }
+
+    const admin = administradores[0];
+
+    // Gera um código numérico de seis dígitos.
+    const codigo = String(randomInt(0, 1000000)).padStart(6, "0");
+
+    // Armazena somente o hash do código.
+    const codigoHash = await bcrypt.hash(codigo, 10);
+
+    // Invalida códigos anteriores ainda não utilizados.
+    await pool.query(
+      `UPDATE recuperacoes_senha_admin
+       SET usado_em = NOW()
+       WHERE administrador_id = ?
+       AND usado_em IS NULL`,
+      [admin.id]
+    );
+
+    // Cria o novo código com validade de 10 minutos.
+    const [resultado] = await pool.query(
+      `INSERT INTO recuperacoes_senha_admin
+       (administrador_id, codigo_hash, expira_em)
+       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))`,
+      [admin.id, codigoHash]
+    );
+
+    try {
+      await enviarCodigoRecuperacao(admin.email, codigo);
+    } catch (error) {
+      await pool.query(
+        `UPDATE recuperacoes_senha_admin
+         SET usado_em = NOW()
+         WHERE id = ?`,
+        [resultado.insertId]
+      );
+
+      throw error;
+    }
+
+    return res.status(200).json({
+      mensagem: "Se o e-mail estiver cadastrado, você receberá um código de recuperação."
+    });
+
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+// 2. Verificar código de recuperação
+
+export async function verificarCodigoAdmin(req, res, next) {
+  try {
+    const { email, codigo } = req.body ?? {};
+
+    if (
+      typeof email !== "string" ||
+      typeof codigo !== "string" ||
+      !email.trim() ||
+      !/^\d{6}$/.test(codigo)
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe o e-mail e o código de seis dígitos."
+      });
+    }
+
+    const emailLimpo = email.trim().toLowerCase();
+
+    const [recuperacoes] = await pool.query(
+      `SELECT r.id, r.administrador_id, r.codigo_hash
+       FROM recuperacoes_senha_admin r
+       INNER JOIN administradores a
+         ON a.id = r.administrador_id
+       WHERE LOWER(a.email) = ?
+         AND a.ativo = TRUE
+         AND r.usado_em IS NULL
+         AND r.expira_em > NOW()
+       ORDER BY r.criado_em DESC
+       LIMIT 1`,
+      [emailLimpo]
+    );
+
+    if (recuperacoes.length === 0) {
+      return res.status(400).json({
+        mensagem: "Código inválido ou expirado."
+      });
+    }
+
+    const recuperacao = recuperacoes[0];
+
+    const codigoValido = await bcrypt.compare(
+      codigo,
+      recuperacao.codigo_hash
+    );
+
+    if (!codigoValido) {
+      return res.status(400).json({
+        mensagem: "Código inválido ou expirado."
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET não configurada.");
+    }
+
+    // Token temporário que autoriza somente a redefinição da senha.
+    const resetToken = jwt.sign(
+      {
+        tipo: "admin",
+        finalidade: "redefinir_senha",
+        recuperacaoId: recuperacao.id
+      },
+      process.env.JWT_SECRET,
+      {
+        subject: String(recuperacao.administrador_id),
+        expiresIn: "10m",
+        algorithm: "HS256"
+      }
+    );
+
+    return res.status(200).json({
+      mensagem: "Código verificado com sucesso.",
+      resetToken
+    });
+
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+// 3. Redefinir senha do administrador
+
+export async function redefinirSenhaAdmin(req, res, next) {
+  let conexao;
+
+  try {
+    const { resetToken, novaSenha } = req.body ?? {};
+
+    if (
+      typeof resetToken !== "string" ||
+      typeof novaSenha !== "string" ||
+      novaSenha.length < 8
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe uma nova senha com pelo menos 8 caracteres."
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET não configurada.");
+    }
+
+    let dadosToken;
+
+    try {
+      dadosToken = jwt.verify(
+        resetToken,
+        process.env.JWT_SECRET,
+        { algorithms: ["HS256"] }
+      );
+    } catch {
+      return res.status(401).json({
+        mensagem: "Autorização inválida ou expirada. Solicite um novo código."
+      });
+    }
+
+    if (
+      dadosToken.tipo !== "admin" ||
+      dadosToken.finalidade !== "redefinir_senha" ||
+      !dadosToken.recuperacaoId ||
+      !dadosToken.sub
+    ) {
+      return res.status(401).json({
+        mensagem: "Autorização inválida."
+      });
+    }
+
+    conexao = await pool.getConnection();
+    await conexao.beginTransaction();
+
+    // Bloqueia o registro durante a operação para impedir reutilização.
+    const [recuperacoes] = await conexao.query(
+      `SELECT id
+       FROM recuperacoes_senha_admin
+       WHERE id = ?
+         AND administrador_id = ?
+         AND usado_em IS NULL
+         AND expira_em > NOW()
+       FOR UPDATE`,
+      [dadosToken.recuperacaoId, dadosToken.sub]
+    );
+
+    if (recuperacoes.length === 0) {
+      await conexao.rollback();
+
+      return res.status(401).json({
+        mensagem: "Código já utilizado ou expirado. Solicite uma nova recuperação."
+      });
+    }
+
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+
+    await conexao.query(
+      `UPDATE administradores
+       SET senha_hash = ?
+       WHERE id = ? AND ativo = TRUE`,
+      [novaSenhaHash, dadosToken.sub]
+    );
+
+    // Marca o código como utilizado.
+    await conexao.query(
+      `UPDATE recuperacoes_senha_admin
+       SET usado_em = NOW()
+       WHERE id = ?`,
+      [dadosToken.recuperacaoId]
+    );
+
+    await conexao.commit();
+
+    return res.status(200).json({
+      mensagem: "Senha alterada com sucesso!"
+    });
+
+  } catch (error) {
+    if (conexao) {
+      await conexao.rollback();
+    }
+
+    next(error);
+
+  } finally {
+    if (conexao) {
+      conexao.release();
+    }
+  }
+}

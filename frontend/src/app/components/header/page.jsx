@@ -4,7 +4,7 @@ import Image from "next/image";
 
 import Link from "next/link";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -18,14 +18,20 @@ import {
 
   Menu,
 
+  LogOut,
+
   UserRound,
 
   X,
 
 } from "lucide-react";
+
 // ======================================================
+
 // MENUS
+
 // ======================================================
+
 const menus = {
 
   publico: [
@@ -41,13 +47,12 @@ const menus = {
   ],
 
   paciente: [
-  { nome: "Dashboard", href: "/paciente/dashboard" },
-  { nome: "Triagem", href: "/paciente/triagem" },
-  { nome: "Fila Online", href: "/paciente/filaOnline" },
-  { nome: "Visita Domiciliar", href: "/paciente/visitadomiciliar" },
-  { nome: "Exames", href: "/paciente/exames" },
-  { nome: "Consultas", href: "/paciente/consultas" },
-],
+    { nome: "Home", href: "/paciente/dashboard" },
+    { nome: "Fila Online", href: "/paciente/filaOnline" },
+    { nome: "Visita Domiciliar", href: "/paciente/visitadomiciliar" },
+    { nome: "Exames", href: "/paciente/exames" },
+    { nome: "Consultas", href: "/paciente/consultas" },
+  ],
 
   medico: [
 
@@ -73,11 +78,9 @@ const menus = {
 
   admin: [
 
-    { nome: "Home", href: "/admin/dashboard" },
+    { nome: "Dashboard", href: "/admin/dashboard" },
 
-    { nome: "Filas", href: "/admin/filas" },
-
-    { nome: "Epidemiologia", href: "/admin/epidemiologico" },
+    { nome: "Fila Online", href: "/admin/filaOnline" },
 
     { nome: "Unidades", href: "/admin/unidades" },
 
@@ -94,9 +97,13 @@ const menus = {
   ],
 
 };
+
 // ======================================================
+
 // ÁREAS
+
 // ======================================================
+
 const areas = {
 
   publico: {
@@ -170,19 +177,26 @@ const areas = {
   },
 
 };
+
 // ======================================================
+
 // HEADER
+
 // ======================================================
+
 export default function Header() {
 
   const pathname = usePathname() || "/";
+  const router = useRouter();
 
   const [menuAberto, setMenuAberto] = useState(false);
 
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
 
   const headerRef = useRef(null);
+
 // Identificação da área atual.
+
   const tipo = pathname.startsWith("/paciente")
 
     ? "paciente"
@@ -202,12 +216,15 @@ export default function Header() {
           : "publico";
 
   const areaAtual = areas[tipo];
+
   const menuAtual = menus[tipo] || [];
 
   const IconePerfil = areaAtual.icone;
 
   const usuarioLogado = tipo !== "publico";
+
 // Página inicial de cada área.
+
   const inicio =
 
     tipo === "paciente"
@@ -227,9 +244,13 @@ export default function Header() {
             ? "/admin/dashboard"
 
             : "/";
+
 // ======================================================
+
 // NAVEGAÇÃO
+
 // ======================================================
+
   function estaAtivo(href) {
 
     if (!href) return false;
@@ -246,12 +267,35 @@ export default function Header() {
 
   }
 
+  function sairDaConta() {
+    // Remove o JWT da sessão antes de voltar para a tela de login.
+    const chavesDeAutenticacao = [
+      "token",
+      "authToken",
+      "accessToken",
+      "auth_token",
+      "access_token",
+      "unesus_token",
+      "jwt",
+    ];
+
+    chavesDeAutenticacao.forEach((chave) => {
+      localStorage.removeItem(chave);
+      sessionStorage.removeItem(chave);
+    });
+
+    fecharMenus();
+    router.replace("/publico/login");
+  }
+
   useEffect(() => {
 
     fecharMenus();
 
   }, [pathname]);
+
 // Fecha os menus com ESC ou ao clicar fora.
+
   useEffect(() => {
 
     function fecharComEscape(event) {
@@ -309,9 +353,13 @@ export default function Header() {
     setMenuAberto(false);
 
   }
+
 // ======================================================
+
 // NOTIFICAÇÕES
+
 // ======================================================
+
   function renderNotificacoes() {
 
     if (!usuarioLogado) return null;
@@ -479,14 +527,20 @@ export default function Header() {
     );
 
   }
+
 // ======================================================
+
 // PERFIL
+
 // ======================================================
+
   function renderPerfil() {
 
     if (!usuarioLogado) return null;
 
     return (
+
+      <div className="flex shrink-0 items-center gap-1.5">
 
       <Link
 
@@ -558,12 +612,34 @@ export default function Header() {
 
       </Link>
 
+      <button
+        type="button"
+        onClick={sairDaConta}
+        aria-label="Sair da conta"
+        title="Sair da conta"
+        className="
+          flex h-10 w-10 shrink-0 items-center justify-center
+          rounded-xl border border-slate-200 bg-white text-[#023E8A]
+          transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600
+          focus-visible:outline-none focus-visible:ring-2
+          focus-visible:ring-[#023E8A] focus-visible:ring-offset-2
+        "
+      >
+        <LogOut size={18} strokeWidth={2} />
+      </button>
+
+      </div>
+
     );
 
   }
+
 // ======================================================
+
 // LOGO
+
 // ======================================================
+
   function renderLogo() {
 
     return (
@@ -607,9 +683,13 @@ export default function Header() {
     );
 
   }
+
 // ======================================================
+
 // LINKS DESKTOP
+
 // ======================================================
+
   function renderNavegacaoDesktop() {
 
     return (
@@ -679,9 +759,13 @@ export default function Header() {
     );
 
   }
+
 // ======================================================
+
 // LINKS MOBILE / TABLET
+
 // ======================================================
+
   function renderMenuResponsivo() {
 
     return (
@@ -828,6 +912,26 @@ export default function Header() {
 
           </nav>
 
+          {usuarioLogado && (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={sairDaConta}
+                className="
+                  flex h-12 w-full items-center justify-center gap-2
+                  rounded-xl border border-red-100 bg-red-50 px-5
+                  text-sm font-semibold text-red-700
+                  transition-colors hover:bg-red-100
+                  focus-visible:outline-none focus-visible:ring-2
+                  focus-visible:ring-red-500 focus-visible:ring-offset-2
+                "
+              >
+                <LogOut size={18} />
+                Sair da conta
+              </button>
+            </div>
+          )}
+
           {/* ENTRAR */}
 
           {tipo === "publico" && (
@@ -836,7 +940,7 @@ export default function Header() {
 
               <Link
 
-                href="/publico/login"
+                href="/publico/selecionar-acesso"
 
                 onClick={fecharMenus}
 
@@ -873,9 +977,13 @@ export default function Header() {
     );
 
   }
+
 // ======================================================
+
 // RENDERIZAÇÃO
+
 // ======================================================
+
   return (
 
     <header
@@ -920,7 +1028,7 @@ export default function Header() {
 
         {/* AÇÕES */}
 
-        <div className="flex w-[205px] shrink-0 items-center justify-end gap-2">
+        <div className="flex w-[270px] shrink-0 items-center justify-end gap-2">
 
           {usuarioLogado && renderNotificacoes()}
 
@@ -928,7 +1036,7 @@ export default function Header() {
 
             <Link
 
-              href="/publico/login"
+              href="/publico/selecionar-acesso"
 
               className="
 

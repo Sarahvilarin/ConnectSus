@@ -1,18 +1,35 @@
- "use client";
+"use client";
 
 import { useMemo, useState } from "react";
+
 import {
-  AlertTriangle, ArrowRight, Building2, Check, CheckCircle2,
-  ChevronRight, Clock3, FileCheck2, FileText, HeartPulse,
-  Hospital, MapPin, Search, ShieldCheck, Stethoscope, UserRound, X,
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  FileCheck2,
+  FileText,
+  HeartPulse,
+  Hospital,
+  MapPin,
+  Search,
+  ShieldCheck,
+  Stethoscope,
+  UserRound,
+  X,
 } from "lucide-react";
 
+// Dados fictícios utilizados somente para demonstração.
 const PACIENTES = [
   { id: 1, nome: "Mariana Silva Costa", cpf: "123.456.789-00", idade: 28 },
   { id: 2, nome: "João Pedro Alves", cpf: "987.654.321-00", idade: 44 },
   { id: 3, nome: "Carlos Eduardo Lima", cpf: "111.222.333-44", idade: 61 },
 ];
 
+// Catálogo de exames disponíveis no fluxo emergencial.
 const EXAMES = [
   { id: 1, nome: "Hemograma completo", categoria: "Laboratorial", descricao: "Avaliação geral das células sanguíneas.", tipo: "lab" },
   { id: 2, nome: "Glicemia", categoria: "Laboratorial", descricao: "Medição dos níveis de glicose no sangue.", tipo: "lab" },
@@ -23,12 +40,14 @@ const EXAMES = [
   { id: 7, nome: "PCR", categoria: "Laboratorial", descricao: "Investigação de processos inflamatórios.", tipo: "lab" },
 ];
 
+// Unidades e exames compatíveis — substituir pelos dados da API.
 const UNIDADES = [
   { id: 1, nome: "Hospital Municipal de Emergências Albert Sabin", bairro: "Santa Paula", horario: "Atendimento 24 horas", distancia: "1,2 km", exames: [1, 2, 3, 4, 6, 7] },
   { id: 2, nome: "Hospital Municipal Maria Braido", bairro: "Santa Paula", horario: "Conforme atendimento", distancia: "2,4 km", exames: [1, 2, 4, 5, 6] },
   { id: 3, nome: "Atende Fácil Saúde Pedro Kassab", bairro: "Centro", horario: "Segunda a sexta, das 7h às 17h", distancia: "3,1 km", exames: [1, 2, 3, 5, 7] },
 ];
 
+// Estilo compartilhado dos cartões das etapas.
 const cardClass = "rounded-[26px] border border-white/80 bg-white p-5 shadow-[0_12px_36px_rgba(2,62,138,0.07)] sm:p-6";
 
 export default function GestaoExamePage() {
@@ -40,19 +59,21 @@ export default function GestaoExamePage() {
   const [erro, setErro] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [sucesso, setSucesso] = useState(false);
-
+  // Filtra somente as unidades que realizam o exame selecionado.
   const unidadesDisponiveis = useMemo(
     () => exame ? UNIDADES.filter((item) => item.exames.includes(exame.id)) : [],
     [exame]
   );
-
+  // Mantém o CPF no formato 000.000.000-00.
   function formatarCPF(valor) {
-    return valor.replace(/\D/g, "").slice(0, 11)
+    return valor
+      .replace(/\D/g, "")
+      .slice(0, 11)
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   }
-
+  // Localiza o paciente pelo CPF informado.
   function buscarPaciente(event) {
     event.preventDefault();
     const encontrado = PACIENTES.find((item) => item.cpf === cpf);
@@ -67,7 +88,7 @@ export default function GestaoExamePage() {
     setUnidade(null);
     setConfirmado(false);
   }
-
+  // Reinicia o fluxo para uma nova solicitação.
   function limpar() {
     setCpf("");
     setPaciente(null);
@@ -78,7 +99,7 @@ export default function GestaoExamePage() {
     setConfirmado(false);
     setSucesso(false);
   }
-
+  // Nesta versão, a solicitação é apenas demonstrativa.
   function solicitar() {
     if (!paciente || !exame || !unidade || !confirmado) return;
     const solicitacao = {
@@ -96,16 +117,13 @@ export default function GestaoExamePage() {
     console.log("SOLICITAÇÃO DE DEMONSTRAÇÃO:", solicitacao);
     setSucesso(true);
   }
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7]">
-      {/* Elementos decorativos do fundo */}
-      <div className="pointer-events-none absolute -left-40 top-28 h-[420px] w-[420px] rounded-full bg-[#C8E0F5]/70" />
-      <div className="pointer-events-none absolute -right-44 top-64 h-[520px] w-[520px] rounded-full bg-[#BFD9F1]/65" />
-      <div className="pointer-events-none absolute left-[10%] top-[850px] h-52 w-52 rounded-full bg-white/80" />
-      <div className="pointer-events-none absolute right-[8%] top-[1250px] h-72 w-72 rounded-full border-[48px] border-[#D4E7F7]/80" />
-
-      <div className="relative z-10 mx-auto max-w-[1200px] px-4 pb-14 pt-8 sm:px-6 lg:px-8">
+    <main className="relative min-h-screen overflow-hidden bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
+      {/* Elementos decorativos do fundo — mesmo padrão das demais telas */}
+      <div className="pointer-events-none absolute -left-40 top-64 h-96 w-96 rounded-full bg-[#D9EAF8]/70" />
+      <div className="pointer-events-none absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-[#D3E5F7]/70" />
+      <div className="pointer-events-none absolute right-[12%] top-[1050px] h-56 w-56 rounded-full border-[42px] border-white/80" />
+      <div className="relative z-10 mx-auto max-w-[1500px]">
         {/* Alerta */}
         <div role="alert" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-900">
@@ -119,10 +137,9 @@ export default function GestaoExamePage() {
           </div>
           <span className="w-fit rounded-full border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-900">Uso restrito</span>
         </div>
-
         {/* Cabeçalho da página */}
-        <section className="mb-6 overflow-hidden rounded-[28px] bg-white shadow-[0_16px_48px_rgba(2,62,138,0.10)]">
-          <div className="relative overflow-hidden bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-9 text-white sm:px-9 sm:py-10">
+        <section className="mb-6 overflow-hidden rounded-[30px] bg-white shadow-[0_20px_55px_rgba(2,62,138,0.16)]">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white sm:px-9 lg:px-10">
             <div className="pointer-events-none absolute -right-16 -top-28 h-80 w-80 rounded-full bg-white/10" />
             <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#3F6DB0]/30" />
             <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -135,20 +152,18 @@ export default function GestaoExamePage() {
                   Registre exames indicados pela equipe assistencial durante um atendimento de urgência ou emergência.
                 </p>
               </div>
-              <div className="grid w-full max-w-[360px] grid-cols-2 gap-3">
+              <div className="grid w-full max-w-[420px] grid-cols-2 gap-3">
                 <HeroInfo icon={<ShieldCheck size={18} />} title="Acesso seguro" text="Área médica" />
                 <HeroInfo icon={<HeartPulse size={18} />} title="Uso emergencial" text="Prioridade clínica" />
               </div>
             </div>
           </div>
-
           <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
             <Etapa numero="1" titulo="Paciente" descricao={paciente?.nome || "Buscar pelo CPF"} concluida={!!paciente} ativa={!paciente} />
             <Etapa numero="2" titulo="Exame" descricao={exame?.nome || "Selecionar exame"} concluida={!!exame} ativa={!!paciente && !exame} />
             <Etapa numero="3" titulo="Unidade" descricao={unidade?.bairro || "Escolher unidade"} concluida={!!unidade} ativa={!!exame && !unidade} />
           </div>
         </section>
-
         {/* Etapa 1 */}
         <section className={cardClass}>
           <TituloSecao numero="01" icon={<UserRound size={21} />} titulo="Localizar paciente" descricao="Digite o CPF para localizar o cadastro." />
@@ -159,7 +174,10 @@ export default function GestaoExamePage() {
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     value={cpf}
-                    onChange={(event) => { setCpf(formatarCPF(event.target.value)); setErro(""); }}
+                    onChange={(event) => {
+                      setCpf(formatarCPF(event.target.value));
+                      setErro("");
+                    }}
                     placeholder="Digite o CPF do paciente"
                     maxLength={14}
                     className={`h-14 w-full rounded-2xl border bg-[#F7FAFD] pl-12 pr-4 text-sm text-[#0B1756] outline-none transition focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10 ${erro ? "border-red-300" : "border-slate-200 focus:border-[#3563A7]"}`}
@@ -185,7 +203,6 @@ export default function GestaoExamePage() {
             </div>
           )}
         </section>
-
         {/* Etapa 2 */}
         <section className={`${cardClass} mt-5`}>
           <TituloSecao numero="02" icon={<FileText size={21} />} titulo="Selecionar exame emergencial" descricao="Escolha o exame indicado pela equipe assistencial." />
@@ -202,8 +219,20 @@ export default function GestaoExamePage() {
                 {EXAMES.map((item) => {
                   const selecionado = exame?.id === item.id;
                   return (
-                    <button key={item.id} type="button" onClick={() => { setExame(item); setUnidade(null); setConfirmado(false); }}
-                      className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${selecionado ? "border-[#174693] bg-[#EEF5FB] shadow-sm" : "border-slate-200 bg-[#FBFCFE] hover:border-[#BED2E5]"}`}>
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setExame(item);
+                        setUnidade(null);
+                        setConfirmado(false);
+                      }}
+                      className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${
+                        selecionado
+                          ? "border-[#174693] bg-[#EEF5FB] shadow-sm"
+                          : "border-slate-200 bg-[#FBFCFE] hover:border-[#BED2E5]"
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${selecionado ? "bg-[#174693] text-white" : "bg-[#EAF3F7] text-[#174693]"}`}>
                           {item.tipo === "coracao" ? <HeartPulse size={19} /> : item.tipo === "imagem" ? <Building2 size={19} /> : <FileText size={19} />}
@@ -223,7 +252,6 @@ export default function GestaoExamePage() {
             </>
           )}
         </section>
-
         {/* Etapa 3 */}
         <section className={`${cardClass} mt-5`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -235,8 +263,19 @@ export default function GestaoExamePage() {
               {unidadesDisponiveis.map((item) => {
                 const selecionada = unidade?.id === item.id;
                 return (
-                  <button key={item.id} type="button" onClick={() => { setUnidade(item); setConfirmado(false); }}
-                    className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 ${selecionada ? "border-[#174693] bg-[#EEF5FB]" : "border-slate-200 bg-[#FBFCFE] hover:border-[#BED2E5]"}`}>
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setUnidade(item);
+                      setConfirmado(false);
+                    }}
+                    className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 ${
+                      selecionada
+                        ? "border-[#174693] bg-[#EEF5FB]"
+                        : "border-slate-200 bg-[#FBFCFE] hover:border-[#BED2E5]"
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
                       <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${selecionada ? "bg-[#174693] text-white" : "bg-[#EAF3F7] text-[#174693]"}`}><Hospital size={20} /></div>
                       {selecionada && <CheckCircle2 size={22} className="text-[#174693]" />}
@@ -257,7 +296,6 @@ export default function GestaoExamePage() {
             </div>
           )}
         </section>
-
         {/* Revisão */}
         {unidade && (
           <section className="mt-5 overflow-hidden rounded-[26px] border border-[#D7E5F1] bg-white shadow-[0_14px_40px_rgba(2,62,138,0.08)]">
@@ -290,8 +328,12 @@ export default function GestaoExamePage() {
                   <span><strong>Confirmo</strong> que esta solicitação corresponde a uma necessidade de urgência ou emergência e foi indicada conforme avaliação clínica.</span>
                 </label>
               </div>
-              <button type="button" onClick={solicitar} disabled={!confirmado}
-                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#174693] text-sm font-semibold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500">
+              <button
+                type="button"
+                onClick={solicitar}
+                disabled={!confirmado}
+                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#174693] text-sm font-semibold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+              >
                 <CheckCircle2 size={18} /> Confirmar exame de urgência/emergência
               </button>
               <p className="mt-3 text-center text-xs text-slate-400">Demonstração visual: a confirmação não envia nem salva dados no sistema.</p>
@@ -299,7 +341,6 @@ export default function GestaoExamePage() {
           </section>
         )}
       </div>
-
       {sucesso && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#06194E]/65 p-4 backdrop-blur-sm">
           <div className="w-full max-w-[480px] overflow-hidden rounded-[28px] bg-white shadow-2xl">

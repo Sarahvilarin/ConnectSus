@@ -332,184 +332,240 @@ export default function DashboardMedico() {
     </div>
   </div>
 
-  {/* CONTEÚDO DA AGENDA */}
-  <div className="mt-8 grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-    {/* RESUMO LATERAL */}
-    <aside className="flex flex-col gap-4">
-      <div className="rounded-[24px] bg-[#023E8A] p-6 text-white shadow-lg shadow-[#023E8A]/10">
-        <p className="text-sm font-medium text-white/75">
-          Consultas programadas
-        </p>
+  
+{/* CONTEÚDO DA AGENDA */}
+<div className="mt-8 grid items-stretch gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
 
-        <div className="mt-3 flex items-end gap-2">
-          <span className="text-5xl font-extrabold tracking-tight">
-            12
-          </span>
-          <span className="mb-1 text-sm text-white/75">
-            hoje
-          </span>
-        </div>
+  {/* RESUMO LATERAL */}
+  <aside className="flex flex-col gap-4 lg:h-full">
 
-        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/20">
-          <div className="h-full w-2/3 rounded-full bg-white" />
-        </div>
+    {/* CONSULTAS PROGRAMADAS */}
+    <div className="flex flex-1 flex-col justify-center rounded-[24px] bg-[#023E8A] p-6 text-white shadow-lg shadow-[#023E8A]/10">
+      <p className="text-sm font-medium text-white/75">
+        Consultas programadas
+      </p>
 
-        <p className="mt-3 text-xs text-white/75">
-          8 de 12 consultas concluídas
-        </p>
-      </div>
-
-      <div className="rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
-        <p className="text-sm font-bold text-[#0B1756]">
-          Situação dos atendimentos
-        </p>
-
-        <div className="mt-5 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              <span className="text-sm text-[#536783]">
-                Concluídas
-              </span>
-            </div>
-            <span className="font-bold text-[#0B1756]">08</span>
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#023E8A]" />
-              <span className="text-sm text-[#536783]">
-                Em atendimento
-              </span>
-            </div>
-            <span className="font-bold text-[#0B1756]">02</span>
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-              <span className="text-sm text-[#536783]">
-                Aguardando
-              </span>
-            </div>
-            <span className="font-bold text-[#0B1756]">02</span>
-          </div>
-        </div>
-      </div>
-
-    </aside>
-
-    {/* LINHA DO TEMPO */}
-    <div className="min-w-0 rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5 shadow-sm sm:p-7">
-      <div className="flex flex-col gap-2 border-b border-[#3563A7]/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-lg font-extrabold text-[#0B1756]">
-            Horários programados
-          </h3>
-          <p className="mt-1 text-sm text-[#536783]">
-            Acompanhe a sequência das consultas.
-          </p>
-        </div>
-
-        <span className="w-fit rounded-full bg-[#EAF3F7] px-3 py-1.5 text-xs font-bold text-[#3563A7]">
-          08:00 — 10:00
+      <div className="mt-3 flex items-end gap-2">
+        <span className="text-5xl font-extrabold tracking-tight">
+          12
+        </span>
+        <span className="mb-1 text-sm text-white/75">
+          hoje
         </span>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/20">
+        <div className="h-full w-2/3 rounded-full bg-white" />
+      </div>
+
+      <p className="mt-3 text-xs text-white/75">
+        8 de 12 consultas concluídas
+      </p>
+    </div>
+
+    {/* SITUAÇÃO DOS ATENDIMENTOS */}
+    <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
+      <p className="text-sm font-bold text-[#0B1756]">
+        Situação dos atendimentos
+      </p>
+
+      <div className="mt-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            <span className="text-sm text-[#536783]">
+              Concluídas
+            </span>
+          </div>
+          <span className="font-bold text-[#0B1756]">08</span>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#023E8A]" />
+            <span className="text-sm text-[#536783]">
+              Em atendimento
+            </span>
+          </div>
+          <span className="font-bold text-[#0B1756]">02</span>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            <span className="text-sm text-[#536783]">
+              Aguardando
+            </span>
+          </div>
+          <span className="font-bold text-[#0B1756]">02</span>
+        </div>
+      </div>
+    </div>
+
+    {/* PRÓXIMOS ATENDIMENTOS */}
+    <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold text-[#0B1756]">
+          Próximos atendimentos
+        </p>
+
+        <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-bold text-[#3563A7]">
+          Hoje
+        </span>
+      </div>
+
+      <div className="mt-5 space-y-4">
         {[
-          {
-            horario: "08:00",
-            nome: "Maria Silva",
-            tipo: "Consulta de rotina",
-            status: "Concluída",
-            cor: "bg-emerald-50 text-emerald-700",
-            marcador: "bg-emerald-500",
-            borda: "border-l-emerald-500",
-          },
-          {
-            horario: "08:30",
-            nome: "João Pereira",
-            tipo: "Consulta de retorno",
-            status: "Concluída",
-            cor: "bg-emerald-50 text-emerald-700",
-            marcador: "bg-emerald-500",
-            borda: "border-l-emerald-500",
-          },
-          {
-            horario: "09:00",
-            nome: "Ana Costa",
-            tipo: "Consulta médica",
-            status: "Em atendimento",
-            cor: "bg-blue-50 text-blue-700",
-            marcador: "bg-[#023E8A]",
-            borda: "border-l-[#023E8A]",
-          },
           {
             horario: "09:30",
             nome: "Carlos Lima",
             tipo: "Avaliação clínica",
-            status: "Aguardando",
-            cor: "bg-amber-50 text-amber-700",
-            marcador: "bg-amber-500",
-            borda: "border-l-amber-500",
           },
           {
             horario: "10:00",
             nome: "Beatriz Souza",
             tipo: "Consulta médica",
-            status: "Agendada",
-            cor: "bg-[#EAF3F7] text-[#3563A7]",
-            marcador: "bg-[#B8D6FC]",
-            borda: "border-l-[#B8D6FC]",
           },
-        ].map((consulta, index) => (
+        ].map((item) => (
           <div
-            key={consulta.horario}
-            className="grid grid-cols-[60px_minmax(0,1fr)] gap-3 sm:grid-cols-[72px_minmax(0,1fr)] sm:gap-5"
+            key={item.horario}
+            className="flex items-center gap-3"
           >
-            {/* HORÁRIO E MARCADOR */}
-            <div className="relative flex flex-col items-center">
-              <span className="pt-4 text-sm font-extrabold text-[#023E8A] sm:text-base">
-                {consulta.horario}
+            <div className="rounded-xl bg-[#EAF3F7] px-3 py-2">
+              <span className="text-sm font-extrabold text-[#023E8A]">
+                {item.horario}
               </span>
-
-              <span
-                className={`relative z-10 mt-3 h-3 w-3 rounded-full ${consulta.marcador} ring-4 ring-white`}
-              />
-
-              {index !== 4 && (
-                <span className="absolute bottom-0 top-[62px] w-px bg-[#D9E7F5]" />
-              )}
             </div>
 
-            {/* BLOCO DA CONSULTA */}
-            <div
-              className={`mb-4 min-w-0 rounded-xl border border-[#3563A7]/10 border-l-4 ${consulta.borda} bg-white px-4 py-4 transition hover:shadow-sm sm:px-5`}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="truncate font-bold text-[#0B1756]">
-                    {consulta.nome}
-                  </p>
-
-                  <p className="mt-1 text-sm text-[#536783]">
-                    {consulta.tipo}
-                  </p>
-                </div>
-
-                <span
-                  className={`w-fit shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold ${consulta.cor}`}
-                >
-                  {consulta.status}
-                </span>
-              </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#0B1756]">
+                {item.nome}
+              </p>
+              <p className="mt-0.5 text-xs text-[#536783]">
+                {item.tipo}
+              </p>
             </div>
           </div>
         ))}
       </div>
     </div>
+
+  </aside>
+
+  {/* LINHA DO TEMPO */}
+  <div className="h-full min-w-0 rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5 shadow-sm sm:p-7">
+
+    <div className="flex flex-col gap-2 border-b border-[#3563A7]/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 className="text-lg font-extrabold text-[#0B1756]">
+          Horários programados
+        </h3>
+        <p className="mt-1 text-sm text-[#536783]">
+          Acompanhe a sequência das consultas.
+        </p>
+      </div>
+
+      <span className="w-fit rounded-full bg-[#EAF3F7] px-3 py-1.5 text-xs font-bold text-[#3563A7]">
+        08:00 — 10:00
+      </span>
+    </div>
+
+    <div className="mt-5">
+      {[
+        {
+          horario: "08:00",
+          nome: "Maria Silva",
+          tipo: "Consulta de rotina",
+          status: "Concluída",
+          cor: "bg-emerald-50 text-emerald-700",
+          marcador: "bg-emerald-500",
+          borda: "border-l-emerald-500",
+        },
+        {
+          horario: "08:30",
+          nome: "João Pereira",
+          tipo: "Consulta de retorno",
+          status: "Concluída",
+          cor: "bg-emerald-50 text-emerald-700",
+          marcador: "bg-emerald-500",
+          borda: "border-l-emerald-500",
+        },
+        {
+          horario: "09:00",
+          nome: "Ana Costa",
+          tipo: "Consulta médica",
+          status: "Em atendimento",
+          cor: "bg-blue-50 text-blue-700",
+          marcador: "bg-[#023E8A]",
+          borda: "border-l-[#023E8A]",
+        },
+        {
+          horario: "09:30",
+          nome: "Carlos Lima",
+          tipo: "Avaliação clínica",
+          status: "Aguardando",
+          cor: "bg-amber-50 text-amber-700",
+          marcador: "bg-amber-500",
+          borda: "border-l-amber-500",
+        },
+        {
+          horario: "10:00",
+          nome: "Beatriz Souza",
+          tipo: "Consulta médica",
+          status: "Agendada",
+          cor: "bg-[#EAF3F7] text-[#3563A7]",
+          marcador: "bg-[#B8D6FC]",
+          borda: "border-l-[#B8D6FC]",
+        },
+      ].map((consulta, index) => (
+        <div
+          key={consulta.horario}
+          className="grid grid-cols-[60px_minmax(0,1fr)] gap-3 sm:grid-cols-[72px_minmax(0,1fr)] sm:gap-5"
+        >
+          {/* HORÁRIO E MARCADOR */}
+          <div className="relative flex flex-col items-center">
+            <span className="pt-4 text-sm font-extrabold text-[#023E8A] sm:text-base">
+              {consulta.horario}
+            </span>
+
+            <span
+              className={`relative z-10 mt-3 h-3 w-3 rounded-full ${consulta.marcador} ring-4 ring-white`}
+            />
+
+            {index !== 4 && (
+              <span className="absolute bottom-0 top-[62px] w-px bg-[#D9E7F5]" />
+            )}
+          </div>
+
+          {/* BLOCO DA CONSULTA */}
+          <div
+            className={`mb-4 min-w-0 rounded-xl border border-[#3563A7]/10 border-l-4 ${consulta.borda} bg-white px-4 py-4 transition hover:shadow-sm sm:px-5`}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="truncate font-bold text-[#0B1756]">
+                  {consulta.nome}
+                </p>
+
+                <p className="mt-1 text-sm text-[#536783]">
+                  {consulta.tipo}
+                </p>
+              </div>
+
+              <span
+                className={`w-fit shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold ${consulta.cor}`}
+              >
+                {consulta.status}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   </div>
+
+</div>
+
 
   {/* COMUNICADOS DA UNIDADE */}
 <section
@@ -549,17 +605,9 @@ export default function DashboardMedico() {
     {/* COMUNICADO EM DESTAQUE */}
     <div className="mt-9 rounded-2xl border border-white/10 bg-white/[0.07] p-5 sm:p-6">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/40 text-[#B8D6FC]">
-          <Icon name="hospital" className="h-6 w-6" />
-        </div>
+        
 
         <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-
-            <span className="rounded-full bg-[#3563A7]/30 px-2.5 py-1 text-[11px] font-semibold text-[#D9EBFF]">
-              Unidade de saúde
-            </span>
-          </div>
 
           <h3 className="mt-3 text-lg font-bold sm:text-xl">
             Orientações para a equipe de atendimento
