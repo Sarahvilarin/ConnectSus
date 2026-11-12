@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { api } from "../../../lib/api";
 import {
   Activity,
   ArrowLeft,
@@ -49,178 +50,25 @@ import {
   os registros do paciente logado e registrar log de acesso.
 */
 
-const especialidades = [
-  { nome: "Clínica geral", Icone: Stethoscope },
-  { nome: "Cardiologia", Icone: HeartPulse },
-  { nome: "Neurologia", Icone: Brain },
-  { nome: "Oftalmologia", Icone: Eye },
-  { nome: "Pediatria", Icone: Baby },
-  { nome: "Ortopedia", Icone: Bone },
-];
+const iconesEspecialidade = {
+  "clínica geral": Stethoscope,
+  cardiologia: HeartPulse,
+  neurologia: Brain,
+  oftalmologia: Eye,
+  pediatria: Baby,
+  ortopedia: Bone,
+};
 
-const UNIDADES = [
-  {
-    id: 1,
-    nome: "Hospital Municipal de Emergências Albert Sabin",
-    bairro: "Santa Paula",
-    endereco: "São Caetano do Sul - SP",
-    horario: "Atendimento 24 horas",
-    distancia: "1,2 km",
-    km: 1.2,
-    especialidades: [
-      "Clínica geral",
-      "Cardiologia",
-      "Neurologia",
-      "Pediatria",
-      "Ortopedia",
-    ],
-  },
-  {
-    id: 2,
-    nome: "Hospital Municipal Maria Braido",
-    bairro: "Santa Paula",
-    endereco: "São Caetano do Sul - SP",
-    horario: "Conforme atendimento",
-    distancia: "2,4 km",
-    km: 2.4,
-    especialidades: [
-      "Clínica geral",
-      "Oftalmologia",
-      "Pediatria",
-      "Ortopedia",
-    ],
-  },
-  {
-    id: 3,
-    nome: "Atende Fácil Saúde Pedro Kassab",
-    bairro: "Centro",
-    endereco: "São Caetano do Sul - SP",
-    horario: "Segunda a sexta, das 7h às 17h",
-    distancia: "3,1 km",
-    km: 3.1,
-    especialidades: [
-      "Clínica geral",
-      "Cardiologia",
-      "Neurologia",
-      "Oftalmologia",
-    ],
-  },
-];
-
-const horarios = ["08:00", "09:00", "10:30", "14:00", "15:30", "17:00"];
+const horarios = [];
 
 const etapas = ["Agendamento", "Revisão", "Confirmação"];
 
-/* Cada consulta tem `medico` e `prontuario` (nulo quando ainda não há registro) */
-const consultasIniciais = [
-  {
-    id: 1,
-    especialidade: "Cardiologia",
-    unidade: "Hospital Municipal de Emergências Albert Sabin",
-    data: "28 de out, 2026",
-    horario: "09:00",
-    modalidade: "Presencial",
-    status: "Agendada",
-    medico: null,
-    prontuario: null,
-  },
-  {
-    id: 2,
-    especialidade: "Clínica geral",
-    unidade: "Atende Fácil Saúde Pedro Kassab",
-    data: "05 de nov, 2026",
-    horario: "14:00",
-    modalidade: "Presencial",
-    status: "Agendada",
-    medico: null,
-    prontuario: null,
-  },
-  {
-    id: 3,
-    especialidade: "Oftalmologia",
-    unidade: "Hospital Municipal Maria Braido",
-    data: "02 de set, 2026",
-    horario: "10:30",
-    modalidade: "Presencial",
-    status: "Concluída",
-    medico: "Dr. Rafael Menezes",
-    prontuario: {
-      queixa: "Visão embaçada ao longe há algumas semanas",
-      historia:
-        "Dificuldade para enxergar placas e a TV à distância, com piora ao fim do dia.",
-      alergias: "Nenhuma conhecida",
-      medicamentos: "Nenhum",
-      vitais: {
-        pa: "120/80",
-        fc: "72",
-        temp: "36,5",
-        spo2: "98",
-        peso: "70",
-        altura: "172",
-      },
-      exameFisico:
-        "Acuidade visual reduzida em ambos os olhos. Fundo de olho sem alterações.",
-      hipotese: "Miopia",
-      cid: "H52.1",
-      conduta:
-        "Prescrição de óculos para uso contínuo. Orientação para pausas ao usar telas por longos períodos.",
-      exames: "Mapeamento de retina",
-      retorno: "6 meses",
-      registradoEm: "02/09/2026 10:30",
-      registradoPor: "Dr. Rafael Menezes",
-    },
-  },
-  {
-    id: 4,
-    especialidade: "Ortopedia",
-    unidade: "Hospital Municipal de Emergências Albert Sabin",
-    data: "15 de ago, 2026",
-    horario: "17:00",
-    modalidade: "Presencial",
-    status: "Cancelada",
-    medico: null,
-    prontuario: null,
-  },
-  {
-    id: 5,
-    especialidade: "Clínica geral",
-    unidade: "Atende Fácil Saúde Pedro Kassab",
-    data: "10 de out, 2026",
-    horario: "08:00",
-    modalidade: "Presencial",
-    status: "Concluída",
-    medico: "Dra. Helena Duarte",
-    prontuario: {
-      queixa: "Dor de cabeça frequente",
-      historia:
-        "Cefaleia há cerca de 1 mês, piora ao fim do dia, sem sinais de alarme.",
-      alergias: "Dipirona",
-      medicamentos: "Nenhum",
-      vitais: {
-        pa: "118/76",
-        fc: "80",
-        temp: "36,6",
-        spo2: "99",
-        peso: "61",
-        altura: "162",
-      },
-      exameFisico: "Exame neurológico sem alterações. Sem rigidez de nuca.",
-      hipotese: "Cefaleia tensional",
-      cid: "G44.2",
-      conduta:
-        "Orientações de higiene do sono e hidratação. Analgésico se necessário.",
-      exames: "Hemograma completo, glicemia de jejum, TSH",
-      retorno: "30 dias",
-      registradoEm: "10/10/2026 08:40",
-      registradoPor: "Dra. Helena Duarte",
-    },
-  },
-];
-
 const estiloStatus = {
-  Agendada: { badge: "bg-[#3563A7]/15", ponto: "bg-[#023E8A]" },
+  Pendente: { badge: "bg-amber-100", ponto: "bg-amber-600" },
+  Confirmada: { badge: "bg-[#3563A7]/15", ponto: "bg-[#023E8A]" },
   Concluída: { badge: "bg-emerald-100", ponto: "bg-emerald-600" },
   Cancelada: { badge: "bg-red-100", ponto: "bg-red-500" },
+  Falta: { badge: "bg-slate-100", ponto: "bg-slate-500" },
 };
 
 const filtros = ["Todas", "Agendada", "Concluída", "Cancelada"];
@@ -281,13 +129,16 @@ function DatePicker({
   valor,
   onChange,
   minimo = "",
-  bloquearDomingos = false,
+  bloquearFinsDeSemana = false,
   placeholder = "Selecione a data",
   altura = "min-h-[50px]",
   largura = "w-full",
 }) {
   const [aberto, setAberto] = useState(false);
-  const [visao, setVisao] = useState({ ano: 2026, mes: 0 });
+  const [visao, setVisao] = useState(() => {
+    const atual = new Date();
+    return { ano: atual.getFullYear(), mes: atual.getMonth() };
+  });
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
 
@@ -439,10 +290,11 @@ function DatePicker({
                 const iso = paraIso(visao.ano, visao.mes, dia);
                 const selecionado = iso === valor;
                 const ehHoje = iso === hojeIso;
-                const domingo =
-                  new Date(visao.ano, visao.mes, dia).getDay() === 0;
+                const fimDeSemana = [0, 6].includes(
+                  new Date(visao.ano, visao.mes, dia).getDay()
+                );
                 const bloqueado =
-                  (minimo && iso < minimo) || (bloquearDomingos && domingo);
+                  (minimo && iso < minimo) || (bloquearFinsDeSemana && fimDeSemana);
 
                 return (
                   <button
@@ -576,25 +428,30 @@ function ProntuarioPaciente({ consulta }) {
 export default function Consultas() {
   const [aba, setAba] = useState("agendar");
   const [etapaAtual, setEtapaAtual] = useState(1);
+  const [especialidades, setEspecialidades] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [especialidade, setEspecialidade] = useState("");
   const [unidade, setUnidade] = useState(null);
   const modalidade = "Presencial";
-  const [dia, setDia] = useState(""); // guarda AAAA-MM-DD
+  const [dia, setDia] = useState("");
   const [horario, setHorario] = useState("");
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
   const [motivo, setMotivo] = useState("");
-  const [consultas, setConsultas] = useState(consultasIniciais);
+  const [consultas, setConsultas] = useState([]);
   const [filtro, setFiltro] = useState("Todas");
   const [erro, setErro] = useState("");
-
+  const [carregandoDados, setCarregandoDados] = useState(true);
+  const [carregandoHorarios, setCarregandoHorarios] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [carregandoConsultas, setCarregandoConsultas] = useState(false);
   const [prontuarioId, setProntuarioId] = useState(null);
+
   const consultaProntuario =
     consultas.find((c) => c.id === prontuarioId && c.prontuario) || null;
 
   useEffect(() => {
     document.body.style.overflow = consultaProntuario ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [consultaProntuario]);
 
   useEffect(() => {
@@ -604,71 +461,167 @@ export default function Consultas() {
   }, []);
 
   const diaSelecionado = dia ? { texto: textoData(dia) } : null;
-
-  // A partir de amanhã
   const amanha = new Date();
   amanha.setDate(amanha.getDate() + 1);
-  const minimoIso = paraIso(
-    amanha.getFullYear(),
-    amanha.getMonth(),
-    amanha.getDate()
-  );
+  const minimoIso = paraIso(amanha.getFullYear(), amanha.getMonth(), amanha.getDate());
 
-  const ativas = consultas.filter((c) => c.status === "Agendada").length;
-  const listaFiltrada = consultas.filter(
-    (c) => filtro === "Todas" || c.status === filtro
-  );
+  const ativas = consultas.filter((c) => ["Pendente", "Confirmada"].includes(c.status)).length;
+  const listaFiltrada = consultas.filter((c) => {
+    if (filtro === "Todas") return true;
+    if (filtro === "Agendada") return ["Pendente", "Confirmada"].includes(c.status);
+    return c.status === filtro;
+  });
 
-  const unidadesDisponiveis = especialidade
-    ? UNIDADES.filter((u) => u.especialidades.includes(especialidade)).sort(
-        (a, b) => a.km - b.km
-      )
-    : [];
+  const unidadesDisponiveis = unidades;
+  const especialidadeSelecionada = especialidades.find((item) => item.nome === especialidade) || null;
 
-  function topo() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  function extrairLista(resposta, chaves) {
+    if (Array.isArray(resposta)) return resposta;
+    for (const chave of chaves) if (Array.isArray(resposta?.[chave])) return resposta[chave];
+    return [];
   }
+
+  function normalizarConsulta(item) {
+    const dataHora = String(item.data_hora || "").replace("T", " ");
+    const [dataParte, horaParte = ""] = dataHora.split(" ");
+    const statusBanco = String(item.status || "").toLowerCase();
+    const status = ({ pendente: "Pendente", confirmada: "Confirmada", concluida: "Concluída", cancelada: "Cancelada", falta: "Falta" })[statusBanco] || statusBanco;
+    return {
+      id: Number(item.id),
+      especialidade: item.especialidade || "Especialidade não informada",
+      especialidade_id: item.especialidade_id,
+      unidade: item.unidade || "Unidade não informada",
+      unidade_id: item.unidade_id,
+      data: dataParte ? textoData(dataParte.slice(0, 10)) : "Data não informada",
+      horario: horaParte.slice(0, 5),
+      status,
+      medico: item.medico || null,
+      prontuario: null,
+    };
+  }
+
+  async function carregarConsultas() {
+    setCarregandoConsultas(true);
+    try {
+      const resposta = await api("/consultas/me");
+      setConsultas(extrairLista(resposta, ["consultas", "dados", "resultados"]).map(normalizarConsulta));
+    } catch (error) {
+      setErro(error.message || "Não foi possível carregar suas consultas.");
+    } finally {
+      setCarregandoConsultas(false);
+    }
+  }
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregarDadosIniciais() {
+      setCarregandoDados(true);
+      try {
+        const [resEspecialidades, resUnidades] = await Promise.all([
+          api("/especialidades"),
+          api("/unidades"),
+        ]);
+        if (!ativo) return;
+        const listaEspecialidades = extrairLista(resEspecialidades, ["especialidades", "dados", "resultados"]);
+        const listaUnidades = extrairLista(resUnidades, ["unidades", "dados", "resultados"]);
+        setEspecialidades(listaEspecialidades.map((item) => ({
+          id: Number(item.id),
+          nome: item.nome || item.nome_especialidade || "",
+          Icone: iconesEspecialidade[String(item.nome || item.nome_especialidade || "").toLocaleLowerCase("pt-BR")] || Stethoscope,
+        })).filter((item) => item.id && item.nome));
+        setUnidades(listaUnidades.filter((item) => item.ativo !== false && item.ativo !== 0).map((item) => ({
+          id: Number(item.id),
+          nome: item.nome || item.nome_unidade || "",
+          bairro: item.bairro || "Endereço não informado",
+          horario: item.horario_funcionamento || "Horário conforme unidade",
+          distancia: "",
+          rua: item.rua || "",
+        })).filter((item) => item.id && item.nome));
+      } catch (error) {
+        if (ativo) setErro(error.message || "Não foi possível carregar especialidades e unidades.");
+      } finally {
+        if (ativo) setCarregandoDados(false);
+      }
+    }
+    carregarDadosIniciais();
+    carregarConsultas();
+    return () => { ativo = false; };
+  }, []);
+
+  useEffect(() => {
+    let ativo = true;
+    setHorariosDisponiveis([]);
+    setHorario("");
+    if (!unidade?.id || !especialidadeSelecionada?.id || !dia) return undefined;
+    async function carregarHorarios() {
+      setCarregandoHorarios(true);
+      setErro("");
+      try {
+        const params = new URLSearchParams({
+          unidade_id: String(unidade.id),
+          especialidade_id: String(especialidadeSelecionada.id),
+          data: dia,
+        });
+        const resposta = await api(`/consultas/disponibilidade?${params.toString()}`);
+        if (ativo) setHorariosDisponiveis(Array.isArray(resposta?.horarios) ? resposta.horarios : []);
+      } catch (error) {
+        if (ativo) setErro(error.message || "Não foi possível consultar os horários disponíveis.");
+      } finally {
+        if (ativo) setCarregandoHorarios(false);
+      }
+    }
+    carregarHorarios();
+    return () => { ativo = false; };
+  }, [unidade?.id, especialidadeSelecionada?.id, dia]);
+
+  function topo() { window.scrollTo({ top: 0, behavior: "smooth" }); }
 
   function escolherEspecialidade(nome) {
     setEspecialidade(nome);
     setUnidade(null);
+    setDia("");
+    setHorario("");
+    setHorariosDisponiveis([]);
   }
 
   function continuar(event) {
     event.preventDefault();
     setErro("");
-
-    if (!especialidade || !unidade) {
+    if (!especialidadeSelecionada || !unidade) {
       setErro("Escolha a especialidade e a unidade para continuar.");
       return;
     }
-
     if (!dia || !horario) {
-      setErro("Selecione a data e o horário da consulta.");
+      setErro("Selecione a data e um horário disponível.");
       return;
     }
-
     setEtapaAtual(2);
     topo();
   }
 
-  function confirmar() {
-    setConsultas((atuais) => [
-      {
-        id: Date.now(),
-        especialidade,
-        unidade: unidade.nome,
-        data: diaSelecionado.texto,
-        horario,
-        modalidade,
-        status: "Agendada",
-        medico: null,
-        prontuario: null,
-      },
-      ...atuais,
-    ]);
-    setEtapaAtual(3);
-    topo();
+  async function confirmar() {
+    if (salvando) return;
+    setSalvando(true);
+    setErro("");
+    try {
+      await api("/consultas", {
+        method: "POST",
+        body: JSON.stringify({
+          unidade_id: unidade.id,
+          especialidade_id: especialidadeSelecionada.id,
+          data_hora: `${dia}T${horario}`,
+          observacoes: motivo.trim() || null,
+        }),
+      });
+      await carregarConsultas();
+      setEtapaAtual(3);
+      topo();
+    } catch (error) {
+      setErro(error.message || "Não foi possível solicitar a consulta.");
+      setEtapaAtual(1);
+    } finally {
+      setSalvando(false);
+    }
   }
 
   function voltar() {
@@ -678,10 +631,12 @@ export default function Consultas() {
   }
 
   function novoAgendamento(consulta) {
-    setEspecialidade(consulta?.especialidade || "");
-    setUnidade(UNIDADES.find((u) => u.nome === consulta?.unidade) || null);
+    const especialidadeAnterior = consulta?.especialidade || "";
+    setEspecialidade(especialidadeAnterior);
+    setUnidade(unidades.find((u) => u.id === Number(consulta?.unidade_id)) || null);
     setDia("");
     setHorario("");
+    setHorariosDisponiveis([]);
     setMotivo("");
     setErro("");
     setEtapaAtual(1);
@@ -689,10 +644,14 @@ export default function Consultas() {
     topo();
   }
 
-  function cancelarConsulta(id) {
-    setConsultas((atuais) =>
-      atuais.map((c) => (c.id === id ? { ...c, status: "Cancelada" } : c))
-    );
+  async function cancelarConsulta(id) {
+    setErro("");
+    try {
+      await api(`/consultas/${id}/cancelar`, { method: "PATCH" });
+      await carregarConsultas();
+    } catch (error) {
+      setErro(error.message || "Não foi possível cancelar a consulta.");
+    }
   }
 
   const cardBase = "rounded-xl border border-blue-100 bg-white shadow-sm";
@@ -736,7 +695,7 @@ export default function Consultas() {
                 "Confira os dados da consulta antes de confirmar."}
               {aba === "agendar" &&
                 etapaAtual === 3 &&
-                "Seu horário foi reservado nesta demonstração."}
+                "Sua solicitação foi enviada e aguarda confirmação da unidade."}
             </p>
           </div>
 
@@ -775,6 +734,10 @@ export default function Consultas() {
             </button>
           ))}
         </section>
+
+        {erro && aba === "acompanhar" && (
+          <div role="alert" className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{erro}</div>
+        )}
 
         {/* ===================== ABA: AGENDAR ===================== */}
         {aba === "agendar" && (
@@ -847,6 +810,7 @@ export default function Consultas() {
                       </div>
                     </div>
 
+                    {carregandoDados && <p className="mb-5 rounded-lg bg-blue-50 p-4 text-sm">Carregando especialidades e unidades...</p>}
                     {/* ESPECIALIDADE */}
                     <fieldset className="mb-7">
                       <legend className="mb-3 text-sm font-bold sm:text-base">
@@ -947,7 +911,7 @@ export default function Consultas() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      {i === 0 && (
+                                      {false && i === 0 && (
                                         <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold">
                                           Mais próxima
                                         </span>
@@ -985,7 +949,7 @@ export default function Consultas() {
                                         size={15}
                                         className="shrink-0 text-[#3563A7]"
                                       />
-                                      {u.distancia} de distância
+                                      {u.rua || u.bairro}
                                     </p>
                                   </div>
 
@@ -1020,7 +984,7 @@ export default function Consultas() {
                         valor={dia}
                         onChange={setDia}
                         minimo={minimoIso}
-                        bloquearDomingos
+                        bloquearFinsDeSemana
                         placeholder="Selecione o dia"
                         largura="w-full sm:w-60"
                       />
@@ -1033,8 +997,15 @@ export default function Consultas() {
                         <span className="ml-1 text-red-500">*</span>
                       </legend>
 
+                      {carregandoHorarios ? (
+                        <p className="col-span-full rounded-lg bg-blue-50 p-4 text-sm">Buscando horários disponíveis...</p>
+                      ) : !dia || !unidade || !especialidadeSelecionada ? (
+                        <p className="col-span-full rounded-lg bg-blue-50 p-4 text-sm">Selecione a especialidade, a unidade e a data para consultar os horários.</p>
+                      ) : horariosDisponiveis.length === 0 ? (
+                        <p className="col-span-full rounded-lg bg-blue-50 p-4 text-sm">Não há horários disponíveis para esta data. Escolha outro dia.</p>
+                      ) : null}
                       <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-                        {horarios.map((h) => {
+                        {horariosDisponiveis.map((h) => {
                           const selecionado = horario === h;
 
                           return (
@@ -1258,12 +1229,11 @@ export default function Consultas() {
                 </div>
 
                 <h2 className="text-2xl font-extrabold sm:text-3xl">
-                  Agendamento concluído!
+                  Solicitação enviada!
                 </h2>
 
                 <p className="mx-auto mt-4 max-w-xl text-sm leading-7 sm:text-base">
-                  Sua consulta de {especialidade} na {unidade?.nome} está
-                  marcada para {diaSelecionado?.texto} às {horario}.
+                  Sua solicitação de consulta de {especialidade} na {unidade?.nome} foi registrada para {diaSelecionado?.texto} às {horario}. Ela ficará pendente até a confirmação da unidade.
                 </p>
 
                 <div className="mx-auto mt-7 max-w-xl rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-5 text-left">
@@ -1275,9 +1245,7 @@ export default function Consultas() {
                     <div>
                       <h3 className="font-bold">Importante</h3>
                       <p className="mt-2 text-sm leading-6">
-                        Esta é uma demonstração: nenhum dado é enviado a uma
-                        clínica real. Em caso de urgência, procure um
-                        atendimento de emergência.
+                        O horário foi solicitado, mas ainda depende da confirmação da unidade. Acompanhe o andamento em Minhas consultas.
                       </p>
                     </div>
                   </div>
@@ -1348,7 +1316,9 @@ export default function Consultas() {
               </div>
             </div>
 
-            {listaFiltrada.length === 0 ? (
+            {carregandoConsultas ? (
+              <div className="rounded-xl border border-blue-100 p-10 text-center text-sm">Carregando suas consultas...</div>
+            ) : listaFiltrada.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[#3563A7]/40 p-10 text-center">
                 <p className="font-semibold">Nenhuma consulta encontrada.</p>
                 <p className="mt-1 text-sm">
@@ -1358,7 +1328,7 @@ export default function Consultas() {
             ) : (
               <div className="grid gap-4">
                 {listaFiltrada.map((c) => {
-                  const estilo = estiloStatus[c.status];
+                  const estilo = estiloStatus[c.status] || estiloStatus.Pendente;
 
                   return (
                     <article
@@ -1409,7 +1379,7 @@ export default function Consultas() {
                       </div>
 
                       <div className="flex flex-col gap-2 sm:flex-row">
-                        {c.status === "Agendada" && (
+                        {["Pendente", "Confirmada"].includes(c.status) && (
                           <button
                             type="button"
                             onClick={() => cancelarConsulta(c.id)}
@@ -1437,7 +1407,7 @@ export default function Consultas() {
                           className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#3563A7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/40"
                         >
                           <RefreshCw size={17} />
-                          {c.status === "Agendada"
+                          {["Pendente", "Confirmada"].includes(c.status)
                             ? "Reagendar"
                             : "Agendar novamente"}
                         </button>

@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 
 import {
@@ -8,7 +7,8 @@ import {
   confirmarConsulta,
   listarConsultasDoMedico,
   concluirConsulta,
-  buscarTriagemDaConsulta
+  buscarTriagemDaConsulta,
+  listarDisponibilidadeConsultas
 } from "../controllers/consultaController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
@@ -17,13 +17,19 @@ import { autenticarMedico } from "../middlewares/medicoAuthMiddleware.js";
 const router = Router();
 
 // Rotas do paciente autenticado
-router.post("/", autenticarPaciente, solicitarConsulta);
+router.get(
+  "/disponibilidade",
+  autenticarPaciente,
+  listarDisponibilidadeConsultas
+);
+
 router.get("/me", autenticarPaciente, listarMinhasConsultas);
+router.post("/", autenticarPaciente, solicitarConsulta);
 router.patch("/:id/cancelar", autenticarPaciente, cancelarMinhaConsulta);
 
-// Rota do médico autenticado
-router.patch("/:id/confirmar", autenticarMedico, confirmarConsulta);
+// Rotas do médico autenticado
 router.get("/medico/me", autenticarMedico, listarConsultasDoMedico);
+router.patch("/:id/confirmar", autenticarMedico, confirmarConsulta);
 router.patch("/:id/concluir", autenticarMedico, concluirConsulta);
 router.get("/:id/triagem", autenticarMedico, buscarTriagemDaConsulta);
 

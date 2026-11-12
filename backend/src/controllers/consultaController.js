@@ -1,54 +1,215 @@
 
 import { pool } from "../config/database.js";
 
+// ======================================================
+// FUNÇÕES AUXILIARES
+// ======================================================
+
+function validarDataHoraConsulta(valor) {
+  if (
+    typeof valor !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(valor)
+  ) {
+    return false;
+  }
+
+  const [data, hora] = valor.split("T");
+  const [ano, mes, dia] = data.split("-").map(Number);
+  const [h, min] = hora.split(":").map(Number);
+
+  const dataValidada = new Date(Date.UTC(ano, mes - 1, dia));
+
+  return (
+    dataValidada.getUTCFullYear() === ano &&
+    dataValidada.getUTCMonth() === mes - 1 &&
+    dataValidada.getUTCDate() === dia &&
+    h >= 8 &&
+    h <= 16 &&
+    (min === 0 || min === 30) &&
+    dataValidada.getUTCDay() >= 1 &&
+    dataValidada.getUTCDay() <= 5
+  );
+}
+
+function formatarDataHoraMySQL(valor) {
+  return `${valor.replace("T", " ")}:00`;
+}
+
+// ======================================================
+// DISPONIBILIDADE DE HORÁRIOS PARA O PACIENTE
+// ======================================================
+
+export async function listarDisponibilidadeConsultas(req, res, next) {
+  try {
+    const { unidade_id, especialidade_id, data } = req.query;
+
+    const unidadeId = Number(unidade_id);
+    const especialidadeId = Number(especialidade_id);
+
+    if (
+      !Number.isSafeInteger(unidadeId) ||
+      unidadeId <= 0 ||
+      !Number.isSafeInteger(especialidadeId) ||
+      especialidadeId <= 0
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe uma unidade e uma especialidade válidas."
+      });
+    }
+
+    if (
+      typeof data !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(data)
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe uma data válida."
+      });
+    }
+
+    const dataValidada = new Date(`${data}T00:00:00Z`);
+
+    if (
+      Number.isNaN(dataValidada.getTime()) ||
+      dataValidada.toISOString().slice(0, 10) !== data
+    ) {
+      return res.status(400).json({
+        mensagem: "A data informada é inválida."
+      });
+    }
+
+    const diaSemana = dataValidada.getUTCDay();
+
+    if (diaSemana === 0 || diaSemana === 6) {
+      return res.status(200).json({
+        data,
+        horarios: []
+      });
+    }
+
+    const [unidades] = await pool.query(
+      `SELECT id
+       FROM unidades
+       WHERE id = ?
+         AND ativo = TRUE`,
+      [unidadeId]
+    );
+
+    if (unidades.length === 0) {
+      return res.status(404).json({
+        mensagem: "Unidade não encontrada ou inativa."
+      });
+    }
+
+    const [especialidades] = await pool.query(
+      `SELECT id
+       FROM especialidades
+       WHERE id = ?`,
+      [especialidadeId]
+    );
+
+    if (especialidades.length === 0) {
+      return res.status(404).json({
+        mensagem: "Especialidade não encontrada."
+      });
+    }
+
+    const horarios = [];
+
+    for (let hora = 8; hora <= 16; hora++) {
+      for (const minuto of [0, 30]) {
+        const horario =
+          `${String(hora).padStart(2, "0")}:` +
+          `${String(minuto).padStart(2, "0")}`;
+
+        const dataHora = `${data} ${horario}:00`;
+
+        const [medicos] = await pool.query(
+          `SELECT DISTINCT m.id
+           FROM medicos m
+           INNER JOIN medico_unidade_setores mus
+             ON mus.medico_id = m.id
+           INNER JOIN unidade_setores us
+             ON us.unidade_id = mus.unidade_id
+            AND us.setor_id = mus.setor_id
+           INNER JOIN medico_especialidades me
+             ON me.medico_id = m.id
+           WHERE mus.unidade_id = ?
+             AND me.especialidade_id = ?
+             AND m.ativo = TRUE
+             AND ? > NOW()
+             AND NOT EXISTS (
+               SELECT 1
+               FROM consultas c
+               WHERE c.medico_id = m.id
+                 AND c.data_hora = ?
+                 AND c.status IN ('pendente', 'confirmada')
+             )
+           ORDER BY m.id`,
+          [unidadeId, especialidadeId, dataHora, dataHora]
+        );
+
+        if (medicos.length > 0) {
+          horarios.push(horario);
+        }
+      }
+    }
+
+    const [horariosDoPaciente] = await pool.query(
+      `SELECT TIME_FORMAT(data_hora, '%H:%i') AS horario
+       FROM consultas
+       WHERE paciente_id = ?
+         AND DATE(data_hora) = ?
+         AND status IN ('pendente', 'confirmada')`,
+      [req.paciente.id, data]
+    );
+
+    const ocupadosPaciente = new Set(
+      horariosDoPaciente.map((item) => item.horario)
+    );
+
+    const disponiveis = horarios.filter(
+      (horario) => !ocupadosPaciente.has(horario)
+    );
+
+    return res.status(200).json({
+      data,
+      horarios: disponiveis
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// ======================================================
+// SOLICITAR CONSULTA
+// O MÉDICO É SELECIONADO AUTOMATICAMENTE PELO BACKEND
+// ======================================================
+
 export async function solicitarConsulta(req, res, next) {
   const pacienteId = req.paciente.id;
 
   const {
-    medico_id,
     unidade_id,
     especialidade_id,
-    setor_id,
     data_hora,
     observacoes
   } = req.body ?? {};
 
-  const ids = { medico_id, unidade_id, especialidade_id, setor_id };
-
-  for (const [campo, valor] of Object.entries(ids)) {
-    if (
-      !Number.isSafeInteger(valor) ||
-      valor <= 0
-    ) {
-      return res.status(400).json({
-        mensagem: `O campo ${campo} deve ser um ID inteiro positivo.`
-      });
-    }
-  }
-
   if (
-    typeof data_hora !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(data_hora)
+    !Number.isSafeInteger(unidade_id) ||
+    unidade_id <= 0 ||
+    !Number.isSafeInteger(especialidade_id) ||
+    especialidade_id <= 0
   ) {
     return res.status(400).json({
-      mensagem: "Informe a data e a hora no formato AAAA-MM-DDTHH:mm."
+      mensagem: "Informe uma unidade e uma especialidade válidas."
     });
   }
 
-  const dataHora = new Date(data_hora);
-
-  if (
-    Number.isNaN(dataHora.getTime()) ||
-    dataHora.toISOString().slice(0, 16) !== data_hora.slice(0, 16)
-  ) {
+  if (!validarDataHoraConsulta(data_hora)) {
     return res.status(400).json({
-      mensagem: "A data ou o horário informado é inválido."
-    });
-  }
-
-  if (dataHora.getTime() <= Date.now()) {
-    return res.status(400).json({
-      mensagem: "A consulta deve ser solicitada para uma data futura."
+      mensagem:
+        "Selecione um horário válido, de segunda a sexta, entre 08:00 e 16:30."
     });
   }
 
@@ -65,89 +226,91 @@ export async function solicitarConsulta(req, res, next) {
     });
   }
 
+  const dataHora = formatarDataHoraMySQL(data_hora);
+
   let conexao;
 
   try {
     conexao = await pool.getConnection();
     await conexao.beginTransaction();
 
-    const [vinculos] = await conexao.query(
-      `SELECT 1
+    const [validacaoHorario] = await conexao.query(
+      `SELECT ? > NOW() AS horario_futuro`,
+      [dataHora]
+    );
+
+    if (!validacaoHorario[0].horario_futuro) {
+      await conexao.rollback();
+
+      return res.status(400).json({
+        mensagem:
+          "Não é possível solicitar uma consulta em um horário passado."
+      });
+    }
+
+    // Verifica se o paciente já possui consulta no horário.
+    const [consultasPaciente] = await conexao.query(
+      `SELECT id
+       FROM consultas
+       WHERE paciente_id = ?
+         AND data_hora = ?
+         AND status IN ('pendente', 'confirmada')
+       LIMIT 1
+       FOR UPDATE`,
+      [pacienteId, dataHora]
+    );
+
+    if (consultasPaciente.length > 0) {
+      await conexao.rollback();
+
+      return res.status(409).json({
+        mensagem: "Você já possui uma consulta nesse horário."
+      });
+    }
+
+    // Busca médicos vinculados à unidade, setor e especialidade.
+    // O paciente não precisa escolher o profissional.
+    const [medicos] = await conexao.query(
+      `SELECT DISTINCT
+         m.id AS medico_id,
+         mus.setor_id
        FROM medicos m
        INNER JOIN medico_unidade_setores mus
          ON mus.medico_id = m.id
        INNER JOIN unidade_setores us
          ON us.unidade_id = mus.unidade_id
         AND us.setor_id = mus.setor_id
-       INNER JOIN unidades u
-         ON u.id = us.unidade_id
        INNER JOIN medico_especialidades me
          ON me.medico_id = m.id
-       WHERE m.id = ?
-         AND u.id = ?
+       INNER JOIN unidades u
+         ON u.id = mus.unidade_id
+       WHERE mus.unidade_id = ?
          AND me.especialidade_id = ?
-         AND mus.setor_id = ?
          AND m.ativo = TRUE
          AND u.ativo = TRUE
-       LIMIT 1`,
-      [medico_id, unidade_id, especialidade_id, setor_id]
-    );
-
-    if (vinculos.length === 0) {
-      await conexao.rollback();
-
-      return res.status(400).json({
-        mensagem:
-          "O médico não possui esse vínculo de unidade, setor e especialidade."
-      });
-    }
-
-
-    const [conflitosPaciente] = await conexao.query(
-      `SELECT id
-   FROM consultas
-   WHERE paciente_id = ?
-     AND data_hora = ?
-     AND status IN ('pendente', 'confirmada')
-   LIMIT 1
-   FOR UPDATE`,
-      [
-        pacienteId,
-        dataHora.toISOString().slice(0, 19).replace("T", " ")
-      ]
-    );
-
-    if (conflitosPaciente.length > 0) {
-      await conexao.rollback();
-
-      return res.status(409).json({
-        mensagem:
-          "Você já possui uma consulta pendente ou confirmada nesse horário."
-      });
-    }
-
-
-    const [conflitos] = await conexao.query(
-      `SELECT id
-       FROM consultas
-       WHERE medico_id = ?
-         AND data_hora = ?
-         AND status IN ('pendente', 'confirmada')
-       LIMIT 1
+         AND NOT EXISTS (
+           SELECT 1
+           FROM consultas c
+           WHERE c.medico_id = m.id
+             AND c.data_hora = ?
+             AND c.status IN ('pendente', 'confirmada')
+         )
+       ORDER BY m.id
        FOR UPDATE`,
-      [
-        medico_id,
-        dataHora.toISOString().slice(0, 19).replace("T", " ")
-      ]
+      [unidade_id, especialidade_id, dataHora]
     );
 
-    if (conflitos.length > 0) {
+    if (medicos.length === 0) {
       await conexao.rollback();
 
       return res.status(409).json({
-        mensagem: "Já existe uma consulta solicitada ou confirmada para esse médico nesse horário."
+        mensagem:
+          "Esse horário acabou de ficar indisponível. Selecione outro horário."
       });
     }
+
+    // Seleciona automaticamente o primeiro médico disponível.
+    const medicoSelecionado = medicos[0];
 
     const [resultado] = await conexao.query(
       `INSERT INTO consultas (
@@ -162,11 +325,11 @@ export async function solicitarConsulta(req, res, next) {
       ) VALUES (?, ?, ?, ?, ?, ?, 'pendente', ?)`,
       [
         pacienteId,
-        medico_id,
+        medicoSelecionado.medico_id,
         unidade_id,
         especialidade_id,
-        setor_id,
-        dataHora.toISOString().slice(0, 19).replace("T", " "),
+        medicoSelecionado.setor_id,
+        dataHora,
         observacoes?.trim() || null
       ]
     );
@@ -174,15 +337,14 @@ export async function solicitarConsulta(req, res, next) {
     await conexao.commit();
 
     return res.status(201).json({
-      mensagem: "Solicitação de consulta registrada. Aguarde a confirmação da unidade.",
+      mensagem:
+        "Solicitação de consulta registrada. Aguarde a confirmação da unidade.",
       consulta: {
         id: resultado.insertId,
         paciente_id: pacienteId,
-        medico_id,
         unidade_id,
         especialidade_id,
-        setor_id,
-        data_hora: dataHora.toISOString().slice(0, 19).replace("T", " "),
+        data_hora: dataHora,
         status: "pendente"
       }
     });
@@ -201,6 +363,9 @@ export async function solicitarConsulta(req, res, next) {
   }
 }
 
+// ======================================================
+// LISTAR CONSULTAS DO PACIENTE
+// ======================================================
 
 export async function listarMinhasConsultas(req, res, next) {
   try {
@@ -244,6 +409,9 @@ export async function listarMinhasConsultas(req, res, next) {
   }
 }
 
+// ======================================================
+// CANCELAR CONSULTA DO PACIENTE
+// ======================================================
 
 export async function cancelarMinhaConsulta(req, res, next) {
   try {
@@ -295,6 +463,9 @@ export async function cancelarMinhaConsulta(req, res, next) {
   }
 }
 
+// ======================================================
+// CONFIRMAR CONSULTA PELO MÉDICO
+// ======================================================
 
 export async function confirmarConsulta(req, res, next) {
   try {
@@ -339,7 +510,8 @@ export async function confirmarConsulta(req, res, next) {
 
       if (consultas[0].medico_id !== medicoId) {
         return res.status(403).json({
-          mensagem: "Você não tem permissão para confirmar esta consulta."
+          mensagem:
+            "Você não tem permissão para confirmar esta consulta."
         });
       }
 
@@ -360,6 +532,9 @@ export async function confirmarConsulta(req, res, next) {
   }
 }
 
+// ======================================================
+// LISTAR CONSULTAS DO MÉDICO
+// ======================================================
 
 export async function listarConsultasDoMedico(req, res, next) {
   try {
@@ -404,6 +579,9 @@ export async function listarConsultasDoMedico(req, res, next) {
   }
 }
 
+// ======================================================
+// CONCLUIR CONSULTA PELO MÉDICO
+// ======================================================
 
 export async function concluirConsulta(req, res, next) {
   try {
@@ -442,7 +620,8 @@ export async function concluirConsulta(req, res, next) {
 
       if (consultas[0].medico_id !== medicoId) {
         return res.status(403).json({
-          mensagem: "Você não tem permissão para concluir esta consulta."
+          mensagem:
+            "Você não tem permissão para concluir esta consulta."
         });
       }
 
@@ -463,8 +642,10 @@ export async function concluirConsulta(req, res, next) {
   }
 }
 
-
+// ======================================================
 // BUSCAR TRIAGEM VINCULADA À CONSULTA
+// ======================================================
+
 export async function buscarTriagemDaConsulta(req, res, next) {
   try {
     const { id } = req.params;
@@ -477,27 +658,27 @@ export async function buscarTriagemDaConsulta(req, res, next) {
 
     const [triagens] = await pool.query(
       `SELECT
-        t.id,
-        t.paciente_id,
-        t.consulta_id,
-        t.enfermeiro_id,
-        p.nome_completo AS paciente,
-        e.nome_completo AS enfermeiro,
-        t.queixa_principal,
-        t.sintomas,
-        t.inicio_sintomas,
-        t.intensidade_dor,
-        t.pressao_arterial,
-        t.temperatura,
-        t.frequencia_cardiaca,
-        t.frequencia_respiratoria,
-        t.saturacao_oxigenio,
-        t.glicemia,
-        t.peso,
-        t.altura,
-        t.classificacao_risco,
-        t.observacoes,
-        t.criado_em
+         t.id,
+         t.paciente_id,
+         t.consulta_id,
+         t.enfermeiro_id,
+         p.nome_completo AS paciente,
+         e.nome_completo AS enfermeiro,
+         t.queixa_principal,
+         t.sintomas,
+         t.inicio_sintomas,
+         t.intensidade_dor,
+         t.pressao_arterial,
+         t.temperatura,
+         t.frequencia_cardiaca,
+         t.frequencia_respiratoria,
+         t.saturacao_oxigenio,
+         t.glicemia,
+         t.peso,
+         t.altura,
+         t.classificacao_risco,
+         t.observacoes,
+         t.criado_em
        FROM consultas c
        INNER JOIN triagens t
          ON t.paciente_id = c.paciente_id
@@ -521,4 +702,3 @@ export async function buscarTriagemDaConsulta(req, res, next) {
     return next(error);
   }
 }
-
