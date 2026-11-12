@@ -1,3 +1,4 @@
+
 import { pool } from "../config/database.js";
 
 // Indicadores gerais do dashboard administrativo.
@@ -5,11 +6,12 @@ export async function obterIndicadoresAdministrativos() {
     const [
         [pacientes],
         [medicos],
-        [unidades],
+        [totalUnidades],
         [consultasHoje],
         [consultasPorStatus],
         [atendimentosDomiciliares],
-        [pacientesNaFila]
+        [pacientesNaFila],
+        [unidadesResumo]
     ] = await Promise.all([
 
         // Total de pacientes ativos.
@@ -64,19 +66,43 @@ export async function obterIndicadoresAdministrativos() {
             SELECT COUNT(*) AS total
             FROM filas
             WHERE status = 'aguardando'
+        `),
+
+        // Resumo de cada unidade, com consultas e pacientes aguardando.
+        pool.query(`
+            SELECT
+                u.id,
+                u.nome,
+                u.bairro,
+                COUNT(DISTINCT c.id) AS total_consultas,
+                COUNT(
+                    DISTINCT CASE
+                        WHEN f.status = 'aguardando' THEN f.id
+                    END
+                ) AS pacientes_aguardando
+            FROM unidades u
+            LEFT JOIN consultas c
+                ON c.unidade_id = u.id
+            LEFT JOIN filas f
+                ON f.unidade_id = u.id
+            WHERE u.ativo = TRUE
+            GROUP BY u.id, u.nome, u.bairro
+            ORDER BY u.nome ASC
         `)
     ]);
 
     return {
         pacientes_ativos: pacientes[0].total,
         medicos_ativos: medicos[0].total,
-        unidades_ativas: unidades[0].total,
+        unidades_ativas: totalUnidades[0].total,
         consultas_hoje: consultasHoje[0].total,
         consultas_por_status: consultasPorStatus,
         atendimentos_domiciliares_por_status: atendimentosDomiciliares,
-        pacientes_aguardando: pacientesNaFila[0].total
+        pacientes_aguardando: pacientesNaFila[0].total,
+        unidades: unidadesResumo
     };
 }
+
 // Indicadores do dashboard médico.
 export async function obterIndicadoresMedicos(medicoId) {
     const [
