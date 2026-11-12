@@ -940,7 +940,7 @@ export default function Header() {
 
               <Link
 
-                href="/publico/login"
+                href="/publico/selecionar-acesso"
 
                 onClick={fecharMenus}
 
@@ -1036,7 +1036,7 @@ export default function Header() {
 
             <Link
 
-              href="/publico/login"
+              href="/publico/selecionar-acesso"
 
               className="
 
