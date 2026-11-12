@@ -834,7 +834,7 @@ export default function TriagemEnfermagemPage() {
                 </section>
 
                 {/* CLASSIFICAÇÃO */}
-                <section className="rounded-[24px] min-h-[619px] border border-[#DCE8F3] bg-white p-5 shadow-[0_10px_30px_rgba(2,62,138,0.05)] sm:p-7">
+                <section className="rounded-[24px] min-h-[620px] border border-[#DCE8F3] bg-white p-5 shadow-[0_10px_30px_rgba(2,62,138,0.05)] sm:p-7">
                   <SectionHeading
                     number="04"
                     icon={<ShieldCheck size={20} />}
