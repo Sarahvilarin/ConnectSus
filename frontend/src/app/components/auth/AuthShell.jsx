@@ -2,15 +2,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-
-import {
-  Activity,
-  CalendarCheck,
-  FileText,
-  HeartPulse,
-  ShieldCheck,
-} from "lucide-react";
 
 export default function AuthShell({
   children,
@@ -90,33 +81,6 @@ export default function AuthShell({
               "
             />
 
-            {/* LOGO */}
-
-            <div className="absolute left-7 top-7">
-              <Link
-                href="/"
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  rounded-full
-                  border
-                  border-white/20
-                  bg-white/15
-                  px-4
-                  py-2
-                  text-sm
-                  font-semibold
-                  text-white
-                  backdrop-blur-md
-                "
-              >
-                <HeartPulse size={17} />
-
-                UneSUS
-              </Link>
-            </div>
-
             {/* CONTEÚDO */}
 
             <div
@@ -129,30 +93,6 @@ export default function AuthShell({
                 xl:p-10
               "
             >
-              <div
-                className="
-                  mb-4
-                  flex
-                  w-fit
-                  items-center
-                  gap-2
-                  rounded-full
-                  border
-                  border-white/20
-                  bg-white/10
-                  px-3
-                  py-1.5
-                  text-xs
-                  font-semibold
-                  text-white
-                  backdrop-blur
-                "
-              >
-                <ShieldCheck size={15} />
-
-                Saúde digital com segurança
-              </div>
-
               <h1
                 className="
                   max-w-xl
@@ -178,36 +118,6 @@ export default function AuthShell({
               >
                 {descricao}
               </p>
-
-              <div
-                className="
-                  mt-6
-                  grid
-                  max-w-xl
-                  grid-cols-2
-                  gap-3
-                "
-              >
-                <Beneficio
-                  icon={<CalendarCheck size={17} />}
-                  texto="Consultas"
-                />
-
-                <Beneficio
-                  icon={<FileText size={17} />}
-                  texto="Exames"
-                />
-
-                <Beneficio
-                  icon={<Activity size={17} />}
-                  texto="Fila online"
-                />
-
-                <Beneficio
-                  icon={<HeartPulse size={17} />}
-                  texto="Triagem digital"
-                />
-              </div>
             </div>
           </section>
 
@@ -240,46 +150,5 @@ export default function AuthShell({
         </div>
       </div>
     </main>
-  );
-}
-
-function Beneficio({
-  icon,
-  texto,
-}) {
-  return (
-    <div
-      className="
-        flex
-        items-center
-        gap-3
-        rounded-xl
-        border
-        border-white/15
-        bg-white/10
-        px-3
-        py-2.5
-        text-sm
-        font-medium
-        text-white
-        backdrop-blur-sm
-      "
-    >
-      <div
-        className="
-          flex
-          h-8
-          w-8
-          items-center
-          justify-center
-          rounded-lg
-          bg-white/10
-        "
-      >
-        {icon}
-      </div>
-
-      {texto}
-    </div>
   );
 }
