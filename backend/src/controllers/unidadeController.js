@@ -1,6 +1,7 @@
 
 import { pool } from "../config/database.js";
 import { validarUnidade } from "../validators/unidadeValidator.js";
+import { listarEstimativasPorUnidade } from "../services/filaService.js"
 
 // LISTAR UNIDADES
 export async function listarUnidades(req, res, next) {
@@ -25,6 +26,17 @@ export async function listarUnidades(req, res, next) {
     `);
 
     res.status(200).json(unidades);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// LISTAR ESTIMATIVAS DE ESPERA POR UNIDADE
+export async function listarEstimativasEsperaUnidades(req, res, next) {
+  try {
+    const estimativas = await listarEstimativasPorUnidade();
+
+    return res.status(200).json(estimativas);
   } catch (error) {
     next(error);
   }

@@ -492,3 +492,81 @@ export async function realizarCheckinPaciente(pacienteId, filaId) {
         conexao.release();
     }
 }
+
+
+export async function listarEstimativasPorUnidade() {
+    const [setores] = await pool.query(
+        `SELECT
+            us.unidade_id,
+            us.setor_id,
+            COUNT(f.id) AS pessoas_ativas,
+            (
+                SELECT AVG(
+                    TIMESTAMPDIFF(
+                        SECOND,
+                        h.inicio_atendimento_em,
+                        h.fim_atendimento_em
+                    )
+                )
+                FROM filas h
+                WHERE h.unidade_id = us.unidade_id
+                  AND h.setor_id = us.setor_id
+                  AND h.status = 'concluido'
+                  AND h.inicio_atendimento_em IS NOT NULL
+                  AND h.fim_atendimento_em IS NOT NULL
+                  AND h.fim_atendimento_em >=
+                      DATE_SUB(NOW(), INTERVAL 30 DAY)
+                  AND h.fim_atendimento_em > h.inicio_atendimento_em
+            ) AS media_segundos
+        FROM unidade_setores us
+        INNER JOIN unidades u ON u.id = us.unidade_id
+        LEFT JOIN filas f
+            ON f.unidade_id = us.unidade_id
+            AND f.setor_id = us.setor_id
+            AND f.status IN (
+                'aguardando',
+                'chamado',
+                'em_atendimento'
+            )
+        WHERE u.ativo = TRUE
+        GROUP BY us.unidade_id, us.setor_id`
+    );
+
+    const estimativas = new Map();
+
+    for (const setor of setores) {
+        const quantidade = Number(setor.pessoas_ativas);
+
+        if (!estimativas.has(setor.unidade_id)) {
+            estimativas.set(setor.unidade_id, {
+                totalEspera: 0,
+                totalPessoas: 0
+            });
+        }
+
+        if (quantidade === 0) continue;
+
+        const mediaSegundos = Number(setor.media_segundos);
+
+        const mediaMinutos =
+            Number.isFinite(mediaSegundos) && mediaSegundos > 0
+                ? Math.max(5, Math.round(mediaSegundos / 60))
+                : 15;
+
+        const dados = estimativas.get(setor.unidade_id);
+
+        dados.totalEspera +=
+            (quantidade * (quantidade - 1) / 2) * mediaMinutos;
+
+        dados.totalPessoas += quantidade;
+    }
+
+    return Array.from(estimativas.entries()).map(
+        ([unidade_id, dados]) => ({
+            unidade_id,
+            espera_minutos: dados.totalPessoas > 0
+                ? Math.round(dados.totalEspera / dados.totalPessoas)
+                : 0
+        })
+    );
+}

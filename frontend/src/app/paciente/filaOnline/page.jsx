@@ -1,12 +1,10 @@
 "use client";
 
-console.log("ARQUIVO PACIENTE FILA ONLINE CARREGADO");
-
 import { api } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import {
   APIProvider,
-  Map,
+  Map as GoogleMap,
   Marker,
   useMap,
 } from "@vis.gl/react-google-maps";
@@ -72,12 +70,12 @@ function converterServicos(valor) {
     .filter(Boolean);
 }
 
-function adaptarUnidade(unidade) {
+function adaptarUnidade(unidade, espera = 0) {
   return {
     ...unidade,
     endereco: formatarEndereco(unidade),
     servicos: converterServicos(unidade.servicos_disponiveis),
-    espera: null,
+    espera,
     tipo: "normal",
   };
 }
@@ -538,7 +536,7 @@ function MapaUnidades({ unidades, onSelecionar }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden rounded-xl border border-[#D8E5F8]">
-      <Map
+      <GoogleMap
         defaultCenter={{
           lat: -23.6229,
           lng: -46.5511,
@@ -556,7 +554,7 @@ function MapaUnidades({ unidades, onSelecionar }) {
           unidades={unidades}
           onSelecionar={onSelecionar}
         />
-      </Map>
+      </GoogleMap>
     </div>
   );
 }
@@ -566,7 +564,6 @@ function MapaUnidades({ unidades, onSelecionar }) {
 // ======================================================
 
 function FilaOnlineConteudo() {
-  console.log("TESTE: FilaOnlineConteudo está sendo executado");
   const [unidades, setUnidades] = useState([]);
   const [carregandoUnidades, setCarregandoUnidades] = useState(true);
   const [erroUnidades, setErroUnidades] = useState("");
@@ -582,16 +579,12 @@ function FilaOnlineConteudo() {
 
   useEffect(() => {
     async function carregarUnidades() {
-      console.log("FILA ONLINE: componente carregado");
       try {
         setCarregandoUnidades(true);
         setErroUnidades("");
 
-        console.log("FILA ONLINE: chamando API de unidades");
-        console.log("URL da API:", process.env.NEXT_PUBLIC_API_URL);
+        // Busca todas as unidades
         const resposta = await api("/unidades");
-
-        console.log("Resposta da API de unidades:", resposta);
 
         const listaUnidades = Array.isArray(resposta)
           ? resposta
@@ -607,11 +600,50 @@ function FilaOnlineConteudo() {
           );
         }
 
-        const unidadesAdaptadas = listaUnidades.map(adaptarUnidade);
+        // Busca as estimativas de espera
+        let estimativas = [];
+
+        try {
+          const respostaEstimativas = await api(
+            "/unidades/estimativas-espera"
+          );
+
+          estimativas = Array.isArray(respostaEstimativas)
+            ? respostaEstimativas
+            : Array.isArray(respostaEstimativas?.estimativas)
+              ? respostaEstimativas.estimativas
+              : [];
+        } catch (erro) {
+          console.warn(
+            "Não foi possível carregar as estimativas:",
+            erro
+          );
+        }
+
+        // Relaciona o ID da unidade ao tempo estimado
+        const mapaEstimativas = new Map(
+          estimativas.map((item) => [
+            Number(item.unidade_id),
+            Number(item.espera_minutos),
+          ])
+        );
+
+        // Adapta as unidades com suas respectivas estimativas
+        const unidadesAdaptadas = listaUnidades.map((unidade) =>
+          adaptarUnidade(
+            unidade,
+            mapaEstimativas.get(Number(unidade.id)) ?? 0
+          )
+        );
+        // Logs para diagnóstico
+        console.log("Unidades recebidas:", listaUnidades);
+        console.log("Estimativas recebidas:", estimativas);
+        console.log("Unidades adaptadas:", unidadesAdaptadas);
 
         setUnidades(unidadesAdaptadas);
       } catch (erro) {
         console.error("Erro ao carregar unidades:", erro);
+
         setErroUnidades(
           erro.message || "Não foi possível carregar as unidades."
         );
@@ -621,6 +653,39 @@ function FilaOnlineConteudo() {
     }
 
     carregarUnidades();
+  }, []);
+
+
+  useEffect(() => {
+    async function recuperarFila() {
+      try {
+        const resposta = await api("/filas/me");
+
+        const filas = Array.isArray(resposta)
+          ? resposta
+          : Array.isArray(resposta?.filas)
+            ? resposta.filas
+            : Array.isArray(resposta?.data)
+              ? resposta.data
+              : [];
+
+        const filaAtiva = filas.find((fila) =>
+          ["aguardando", "chamado", "em_atendimento"].includes(
+            fila.status
+          )
+        );
+
+        if (!filaAtiva) return;
+
+        setEntradaFila(filaAtiva);
+        setUnidadeSelecionada(Number(filaAtiva.unidade_id));
+        setEspecialidadeConfirmada(filaAtiva.setor);
+      } catch (erro) {
+        console.error("Erro ao recuperar fila:", erro);
+      }
+    }
+
+    recuperarFila();
   }, []);
 
 
@@ -645,8 +710,65 @@ function FilaOnlineConteudo() {
   const [especialidadeConfirmada, setEspecialidadeConfirmada] =
     useState("");
 
+
   // Estado para busca por texto
   const [busca, setBusca] = useState("");
+
+
+  const [entradaFila, setEntradaFila] = useState(null);
+  const [enviandoEntrada, setEnviandoEntrada] = useState(false);
+  const [carregandoFila, setCarregandoFila] = useState(true);
+  const [erroFila, setErroFila] = useState("");
+
+
+  useEffect(() => {
+    async function carregarMinhaFila() {
+      try {
+        setCarregandoFila(true);
+        setErroFila("");
+
+        const resposta = await api("/filas/me");
+        console.log("RESPOSTA COMPLETA:", JSON.stringify(resposta, null, 2));
+        console.log("TIPO DA RESPOSTA:", typeof resposta);
+        console.log("É ARRAY?", Array.isArray(resposta));
+
+        const filas = Array.isArray(resposta)
+          ? resposta
+          : Array.isArray(resposta?.filas)
+            ? resposta.filas
+            : Array.isArray(resposta?.data)
+              ? resposta.data
+              : [];
+
+        const filaAtiva = filas.find((fila) =>
+          ["aguardando", "chamado", "em_atendimento"].includes(
+            fila.status
+          )
+        );
+
+        if (!filaAtiva) {
+          setEntradaFila(null);
+          setUnidadeSelecionada(null);
+          setEspecialidadeConfirmada("");
+          return;
+        }
+
+        setEntradaFila(filaAtiva);
+        setUnidadeSelecionada(Number(filaAtiva.unidade_id));
+        setEspecialidadeConfirmada(
+          filaAtiva.setor || filaAtiva.especialidade || ""
+        );
+      } catch (erro) {
+        console.error("Erro ao carregar minha fila:", erro);
+        setErroFila(erro.message || "Não foi possível consultar sua fila.");
+      } finally {
+        setCarregandoFila(false);
+      }
+    }
+
+    carregarMinhaFila();
+  }, []);
+
 
   // Filtragem das unidades
   const unidadesFiltradas = unidades.filter((unidade) => {
@@ -698,13 +820,72 @@ function FilaOnlineConteudo() {
     setEspecialidadesSelecionadas([]);
   }
 
-  function confirmarEntrada() {
-    if (especialidadesSelecionadas.length === 0 || !unidadeParaConfirmar) {
+  async function confirmarEntrada() {
+    if (
+      especialidadesSelecionadas.length === 0 ||
+      !unidadeParaConfirmar ||
+      enviandoEntrada
+    ) {
       return;
     }
 
-    setEspecialidadeConfirmada(especialidadesSelecionadas.join(", "));
-    setEntrouNaFila(true);
+    const setorSelecionado = setoresUnidade.find(
+      (setor) => setor.nome === especialidadesSelecionadas[0]
+    );
+
+    if (!setorSelecionado) {
+      alert("Não foi possível identificar o setor selecionado.");
+      return;
+    }
+
+    try {
+      setEnviandoEntrada(true);
+
+      await api("/filas", {
+        method: "POST",
+        body: JSON.stringify({
+          unidade_id: Number(unidadeParaConfirmar.id),
+          setor_id: Number(setorSelecionado.id),
+          consulta_id: null,
+          prioridade: "normal",
+        }),
+      });
+
+      const resposta = await api("/filas/me");
+
+      const filas = Array.isArray(resposta)
+        ? resposta
+        : Array.isArray(resposta?.filas)
+          ? resposta.filas
+          : Array.isArray(resposta?.data)
+            ? resposta.data
+            : [];
+
+      const filaAtiva = filas.find(
+        (fila) =>
+          Number(fila.unidade_id) === Number(unidadeParaConfirmar.id) &&
+          Number(fila.setor_id) === Number(setorSelecionado.id) &&
+          ["aguardando", "chamado", "em_atendimento"].includes(
+            fila.status
+          )
+      );
+
+      if (!filaAtiva) {
+        throw new Error(
+          "A entrada foi enviada, mas não foi possível recuperar os dados da fila."
+        );
+      }
+
+      setEntradaFila(filaAtiva);
+      setUnidadeSelecionada(Number(filaAtiva.unidade_id));
+      setEspecialidadeConfirmada(filaAtiva.setor);
+      setEntrouNaFila(true);
+    } catch (erro) {
+      console.error("Erro ao entrar na fila:", erro);
+      alert(erro.message || "Não foi possível entrar na fila.");
+    } finally {
+      setEnviandoEntrada(false);
+    }
   }
 
   function concluirConfirmacao() {
@@ -719,11 +900,27 @@ function FilaOnlineConteudo() {
     setMostrarConfirmacaoSaida(true);
   }
 
-  function confirmarSaidaDaFila() {
-    setUnidadeSelecionada(null);
-    setEspecialidadeConfirmada("");
-    setMostrarQr(false);
-    setMostrarConfirmacaoSaida(false);
+  async function confirmarSaidaDaFila() {
+    if (!entradaFila?.id) {
+      alert("Não foi possível identificar sua entrada na fila.");
+      return;
+    }
+
+    try {
+      await api(`/filas/${entradaFila.id}/cancelar`, {
+        method: "PATCH",
+      });
+
+      setEntradaFila(null);
+      setUnidadeSelecionada(null);
+      setEspecialidadeConfirmada("");
+      setMostrarQr(false);
+      setMostrarConfirmacaoSaida(false);
+      setEntrouNaFila(false);
+    } catch (erro) {
+      console.error("Erro ao sair da fila:", erro);
+      alert(erro.message || "Não foi possível sair da fila.");
+    }
   }
 
   return (
@@ -776,14 +973,21 @@ function FilaOnlineConteudo() {
                     <div className="sm:border-r sm:border-white/40 sm:pr-4">
                       <p className="text-base font-semibold text-white/95">Sua posição na fila</p>
                       <div className="mt-2 flex items-baseline justify-center gap-3 sm:justify-start">
-                        <span className="text-5xl font-bold leading-none sm:text-6xl">4º</span>
+                        <span className="text-5xl font-bold leading-none sm:text-6xl">
+                          {entradaFila?.posicao != null
+                            ? `${entradaFila.posicao}º`
+                            : "—"}
+                        </span>
                         <span className="text-base sm:text-lg">da fila</span>
                       </div>
                     </div>
                     <div className="sm:border-r sm:border-white/40 sm:px-4">
-                      <p className="text-base font-semibold text-white/95">Tempo estimado de espera</p>
+                      <p className="text-base font-semibold text-white/95">
+                        Sua previsão de espera
+                      </p>
                       <p className="mt-2 text-center text-3xl font-bold sm:text-left">
-                        {unidadeAtual.espera} min
+                        {entradaFila?.estimativa_espera?.tempo_estimado_minutos ?? "—"}
+                        {entradaFila?.estimativa_espera?.tempo_estimado_minutos != null && " min"}
                       </p>
                       <p className="mt-1 text-center text-xs text-white/90 sm:text-left">
                         Sujeito à triagem médica
@@ -792,7 +996,7 @@ function FilaOnlineConteudo() {
                     <div className="flex flex-col items-center justify-center sm:pl-4">
                       <p className="text-base font-semibold text-white/95">Sua senha</p>
                       <span className="mt-2 rounded-lg bg-white/15 px-4 py-1 text-3xl font-bold tracking-wide text-white ring-1 ring-inset ring-white/25">
-                        A-084
+                        {entradaFila?.id ? `#${entradaFila.id}` : "—"}
                       </span>
                     </div>
                   </div>
@@ -950,7 +1154,7 @@ function FilaOnlineConteudo() {
                         <div className="flex items-center gap-2">
                           <div>
                             <p className="text-[11px] text-[#304A7D]">
-                              Tempo de espera
+                              Média de espera da unidade
                             </p>
 
                             <p
@@ -1162,7 +1366,7 @@ function FilaOnlineConteudo() {
                     <p className="text-sm text-[#60769C]">Sua senha</p>
 
                     <span className="mt-2 rounded-xl bg-[#DFEAFF] px-4 py-2 text-3xl font-bold tracking-wide text-[#1752B5]">
-                      A-084
+                      {entradaFila?.id ? `#${entradaFila.id}` : "—"}
                     </span>
                   </div>
 
@@ -1261,10 +1465,12 @@ function FilaOnlineConteudo() {
                   <button
                     type="button"
                     onClick={confirmarEntrada}
-                    disabled={especialidadesSelecionadas.length === 0}
+                    disabled={
+                      especialidadesSelecionadas.length === 0 || enviandoEntrada
+                    }
                     className="flex-1 rounded-xl bg-[#023E8A] px-4 py-2.5 font-semibold text-white transition-colors hover:bg-[#002B66] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Confirmar entrada
+                    {enviandoEntrada ? "Entrando..." : "Confirmar entrada"}
                   </button>
                 </div>
               </>
@@ -1308,7 +1514,7 @@ function FilaOnlineConteudo() {
 
             <div className="mx-auto mt-5 w-fit rounded-2xl border border-[#D5E5FF] bg-white p-4">
               <QRCodeSVG
-                value={`fila-online|unidade:${unidadeAtual.id}|senha:A-084`}
+                value={`unesus|fila:${entradaFila.id}`}
                 size={200}
                 level="M"
               />
@@ -1316,7 +1522,7 @@ function FilaOnlineConteudo() {
 
             <p className="mt-4 text-sm text-[#60769C]">Sua senha</p>
             <span className="mt-1 inline-block rounded-xl bg-[#DFEAFF] px-4 py-1.5 text-2xl font-bold tracking-wide text-[#1752B5]">
-              A-084
+              {entradaFila?.id ? `#${entradaFila.id}` : "—"}
             </span>
           </div>
         </div>
