@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Check,
   Eye,
+  EyeOff,
 } from "lucide-react";
 
 function SelectPersonalizado({
@@ -839,7 +840,11 @@ export default function PerfilMedicoPage() {
                         }
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#3563A7] transition hover:bg-[#D5E6F0] hover:text-[#023E8A] focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30"
                       >
-                        <Eye size={20} strokeWidth={1.8} />
+                        {senhasVisiveis[campo.chave] ? (
+                          <EyeOff size={20} strokeWidth={1.8} />
+                        ) : (
+                          <Eye size={20} strokeWidth={1.8} />
+                        )}
                       </button>
                     </div>
                   </div>
