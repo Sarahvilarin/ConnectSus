@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../../../lib/api";
 import Image from "next/image";
 
 import {
@@ -20,136 +21,119 @@ import {
 } from "lucide-react";
 
 /* ============================================================
-   UNIDADES
+   NORMALIZAÇÃO DOS DADOS DA API
 ============================================================ */
 
-const UNIDADES = [
-  {
-    id: 1,
-    nome: "UBS Santo Antônio",
-    tipo: "UBS",
-    bairro: "Santo Antônio",
-    endereco: "São Caetano do Sul - SP",
-    telefone: "(11) 0000-0000",
-    horario: "Segunda a sexta, das 7h às 17h",
-    descricao:
-      "Atendimento de atenção básica, vacinação, acompanhamento e serviços de saúde da família.",
-    servicos: [
-      "Clínica geral",
-      "Vacinação",
-      "Enfermagem",
-      "Saúde da família",
-    ],
-  },
-  {
-    id: 2,
-    nome: "UBS Dr. Ivanhoé Esposito",
-    tipo: "UBS",
-    bairro: "Olímpico",
-    endereco: "São Caetano do Sul - SP",
-    telefone: "(11) 0000-0000",
-    horario: "Segunda a sexta, das 7h às 17h",
-    descricao:
-      "Unidade de atenção básica com acompanhamento clínico e serviços preventivos.",
-    servicos: [
-      "Consultas",
-      "Vacinação",
-      "Curativos",
-      "Acompanhamento",
-    ],
-  },
-  {
-    id: 3,
-    nome: "UBS Maria Corbeta Segato",
-    tipo: "UBS",
-    bairro: "Prosperidade",
-    endereco: "São Caetano do Sul - SP",
-    telefone: "(11) 0000-0000",
-    horario: "Segunda a sexta, das 7h às 17h",
-    descricao:
-      "Atendimento básico e acompanhamento da população da região.",
-    servicos: [
-      "Clínica geral",
-      "Enfermagem",
-      "Vacinação",
-      "Prevenção",
-    ],
-  },
-  {
-    id: 4,
-    nome: "Hospital Municipal de Emergências Albert Sabin",
-    tipo: "Urgência e Emergência",
-    bairro: "Santa Paula",
-    endereco: "São Caetano do Sul - SP",
-    telefone: "(11) 0000-0000",
-    horario: "Atendimento 24 horas",
-    descricao:
-      "Atendimento destinado a situações de urgência e emergência.",
-    servicos: [
-      "Pronto atendimento",
-      "Emergência",
-      "Exames",
-      "Observação",
-    ],
-  },
-  {
-    id: 5,
-    nome: "Hospital Municipal Maria Braido",
-    tipo: "Hospital Municipal",
-    bairro: "Santa Paula",
-    endereco: "São Caetano do Sul - SP",
-    telefone: "(11) 0000-0000",
-    horario: "Atendimento conforme serviço",
-    descricao:
-      "Hospital municipal com serviços hospitalares e atendimento especializado.",
-    servicos: [
-      "Internação",
-      "Especialidades",
-      "Exames",
-      "Procedimentos",
-    ],
-  },
-  {
-    id: 6,
-    nome: "Atende Fácil Saúde Pedro Kassab",
-    tipo: "Especialidades",
-    bairro: "Centro",
-    endereco: "São Caetano do Sul - SP",
-    telefone: "(11) 0000-0000",
-    horario: "Segunda a sexta",
-    descricao:
-      "Atendimento especializado e serviços complementares da rede municipal.",
-    servicos: [
-      "Especialidades",
-      "Exames",
-      "Avaliações",
-      "Atendimento agendado",
-    ],
-  },
-];
+function textoSeguro(valor, fallback = "Não informado") {
+  if (valor === null || valor === undefined || valor === "") return fallback;
+  return String(valor);
+}
 
-const TIPOS = [
-  "Todos",
-  "UBS",
-  "Urgência e Emergência",
-  "Hospital Municipal",
-  "Especialidades",
-];
+function normalizarTipo(unidade) {
+  const valor =
+    unidade.tipo_unidade_nome ||
+    unidade.tipo_unidade ||
+    unidade.tipo ||
+    unidade.nome_tipo_unidade ||
+    "Unidade de saúde";
+
+  if (typeof valor === "object") {
+    return valor.nome || valor.descricao || "Unidade de saúde";
+  }
+
+  return String(valor);
+}
+
+function normalizarServicos(valor) {
+  if (Array.isArray(valor)) return valor.filter(Boolean).map(String);
+  if (!valor) return [];
+
+  if (typeof valor === "string") {
+    try {
+      const parsed = JSON.parse(valor);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+    } catch {
+      return valor.split(/[,;|]/).map((item) => item.trim()).filter(Boolean);
+    }
+  }
+
+  return [];
+}
+
+function normalizarUnidade(unidade) {
+  const tipo = normalizarTipo(unidade);
+  const bairro = textoSeguro(unidade.bairro, "Bairro não informado");
+  const rua = unidade.rua || unidade.endereco || "";
+  const cep = unidade.cep ? ` • CEP ${unidade.cep}` : "";
+  const endereco = `${rua}${cep}`.trim() || "Endereço não informado";
+  const horario = unidade.horario_funcionamento || unidade.horario || "Horário não informado";
+  const servicos = normalizarServicos(
+    unidade.servicos_disponiveis ?? unidade.servicos ?? unidade.servicosDisponiveis
+  );
+
+  return {
+    id: unidade.id,
+    nome: textoSeguro(unidade.nome, "Unidade sem nome"),
+    tipo,
+    bairro,
+    endereco,
+    telefone: textoSeguro(unidade.telefone),
+    horario: textoSeguro(horario),
+    descricao: textoSeguro(unidade.descricao, "Consulte os dados de localização e atendimento desta unidade."),
+    servicos,
+    ativo: unidade.ativo === undefined ? true : !(unidade.ativo === 0 || unidade.ativo === "0" || unidade.ativo === false),
+  };
+}
 
 /* ============================================================
    PÁGINA
 ============================================================ */
 
 export default function UnidadesPage() {
+  const [unidades, setUnidades] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
   const [bairro, setBairro] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
 
-  const [bairroAberto, setBairroAberto] =
-    useState(false);
+  const [bairroAberto, setBairroAberto] = useState(false);
+  const [unidadeAberta, setUnidadeAberta] = useState(null);
 
-  const [unidadeAberta, setUnidadeAberta] =
-    useState(null);
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarUnidades() {
+      try {
+        setCarregando(true);
+        setErro("");
+        const resposta = await api("/unidades");
+        const lista = Array.isArray(resposta)
+          ? resposta
+          : resposta?.unidades || resposta?.dados || resposta?.resultados || [];
+
+        if (!Array.isArray(lista)) {
+          throw new Error("A resposta da API de unidades está em um formato inesperado.");
+        }
+
+        if (ativo) {
+          setUnidades(lista.map(normalizarUnidade).filter((unidade) => unidade.ativo));
+        }
+      } catch (error) {
+        if (ativo) setErro(error.message || "Não foi possível carregar as unidades.");
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+
+    carregarUnidades();
+    return () => { ativo = false; };
+  }, []);
+
+  const tipos = useMemo(() => [
+    "Todos",
+    ...new Set(unidades.map((unidade) => unidade.tipo).filter(Boolean)),
+  ], [unidades]);
 
   /* ============================================================
      BAIRROS
@@ -158,7 +142,7 @@ export default function UnidadesPage() {
   const bairros = useMemo(() => {
     const lista = [
       ...new Set(
-        UNIDADES.map(
+        unidades.map(
           (unidade) => unidade.bairro
         )
       ),
@@ -168,14 +152,14 @@ export default function UnidadesPage() {
       "Todos",
       ...lista.sort(),
     ];
-  }, []);
+  }, [unidades]);
 
   /* ============================================================
      FILTRO
   ============================================================ */
 
   const unidadesFiltradas = useMemo(() => {
-    return UNIDADES.filter((unidade) => {
+    return unidades.filter((unidade) => {
       const texto = busca.toLowerCase();
 
       const correspondeBusca =
@@ -203,7 +187,7 @@ export default function UnidadesPage() {
         correspondeTipo
       );
     });
-  }, [busca, bairro, tipo]);
+  }, [unidades, busca, bairro, tipo]);
 
   function limparFiltros() {
     setBusca("");
@@ -522,7 +506,7 @@ export default function UnidadesPage() {
               >
                 <InfoHero
                   icon={<Hospital size={17} />}
-                  texto={`${UNIDADES.length} unidades cadastradas`}
+                  texto={`${unidades.length} unidades cadastradas`}
                 />
 
                 <InfoHero
@@ -846,7 +830,7 @@ export default function UnidadesPage() {
                 pb-1
               "
             >
-              {TIPOS.map((item) => {
+              {tipos.map((item) => {
                 const ativo =
                   tipo === item;
 
@@ -910,6 +894,19 @@ export default function UnidadesPage() {
             RESULTADOS
         ====================================================== */}
 
+        {(carregando || erro) && (
+          <div className="mx-auto max-w-[1300px] px-4 pt-8 sm:px-6 lg:px-8">
+            <div className={`rounded-2xl border p-4 text-sm ${erro ? "border-red-200 bg-red-50 text-red-700" : "border-blue-100 bg-white text-slate-600"}`}>
+              {carregando ? "Carregando unidades de saúde..." : erro}
+              {erro && (
+                <button type="button" onClick={() => window.location.reload()} className="ml-2 font-semibold underline">
+                  Tentar novamente
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <section
           className="
             relative
@@ -959,7 +956,7 @@ export default function UnidadesPage() {
 
           {/* CARDS */}
 
-          {unidadesFiltradas.length > 0 ? (
+          {carregando ? null : unidadesFiltradas.length > 0 ? (
             <div
               className="
                 grid
@@ -982,7 +979,7 @@ export default function UnidadesPage() {
                 )
               )}
             </div>
-          ) : (
+          ) : carregando || erro ? null : (
             <div
               className="
                 flex
@@ -1223,6 +1220,7 @@ export default function UnidadesPage() {
 
               {/* SERVIÇOS */}
 
+              {unidadeAberta.servicos.length > 0 && (
               <div className="mt-6">
                 <h3
                   className="
@@ -1261,9 +1259,12 @@ export default function UnidadesPage() {
                   )}
                 </div>
               </div>
+              )}
 
-              <button
-                type="button"
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${unidadeAberta.endereco}, ${unidadeAberta.bairro}, São Caetano do Sul, SP`)}`}
+                target="_blank"
+                rel="noreferrer"
                 className="
                   mt-6
                   flex
@@ -1284,7 +1285,7 @@ export default function UnidadesPage() {
                 <Navigation size={17} />
 
                 Ver localização
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -1440,6 +1441,7 @@ function UnidadeCard({
 
         {/* SERVIÇOS */}
 
+        {unidade.servicos.length > 0 && (
         <div
           className="
             mt-4
@@ -1467,6 +1469,7 @@ function UnidadeCard({
               </span>
             ))}
         </div>
+        )}
 
         {/* BOTÃO */}
 
