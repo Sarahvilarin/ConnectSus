@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UserRound, Pencil, Eye } from "lucide-react";
+import { UserRound, Pencil, Eye, EyeOff } from "lucide-react";
 
 export default function PerfilPage() {
   const [nome, setNome] = useState("Giovana de Andrade Martini");
@@ -469,7 +469,11 @@ export default function PerfilPage() {
                         aria-pressed={senhasVisiveis[campo.id]}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#3563A7] transition hover:bg-[#DCEAF2] hover:text-[#023E8A]"
                       >
-                        <Eye size={19} strokeWidth={1.8} />
+                        {senhasVisiveis[campo.id] ? (
+                          <EyeOff size={19} strokeWidth={1.8} />
+                        ) : (
+                          <Eye size={19} strokeWidth={1.8} />
+                        )}
                       </button>
                     </div>
                   </div>

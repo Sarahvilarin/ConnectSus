@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UserRound, Pencil, Eye } from "lucide-react";
+import { UserRound, Pencil, Eye, EyeOff } from "lucide-react";
 
 export default function PerfilAdminPage() {
   const [nome, setNome] = useState("Administrador UneSUS");
@@ -130,12 +130,10 @@ export default function PerfilAdminPage() {
 
         {/* Resumo do administrador */}
         <section className="mb-8 rounded-[26px] border border-[#3563A7]/25 bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8 lg:px-12 lg:py-7">
-
           <div className="flex flex-col items-center gap-7 md:flex-row md:gap-10">
 
             <div className="relative shrink-0">
               <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full bg-[#EAF3F7] ring-8 ring-[#EAF3F7] sm:h-44 sm:w-44">
-
                 {foto ? (
                   <img
                     src={foto}
@@ -150,7 +148,6 @@ export default function PerfilAdminPage() {
                     fill="#3563A7"
                   />
                 )}
-
               </div>
 
               <button
@@ -174,7 +171,6 @@ export default function PerfilAdminPage() {
             <div className="hidden h-36 w-px bg-[#023E8A] md:block" />
 
             <div className="min-w-0 flex-1 text-center md:text-left">
-
               <div className="mb-2 flex flex-wrap items-center justify-center gap-2 md:justify-start">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-semibold text-[#3563A7]">
                   Administrador
@@ -195,7 +191,6 @@ export default function PerfilAdminPage() {
               </p>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2 sm:gap-6">
-
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-normal text-[#3563A7]">
@@ -219,7 +214,6 @@ export default function PerfilAdminPage() {
                     </p>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -230,7 +224,6 @@ export default function PerfilAdminPage() {
 
           {/* Dados pessoais */}
           <section className="rounded-[26px] border border-[#3563A7]/25 bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8">
-
             <div className="mb-7 flex items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">
@@ -244,7 +237,6 @@ export default function PerfilAdminPage() {
             </div>
 
             <form onSubmit={salvarDados} className="space-y-5">
-
               <div>
                 <label
                   htmlFor="nome-admin"
@@ -306,13 +298,11 @@ export default function PerfilAdminPage() {
                   Salvar alterações
                 </button>
               </div>
-
             </form>
           </section>
 
           {/* Segurança */}
           <section className="rounded-[26px] border border-[#3563A7]/25 bg-white/90 p-6 shadow-[0_8px_25px_rgba(53,99,167,0.06)] sm:p-8">
-
             <div className="mb-7 flex items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">
@@ -329,7 +319,6 @@ export default function PerfilAdminPage() {
 
               {/* Alterar senha */}
               <div className="flex flex-col gap-4 rounded-[22px] border border-[#3563A7]/20 bg-[#EAF3F7] p-5 sm:p-6 xl:flex-row xl:items-center">
-
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div>
                     <h3 className="text-lg font-bold">
@@ -356,7 +345,6 @@ export default function PerfilAdminPage() {
 
               {/* Alterar e-mail */}
               <div className="flex flex-col gap-4 rounded-[22px] border border-[#3563A7]/20 bg-[#EAF3F7] p-5 sm:p-6 xl:flex-row xl:items-center">
-
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div>
                     <h3 className="text-lg font-bold">
@@ -380,7 +368,6 @@ export default function PerfilAdminPage() {
                   Alterar e-mail
                 </button>
               </div>
-
             </div>
 
             <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#3563A7]/20 bg-[#EAF3F7] p-4">
@@ -389,7 +376,6 @@ export default function PerfilAdminPage() {
                 suas credenciais com outras pessoas.
               </p>
             </div>
-
           </section>
         </div>
       </div>
@@ -430,7 +416,6 @@ export default function PerfilAdminPage() {
             aria-labelledby="modal-title"
             className="my-auto w-full max-w-md rounded-[28px] border border-[#3563A7]/25 bg-white p-6 shadow-2xl sm:p-8"
           >
-
             <div className="mb-6 text-center">
               <h2
                 id="modal-title"
@@ -446,7 +431,6 @@ export default function PerfilAdminPage() {
 
             {modal === "senha" ? (
               <form onSubmit={alterarSenha} className="space-y-4">
-
                 {[
                   {
                     id: "senha-atual-admin",
@@ -471,7 +455,6 @@ export default function PerfilAdminPage() {
                   },
                 ].map((campo) => (
                   <div key={campo.id}>
-
                     <label
                       htmlFor={campo.id}
                       className="mb-2 block text-xs font-semibold text-[#023E8A]"
@@ -480,7 +463,6 @@ export default function PerfilAdminPage() {
                     </label>
 
                     <div className="flex items-center rounded-xl border border-[#3563A7]/35 bg-[#EAF3F7] pr-3 transition focus-within:border-[#023E8A] focus-within:ring-4 focus-within:ring-[#3563A7]/10">
-
                       <input
                         id={campo.id}
                         type={mostrarSenhas[campo.id] ? "text" : "password"}
@@ -508,9 +490,12 @@ export default function PerfilAdminPage() {
                         aria-pressed={!!mostrarSenhas[campo.id]}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#3563A7] transition hover:bg-[#D8E7F2]"
                       >
-                        <Eye size={19} />
+                        {mostrarSenhas[campo.id] ? (
+                          <EyeOff size={19} />
+                        ) : (
+                          <Eye size={19} />
+                        )}
                       </button>
-
                     </div>
                   </div>
                 ))}
@@ -525,11 +510,9 @@ export default function PerfilAdminPage() {
                 >
                   Confirmar alteração
                 </button>
-
               </form>
             ) : (
               <form onSubmit={alterarEmail} className="space-y-5">
-
                 <div>
                   <label
                     htmlFor="email-atual-admin"
@@ -571,14 +554,11 @@ export default function PerfilAdminPage() {
                 >
                   Confirmar novo e-mail
                 </button>
-
               </form>
             )}
-
           </section>
         </div>
       )}
-
     </main>
   );
 }
