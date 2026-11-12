@@ -1,4 +1,4 @@
-```sql
+
 CREATE DATABASE IF NOT EXISTS app_db
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
@@ -172,6 +172,20 @@ CREATE TABLE IF NOT EXISTS administradores (
     criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Códigos de recuperação de senha dos administradores
+CREATE TABLE IF NOT EXISTS recuperacoes_senha_admin (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    administrador_id INT NOT NULL,
+    codigo_hash VARCHAR(255) NOT NULL,
+    expira_em DATETIME NOT NULL,
+    usado_em DATETIME DEFAULT NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (administrador_id)
+        REFERENCES administradores(id)
+        ON DELETE CASCADE
+);
+
 -- Dados iniciais: tipos de unidades
 INSERT IGNORE INTO tipos_unidade (nome) VALUES
 ('UBS'),
@@ -211,48 +225,3 @@ INSERT IGNORE INTO especialidades (nome) VALUES
 ('Cirurgia Geral'),
 ('Cirurgia Vascular');
 
-CREATE TABLE IF NOT EXISTS triagens (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-
-    paciente_id INT NOT NULL,
-    consulta_id INT NULL,
-    enfermeiro_id INT NOT NULL,
-
-    queixa_principal TEXT NOT NULL,
-    sintomas TEXT,
-    inicio_sintomas VARCHAR(100),
-    intensidade_dor TINYINT,
-
-    pressao_arterial VARCHAR(20),
-    temperatura DECIMAL(4,1),
-    frequencia_cardiaca SMALLINT,
-    frequencia_respiratoria SMALLINT,
-    saturacao_oxigenio DECIMAL(5,2),
-    glicemia DECIMAL(6,2),
-    peso DECIMAL(6,2),
-    altura DECIMAL(5,2),
-
-    classificacao_risco VARCHAR(30) NOT NULL,
-    observacoes TEXT,
-
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_triagem_paciente
-        FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
-
-    CONSTRAINT fk_triagem_consulta
-        FOREIGN KEY (consulta_id) REFERENCES consultas(id),
-
-    CONSTRAINT fk_triagem_enfermeiro
-        FOREIGN KEY (enfermeiro_id) REFERENCES enfermeiros(id),
-
-    CONSTRAINT uq_triagem_consulta UNIQUE (consulta_id),
-
-    CONSTRAINT chk_triagem_dor
-        CHECK (intensidade_dor IS NULL OR intensidade_dor BETWEEN 0 AND 10),
-
-    INDEX idx_triagem_paciente (paciente_id),
-    INDEX idx_triagem_enfermeiro (enfermeiro_id),
-    INDEX idx_triagem_data (criado_em)
-);
-```

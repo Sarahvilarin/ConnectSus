@@ -39,6 +39,8 @@ services:
       ADMIN_NOME: ${ADMIN_NOME:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_SENHA: ${ADMIN_SENHA:-}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET:?Configure JWT_SECRET no arquivo .env}
 
 
