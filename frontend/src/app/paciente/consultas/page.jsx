@@ -33,22 +33,6 @@ import {
   X,
 } from "lucide-react";
 
-/*
-  PALETA
-  Texto:            #0B1756
-  Botões:           #023E8A  (hover: #3563A7)
-  Destaques/apoio:  #3563A7
-
-  PRONTUÁRIO NO PORTAL DO PACIENTE
-  O paciente vê o prontuário em modo somente leitura, e apenas das consultas
-  "Concluída" (quando o médico já fechou o registro). As anotações rápidas do
-  médico são internas e nunca são exibidas aqui.
-
-  Em produção, os dados vêm da API do próprio paciente autenticado.
-  O prontuário é dado sensível de saúde (LGPD): o back-end deve devolver apenas
-  os registros do paciente logado e registrar log de acesso.
-*/
-
 const especialidades = [
   { nome: "Clínica geral", Icone: Stethoscope },
   { nome: "Cardiologia", Icone: HeartPulse },
@@ -274,8 +258,6 @@ function Portal({ children }) {
   return createPortal(children, document.body);
 }
 
-/* Calendário com posição fixa. valor/onChange usam AAAA-MM-DD.
-   Bloqueia dias anteriores a `minimo` e, se pedido, os domingos. */
 function DatePicker({
   rotulo,
   valor,
@@ -294,7 +276,6 @@ function DatePicker({
   const hoje = new Date();
   const hojeIso = paraIso(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-  // Fecha ao rolar a página ou redimensionar a janela
   useEffect(() => {
     if (!aberto) return;
     const fechar = (e) => {
@@ -476,8 +457,6 @@ function DatePicker({
   );
 }
 
-/* ---------- Prontuário (somente leitura) ---------- */
-
 function TituloBloco({ children }) {
   return (
     <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">
@@ -569,10 +548,6 @@ function ProntuarioPaciente({ consulta }) {
   );
 }
 
-/* =========================
-   PÁGINA PRINCIPAL
-========================= */
-
 export default function Consultas() {
   const [aba, setAba] = useState("agendar");
   const [etapaAtual, setEtapaAtual] = useState(1);
@@ -605,7 +580,6 @@ export default function Consultas() {
 
   const diaSelecionado = dia ? { texto: textoData(dia) } : null;
 
-  // A partir de amanhã
   const amanha = new Date();
   amanha.setDate(amanha.getDate() + 1);
   const minimoIso = paraIso(
@@ -703,14 +677,14 @@ export default function Consultas() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#f5faff] text-[#0B1756]">
-      {/* Fundo com ilustrações de círculos */}
+
       <div className="pointer-events-none absolute -right-28 -top-36 z-0 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/50" />
       <div className="pointer-events-none absolute -left-40 top-10 z-0 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
       <div className="pointer-events-none absolute -bottom-36 -left-24 z-0 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 z-0 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
       <div className="relative z-10 mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-10">
-        {/* TÍTULO DA PÁGINA */}
+
         <section className="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div>
             <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#3563A7]/15 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[#0B1756]">
@@ -749,7 +723,6 @@ export default function Consultas() {
           </div>
         </section>
 
-        {/* ABAS */}
         <section className={`${cardBase} mb-7 flex gap-2 p-2`}>
           {[
             { id: "agendar", rotulo: "Agendar consulta", Icone: CalendarPlus },
@@ -776,10 +749,8 @@ export default function Consultas() {
           ))}
         </section>
 
-        {/* ===================== ABA: AGENDAR ===================== */}
         {aba === "agendar" && (
           <>
-            {/* INDICADOR DE ETAPAS */}
             <section className={`${cardBase} mb-7 p-4 sm:p-5`}>
               <div className="flex items-center">
                 {etapas.map((etapa, index) => {
@@ -827,11 +798,10 @@ export default function Consultas() {
               </div>
             </section>
 
-            {/* ETAPA 1 */}
             {etapaAtual === 1 && (
               <form onSubmit={continuar}>
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 lg:items-stretch">
-                  {/* FORMULÁRIO PRINCIPAL */}
+
                   <section className={`${cardBase} p-5 sm:p-7 lg:col-span-3`}>
                     <div className="mb-7 flex items-center gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
@@ -847,7 +817,6 @@ export default function Consultas() {
                       </div>
                     </div>
 
-                    {/* ESPECIALIDADE */}
                     <fieldset className="mb-7">
                       <legend className="mb-3 text-sm font-bold sm:text-base">
                         Qual especialidade você procura?
@@ -886,7 +855,6 @@ export default function Consultas() {
                       </div>
                     </fieldset>
 
-                    {/* UNIDADE */}
                     <fieldset className="mb-7">
                       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <legend className="text-sm font-bold sm:text-base">
@@ -1008,7 +976,6 @@ export default function Consultas() {
                       )}
                     </fieldset>
 
-                    {/* DATA */}
                     <fieldset className="mb-7">
                       <legend className="mb-3 text-sm font-bold sm:text-base">
                         Qual dia é melhor para você?
@@ -1026,7 +993,6 @@ export default function Consultas() {
                       />
                     </fieldset>
 
-                    {/* HORÁRIO */}
                     <fieldset>
                       <legend className="mb-3 text-sm font-bold sm:text-base">
                         Escolha o horário
@@ -1058,7 +1024,6 @@ export default function Consultas() {
                     </fieldset>
                   </section>
 
-                  {/* LATERAL */}
                   <aside className="flex h-full flex-col gap-5 lg:col-span-2">
                     <section className={`${cardBase} p-5 sm:p-6`}>
                       <div className="mb-7 flex items-center gap-3">
@@ -1073,7 +1038,6 @@ export default function Consultas() {
                         </div>
                       </div>
 
-                      {/* MOTIVO */}
                       <div className="mb-7">
                         <label
                           htmlFor="motivo"
@@ -1119,7 +1083,6 @@ export default function Consultas() {
                       </div>
                     </section>
 
-                    {/* PRÓXIMOS PASSOS */}
                     <section
                       className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}
                     >
@@ -1187,7 +1150,6 @@ export default function Consultas() {
               </form>
             )}
 
-            {/* ETAPA 2: REVISÃO */}
             {etapaAtual === 2 && (
               <section className={`${cardBase} p-5 sm:p-8`}>
                 <div className="mb-7 flex items-center gap-3">
@@ -1250,7 +1212,6 @@ export default function Consultas() {
               </section>
             )}
 
-            {/* ETAPA 3: CONFIRMAÇÃO */}
             {etapaAtual === 3 && (
               <section className={`${cardBase} p-6 text-center sm:p-12`}>
                 <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#3563A7]/10 text-[#023E8A]">
@@ -1310,7 +1271,6 @@ export default function Consultas() {
           </>
         )}
 
-        {/* ===================== ABA: ACOMPANHAR ===================== */}
         {aba === "acompanhar" && (
           <section className={`${cardBase} p-5 sm:p-8`}>
             <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -1462,7 +1422,6 @@ export default function Consultas() {
         )}
       </div>
 
-      {/* MODAL: PRONTUÁRIO (SOMENTE LEITURA) */}
       {consultaProntuario && (
         <Portal>
           <div
