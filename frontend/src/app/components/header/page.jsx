@@ -78,9 +78,9 @@ const menus = {
 
   admin: [
 
-    { nome: "Home", href: "/admin/dashboard" },
+    { nome: "Dashboard", href: "/admin/dashboard" },
 
-    { nome: "Procurar Fila Online", href: "/admin/filaOnline" },
+    { nome: "Fila Online", href: "/admin/filaOnline" },
 
     { nome: "Unidades", href: "/admin/unidades" },
 
