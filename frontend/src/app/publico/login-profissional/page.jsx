@@ -62,36 +62,15 @@ export default function LoginProfissionalPage() {
     setCarregando(true);
 
     try {
-      let resposta;
-
-      // A rota existente é /auth/medico/login.
-      // O controller atende médicos quando recebe crm/uf_crm
-      // e enfermeiros quando recebe coren/uf_coren.
-      try {
-        resposta = await api("/auth/medico/login", {
-          method: "POST",
-          body: JSON.stringify({
-            crm: registro,
-            uf_crm: dados.uf,
-            senha: dados.senha,
-          }),
-        });
-      } catch (erroMedico) {
-        // Se não houver médico com esse registro (ou a senha não conferir),
-        // tenta a mesma rota com os campos de enfermeiro.
-        if (erroMedico.message !== "Credenciais inválidas.") {
-          throw erroMedico;
-        }
-
-        resposta = await api("/auth/medico/login", {
-          method: "POST",
-          body: JSON.stringify({
-            coren: registro,
-            uf_coren: dados.uf,
-            senha: dados.senha,
-          }),
-        });
-      }
+      // Uma única requisição identifica médico ou enfermeiro no backend.
+      const resposta = await api("/auth/medico/login", {
+        method: "POST",
+        body: JSON.stringify({
+          registro,
+          uf: dados.uf,
+          senha: dados.senha,
+        }),
+      });
 
       if (!resposta?.token || !resposta?.profissional || !resposta?.tipo) {
         throw new Error("O servidor não retornou os dados completos do profissional.");
@@ -207,19 +186,17 @@ export default function LoginProfissionalPage() {
                   aria-haspopup="listbox"
                   aria-expanded={ufAberta}
                   onClick={() => setUfAberta(!ufAberta)}
-                  className={`flex h-12 w-full items-center justify-between gap-2 rounded-xl border px-4 text-sm font-normal outline-none transition ${
-                    ufAberta
+                  className={`flex h-12 w-full items-center justify-between gap-2 rounded-xl border px-4 text-sm font-normal outline-none transition ${ufAberta
                       ? "border-[#023E8A] bg-white ring-4 ring-[#023E8A]/15"
                       : "border-slate-200 bg-[#F8FAFD] hover:border-[#3563A7]"
-                  } ${dados.uf ? "text-[#0B1756]" : "text-slate-400"}`}
+                    } ${dados.uf ? "text-[#0B1756]" : "text-slate-400"}`}
                 >
                   <span>{dados.uf || "UF"}</span>
 
                   <ChevronDown
                     size={18}
-                    className={`shrink-0 text-slate-400 transition-transform ${
-                      ufAberta ? "rotate-180 text-[#023E8A]" : ""
-                    }`}
+                    className={`shrink-0 text-slate-400 transition-transform ${ufAberta ? "rotate-180 text-[#023E8A]" : ""
+                      }`}
                   />
                 </button>
 
@@ -255,11 +232,10 @@ export default function LoginProfissionalPage() {
                               setDados({ ...dados, uf });
                               setUfAberta(false);
                             }}
-                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
-                              ativo
+                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${ativo
                                 ? "bg-[#023E8A] font-semibold text-white"
                                 : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"
-                            }`}
+                              }`}
                           >
                             <span>{uf}</span>
 
