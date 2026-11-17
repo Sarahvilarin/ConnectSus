@@ -33,19 +33,71 @@ export default function LoginPage() {
     setErro("");
     setCarregando(true);
 
+    const credenciais = {
+      email: dados.email.trim(),
+      senha: dados.senha,
+    };
+
     try {
-      const resposta = await api("/auth/paciente/login", {
-        method: "POST",
-        body: JSON.stringify(dados),
-      });
+      let resposta;
+      let tipoUsuario;
+
+      // Tenta primeiro autenticar como administrador.
+      try {
+        resposta = await api("/auth/admin/login", {
+          method: "POST",
+          body: JSON.stringify(credenciais),
+        });
+
+        tipoUsuario = "admin";
+      } catch (erroAdmin) {
+        // Só tenta paciente quando o administrador não foi encontrado
+        // ou a senha não corresponde. Outros erros devem ser exibidos.
+        if (erroAdmin.message !== "E-mail ou senha incorretos.") {
+          throw erroAdmin;
+        }
+
+        resposta = await api("/auth/paciente/login", {
+          method: "POST",
+          body: JSON.stringify(credenciais),
+        });
+
+        tipoUsuario = "paciente";
+      }
+
+      if (!resposta?.token) {
+        throw new Error("O servidor não retornou um token de autenticação.");
+      }
 
       localStorage.setItem("unesus_token", resposta.token);
-      localStorage.setItem(
-        "unesus_paciente",
-        JSON.stringify(resposta.paciente)
-      );
 
-      router.push("/paciente/dashboard");
+      if (tipoUsuario === "admin") {
+        if (!resposta.administrador) {
+          throw new Error("Os dados do administrador não foram retornados.");
+        }
+
+        localStorage.setItem(
+          "unesus_admin",
+          JSON.stringify(resposta.administrador)
+        );
+        localStorage.removeItem("unesus_paciente");
+        localStorage.removeItem("unesus_profissional");
+
+        router.push("/admin/dashboard");
+      } else {
+        if (!resposta.paciente) {
+          throw new Error("Os dados do paciente não foram retornados.");
+        }
+
+        localStorage.setItem(
+          "unesus_paciente",
+          JSON.stringify(resposta.paciente)
+        );
+        localStorage.removeItem("unesus_admin");
+        localStorage.removeItem("unesus_profissional");
+
+        router.push("/paciente/dashboard");
+      }
     } catch (error) {
       setErro(error.message || "Não foi possível realizar o login.");
     } finally {
@@ -70,7 +122,7 @@ export default function LoginPage() {
             text-[#023E8A]
           "
         >
-          Área do Paciente
+          Área de Acesso
         </div>
 
         <h2 className="text-4xl font-bold text-[#0B1756]">

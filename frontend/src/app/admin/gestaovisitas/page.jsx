@@ -2,6 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../../lib/api";
+import {
+  Activity,
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Download,
+  MapPin,
+  RefreshCw,
+  Search,
+  Stethoscope,
+  UserRound,
+} from "lucide-react";
 
 const ITENS_POR_PAGINA = 8;
 
@@ -14,7 +27,19 @@ const STATUS = {
 };
 
 const inputCls =
-  "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15";
+  "h-11 w-full rounded-xl border border-[#3563A7]/15 bg-white px-4 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/50 focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/15";
+
+function obterTipoDoToken(token) {
+  try {
+    const parte = token?.split(".")[1];
+    if (!parte) return null;
+    const base64 = parte.replace(/-/g, "+").replace(/_/g, "/");
+    const preenchido = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    return JSON.parse(window.atob(preenchido)).tipo || null;
+  } catch {
+    return null;
+  }
+}
 
 function extrairLista(resposta) {
   if (Array.isArray(resposta)) return resposta;
@@ -51,8 +76,8 @@ function normalizarAtendimento(item = {}) {
     pacienteId: item.paciente_id,
     paciente: item.paciente || item.nome_completo || "Paciente não identificado",
     telefone: item.telefone || "",
-    medicoId: item.medico_id || null,
-    medico: item.medico || "Profissional não definido",
+    enfermeiroId: item.enfermeiro_id || null,
+    enfermeiro: item.enfermeiro || "Não atribuído",
     motivo: item.motivo || "Motivo não informado",
     rua: item.rua || "",
     numero: item.numero || "",
@@ -72,17 +97,6 @@ function normalizarAtendimento(item = {}) {
     status: STATUS[statusApi] || statusApi,
     raw: item,
   };
-}
-
-function normalizarPerfil(resposta) {
-  const medico = resposta?.medico || resposta?.data?.medico || null;
-  const vinculos = Array.isArray(resposta?.vinculos)
-    ? resposta.vinculos
-    : Array.isArray(resposta?.data?.vinculos)
-      ? resposta.data.vinculos
-      : [];
-
-  return { medico, vinculos };
 }
 
 function dataAtualISO() {
@@ -110,19 +124,20 @@ function formatarDataHora(data) {
 
 function Badge({ children, status }) {
   const estilos = {
-    solicitado: "border-amber-200 bg-amber-50 text-amber-700",
-    agendado: "border-blue-200 bg-blue-50 text-blue-700",
-    em_andamento: "border-violet-200 bg-violet-50 text-violet-700",
-    concluido: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    cancelado: "border-slate-200 bg-slate-100 text-slate-600",
+    solicitado: "border border-[#3563A7]/25 bg-[#EAF3F7] text-[#023E8A]",
+    agendado: "border border-[#3563A7]/25 bg-[#3563A7]/15 text-[#023E8A]",
+    em_andamento: "border border-[#023E8A]/20 bg-[#023E8A] text-white",
+    concluido: "border border-[#0B1756]/15 bg-white text-[#0B1756]",
+    cancelado: "border border-slate-200 bg-slate-50 text-slate-500",
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-        estilos[status] || "border-slate-200 bg-slate-100 text-slate-600"
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+        estilos[status] || "border border-slate-200 bg-slate-50 text-slate-500"
       }`}
     >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {children}
     </span>
   );
@@ -131,7 +146,7 @@ function Badge({ children, status }) {
 function Card({ children, className = "" }) {
   return (
     <section
-      className={`rounded-[24px] border border-[#E1EAF4] bg-white p-5 shadow-[0_8px_24px_rgba(20,55,100,0.05)] sm:p-6 ${className}`}
+      className={`rounded-[24px] border border-[#DFEAF5] bg-white p-5 shadow-[0_5px_18px_rgba(20,55,100,0.04)] sm:p-6 ${className}`}
     >
       {children}
     </section>
@@ -139,76 +154,48 @@ function Card({ children, className = "" }) {
 }
 
 function Icone({ tipo, className = "h-5 w-5" }) {
-  const comuns = {
-    calendar: (
-      <>
-        <rect x="3" y="5" width="18" height="16" rx="2" />
-        <path d="M16 3v4M8 3v4M3 10h18" />
-      </>
-    ),
-    search: (
-      <>
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" />
-      </>
-    ),
-    pin: (
-      <>
-        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </>
-    ),
-    clock: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </>
-    ),
-    refresh: (
-      <>
-        <path d="M20 7v5h-5M4 17v-5h5" />
-        <path d="M5.5 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.5-3" />
-      </>
-    ),
-    user: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21a8 8 0 0 1 16 0" />
-      </>
-    ),
-    check: <path d="m5 12 4 4L19 6" />,
-    alert: (
-      <>
-        <path d="M12 3 2.8 19h18.4L12 3Z" />
-        <path d="M12 9v4m0 3h.01" />
-      </>
-    ),
+  const componentes = {
+    calendar: CalendarDays,
+    search: Search,
+    pin: MapPin,
+    clock: Clock3,
+    refresh: RefreshCw,
+    user: UserRound,
+    check: CheckCircle2,
+    alert: AlertTriangle,
   };
+  const Componente = componentes[tipo] || CalendarDays;
+  return <Componente className={className} aria-hidden="true" strokeWidth={1.8} />;
+}
 
+function Metrica({ titulo, numero, legenda, Icone: IconeMetrica, onClick }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[112px] items-center gap-4 rounded-[24px] border border-[#DFEAF5] bg-white p-5 text-left shadow-[0_5px_18px_rgba(20,55,100,0.04)] transition hover:-translate-y-0.5 hover:shadow-lg"
     >
-      {comuns[tipo]}
-    </svg>
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#0B1756]">
+        <IconeMetrica size={22} strokeWidth={1.8} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[12px] font-semibold text-[#0B1756]">{titulo}</span>
+        <span className="block text-2xl font-extrabold leading-tight text-[#0B1756]">{String(numero).padStart(2, "0")}</span>
+        <span className="block text-[11px] text-slate-500">{legenda}</span>
+      </span>
+    </button>
   );
 }
 
 export default function GestaoVisitasPage() {
   const [aba, setAba] = useState("geral");
   const [visitas, setVisitas] = useState([]);
-  const [perfilMedico, setPerfilMedico] = useState(null);
-  const [vinculos, setVinculos] = useState([]);
+  const [enfermeirosDisponiveis, setEnfermeirosDisponiveis] = useState([]);
+  const [enfermeiroSelecionado, setEnfermeiroSelecionado] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState("");
+  const [acessoNegado, setAcessoNegado] = useState(false);
   const [aviso, setAviso] = useState(null);
 
   const [busca, setBusca] = useState("");
@@ -225,7 +212,6 @@ export default function GestaoVisitasPage() {
   const [visitaSelecionada, setVisitaSelecionada] = useState(null);
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [observacoes, setObservacoes] = useState("");
   const [dataAgendamento, setDataAgendamento] = useState("");
   const [horaAgendamento, setHoraAgendamento] = useState("09:00");
 
@@ -240,34 +226,14 @@ export default function GestaoVisitasPage() {
 
     setErro("");
 
-    const [perfilResultado, visitasResultado] = await Promise.allSettled([
-      api("/medicos/me"),
-      api("/atendimentos-domiciliares/unidade"),
-    ]);
-
-    if (perfilResultado.status === "fulfilled") {
-      const perfil = normalizarPerfil(perfilResultado.value);
-      setPerfilMedico(perfil.medico);
-      setVinculos(perfil.vinculos);
-    }
-
-    if (visitasResultado.status === "fulfilled") {
-      const lista = extrairLista(visitasResultado.value).map(
-        normalizarAtendimento
-      );
+    try {
+      const resposta = await api("/atendimentos-domiciliares/admin");
+      const lista = extrairLista(resposta).map(normalizarAtendimento);
       setVisitas(lista);
-    } else {
+    } catch (error) {
       setErro(
-        visitasResultado.reason?.message ||
+        error?.message ||
           "Não foi possível carregar os atendimentos domiciliares."
-      );
-    }
-
-    if (perfilResultado.status === "rejected") {
-      mostrarAviso(
-        perfilResultado.reason?.message ||
-          "Não foi possível carregar o perfil profissional.",
-        "erro"
       );
     }
 
@@ -276,6 +242,12 @@ export default function GestaoVisitasPage() {
   }
 
   useEffect(() => {
+    const token = window.localStorage.getItem("unesus_token");
+    if (obterTipoDoToken(token) !== "admin") {
+      setAcessoNegado(true);
+      setCarregando(false);
+      return;
+    }
     carregarDados();
   }, []);
 
@@ -305,7 +277,8 @@ export default function GestaoVisitasPage() {
           visita.paciente,
           visita.motivo,
           visita.bairro,
-          visita.medico,
+          visita.enfermeiro,
+          visita.unidade,
           visita.endereco,
         ].some((valor) =>
           String(valor || "").toLocaleLowerCase("pt-BR").includes(termo)
@@ -385,87 +358,95 @@ export default function GestaoVisitasPage() {
     return itens;
   }, [mesCalendario, visitas]);
 
-  const profissionais = useMemo(() => {
+  const enfermeiros = useMemo(() => {
     const mapa = new Map();
 
     visitas.forEach((visita) => {
-      if (visita.medicoId) {
-        mapa.set(String(visita.medicoId), {
-          id: visita.medicoId,
-          nome: visita.medico,
+      if (visita.enfermeiroId) {
+        mapa.set(String(visita.enfermeiroId), {
+          id: visita.enfermeiroId,
+          nome: visita.enfermeiro,
         });
       }
     });
 
-    if (perfilMedico?.id) {
-      mapa.set(String(perfilMedico.id), {
-        id: perfilMedico.id,
-        nome: perfilMedico.nome_completo || "Profissional autenticado",
-      });
-    }
-
     return Array.from(mapa.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR")
     );
-  }, [visitas, perfilMedico]);
+  }, [visitas]);
 
   const equipeResumo = useMemo(
     () =>
-      profissionais.map((profissional) => ({
-        ...profissional,
+      enfermeiros.map((enfermeiro) => ({
+        ...enfermeiro,
         total: visitas.filter(
           (v) =>
-            String(v.medicoId) === String(profissional.id) &&
+            String(v.enfermeiroId) === String(enfermeiro.id) &&
             ["agendado", "em_andamento"].includes(v.statusApi)
         ).length,
         emAndamento: visitas.filter(
           (v) =>
-            String(v.medicoId) === String(profissional.id) &&
+            String(v.enfermeiroId) === String(enfermeiro.id) &&
             v.statusApi === "em_andamento"
         ).length,
       })),
-    [profissionais, visitas]
+    [enfermeiros, visitas]
   );
 
-  function abrirDetalhes(visita) {
+  async function abrirDetalhes(visita) {
     setVisitaSelecionada(visita);
-    setObservacoes(visita.observacoes || "");
     setDataAgendamento(visita.dataAgendada?.slice(0, 10) || "");
     setHoraAgendamento(visita.horario || "09:00");
+    setEnfermeiroSelecionado(visita.enfermeiroId ? String(visita.enfermeiroId) : "");
+    setEnfermeirosDisponiveis([]);
     setCarregandoDetalhe(true);
 
-    api(`/atendimentos-domiciliares/${visita.id}`)
-      .then((resposta) => {
-        const registro = resposta?.atendimento || resposta?.dados || resposta;
-        const detalhe = normalizarAtendimento(registro);
-        setVisitaSelecionada(detalhe);
-        setObservacoes(detalhe.observacoes || "");
-        setDataAgendamento(detalhe.dataAgendada?.slice(0, 10) || "");
-        setHoraAgendamento(detalhe.horario || "09:00");
-        setVisitas((atuais) =>
-          atuais.map((item) => (item.id === detalhe.id ? detalhe : item))
-        );
-      })
-      .catch((error) => {
-        mostrarAviso(
-          error.message || "Não foi possível carregar os detalhes.",
-          "erro"
-        );
-      })
-      .finally(() => setCarregandoDetalhe(false));
-  }
+    const [detalheResultado, enfermeirosResultado] = await Promise.allSettled([
+      api(`/atendimentos-domiciliares/admin/${visita.id}`),
+      api("/atendimentos-domiciliares/admin/enfermeiros"),
+    ]);
 
-  function obterUnidadeId(visita) {
-    if (visita?.unidadeId) return visita.unidadeId;
-
-    const unidadeCorrespondente = vinculos.find(
-      (v) => v.unidade === visita?.unidade
-    );
-    if (unidadeCorrespondente?.unidade_id) {
-      return unidadeCorrespondente.unidade_id;
+    if (detalheResultado.status === "fulfilled") {
+      const resposta = detalheResultado.value;
+      const registro = resposta?.atendimento || resposta?.dados || resposta;
+      const detalhe = normalizarAtendimento(registro);
+      setVisitaSelecionada(detalhe);
+      setDataAgendamento(detalhe.dataAgendada?.slice(0, 10) || "");
+      setHoraAgendamento(detalhe.horario || "09:00");
+      setEnfermeiroSelecionado(detalhe.enfermeiroId ? String(detalhe.enfermeiroId) : "");
+      setVisitas((atuais) =>
+        atuais.map((item) => (item.id === detalhe.id ? detalhe : item))
+      );
+    } else {
+      mostrarAviso(
+        detalheResultado.reason?.message || "Não foi possível carregar os detalhes.",
+        "erro"
+      );
     }
 
-    return vinculos.length === 1 ? vinculos[0].unidade_id : null;
+    if (enfermeirosResultado.status === "fulfilled") {
+      const resposta = enfermeirosResultado.value;
+      const lista = Array.isArray(resposta?.enfermeiros)
+        ? resposta.enfermeiros
+        : extrairLista(resposta);
+      setEnfermeirosDisponiveis(lista);
+
+      setEnfermeiroSelecionado((atual) => {
+        if (atual && lista.some((enfermeiro) => String(enfermeiro.id) === String(atual))) {
+          return atual;
+        }
+        return lista[0]?.id ? String(lista[0].id) : "";
+      });
+    } else {
+      setEnfermeirosDisponiveis([]);
+      mostrarAviso(
+        enfermeirosResultado.reason?.message ||
+          "Não foi possível consultar os enfermeiros cadastrados.",
+        "erro"
+      );
+    }
+
+    setCarregandoDetalhe(false);
   }
 
   async function agendarVisita(evento) {
@@ -473,20 +454,9 @@ export default function GestaoVisitasPage() {
 
     if (!visitaSelecionada) return;
 
-    const unidadeId = obterUnidadeId(visitaSelecionada);
-    const medicoId = perfilMedico?.id;
-
-    if (!unidadeId) {
+    if (!enfermeiroSelecionado) {
       mostrarAviso(
-        "Não foi possível identificar a unidade deste atendimento. Confira os vínculos do profissional.",
-        "erro"
-      );
-      return;
-    }
-
-    if (!medicoId) {
-      mostrarAviso(
-        "Não foi possível identificar o profissional autenticado.",
+        "Selecione um enfermeiro ativo para agendar a visita.",
         "erro"
       );
       return;
@@ -506,16 +476,18 @@ export default function GestaoVisitasPage() {
     setSalvando(true);
 
     try {
-      await api(`/atendimentos-domiciliares/${visitaSelecionada.id}/agendar`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          unidade_id: Number(unidadeId),
-          medico_id: Number(medicoId),
-          data_agendada: dataHora,
-        }),
-      });
+      await api(
+        `/atendimentos-domiciliares/admin/${visitaSelecionada.id}/agendar`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            enfermeiro_id: Number(enfermeiroSelecionado),
+            data_agendada: dataHora,
+          }),
+        }
+      );
 
-      mostrarAviso("Visita agendada com sucesso.");
+      mostrarAviso(visitaSelecionada.statusApi === "solicitado" ? "Visita agendada com sucesso." : "Agendamento atualizado com sucesso.");
       setVisitaSelecionada(null);
       await carregarDados(true);
     } catch (error) {
@@ -528,26 +500,15 @@ export default function GestaoVisitasPage() {
   async function atualizarStatus(novoStatus) {
     if (!visitaSelecionada) return;
 
-    const unidadeId = obterUnidadeId(visitaSelecionada);
-    if (!unidadeId) {
-      mostrarAviso(
-        "Não foi possível identificar a unidade deste atendimento.",
-        "erro"
-      );
-      return;
-    }
-
     setSalvando(true);
 
     try {
       await api(
-        `/atendimentos-domiciliares/${visitaSelecionada.id}/status`,
+        `/atendimentos-domiciliares/admin/${visitaSelecionada.id}/status`,
         {
           method: "PATCH",
           body: JSON.stringify({
-            unidade_id: Number(unidadeId),
             status: novoStatus,
-            observacoes: observacoes.trim() || null,
           }),
         }
       );
@@ -570,10 +531,11 @@ export default function GestaoVisitasPage() {
       "ID",
       "Paciente",
       "Telefone",
+      "Unidade",
       "Motivo",
       "Bairro",
       "Endereço",
-      "Profissional",
+      "Enfermeiro responsável",
       "Data agendada",
       "Status",
       "Observações",
@@ -584,10 +546,11 @@ export default function GestaoVisitasPage() {
         v.id,
         v.paciente,
         v.telefone,
+        v.unidade,
         v.motivo,
         v.bairro,
         v.endereco,
-        v.medico,
+        v.enfermeiro,
         formatarDataHora(v.dataAgendada),
         v.status,
         v.observacoes,
@@ -608,88 +571,128 @@ export default function GestaoVisitasPage() {
     URL.revokeObjectURL(url);
   }
 
+  if (acessoNegado) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F1F6FB] px-4 py-10 text-[#0B1756]">
+        <section className="w-full max-w-lg rounded-3xl border border-[#DFEAF5] bg-white p-8 text-center shadow-sm">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+            <AlertTriangle size={26} />
+          </span>
+          <h1 className="mt-5 text-xl font-bold">Acesso restrito</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            A Gestão de Visitas está disponível somente para administradores. Entre com uma conta administrativa para continuar.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   const abas = [
-    { id: "geral", titulo: "Visão geral", descricao: "Indicadores e pendências" },
-    { id: "visitas", titulo: "Todas as visitas", descricao: "Consultar e atualizar" },
-    { id: "agenda", titulo: "Agenda", descricao: "Calendário de atendimentos" },
-    { id: "equipe", titulo: "Profissionais", descricao: "Distribuição dos atendimentos" },
+    { id: "geral", titulo: "Visão geral" },
+    { id: "visitas", titulo: "Todas as visitas" },
+    { id: "agenda", titulo: "Agenda" },
+    { id: "equipe", titulo: "Enfermeiros" },
   ];
 
   return (
-    <div className="min-h-screen bg-[#F1F6FB] font-sans text-[#0B1756]">
-      <div className="pointer-events-none fixed -right-36 -top-36 h-96 w-96 rounded-full border-[64px] border-[#D9E8FA]/60" />
-      <div className="pointer-events-none fixed -bottom-40 -left-32 h-96 w-96 rounded-full bg-white/70" />
+    <main className="relative min-h-screen overflow-hidden bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute -left-40 top-64 h-96 w-96 rounded-full bg-[#D9EAF8]/70" />
+      <div className="pointer-events-none absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-[#D3E5F7]/70" />
+      <div className="pointer-events-none absolute right-[12%] top-[1050px] h-56 w-56 rounded-full border-[42px] border-white/80" />
 
-      <main className="relative z-10 mx-auto w-full max-w-[1500px] space-y-7 px-4 py-7 sm:px-6 xl:px-8">
-        <section className="relative pb-0">
-          <div className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#023E8A] via-[#084B9A] to-[#0B1756] px-6 py-8 shadow-[0_22px_60px_rgba(2,62,138,0.16)] sm:px-9 sm:py-9">
-            <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-white/10" />
-            <div className="pointer-events-none absolute -bottom-28 right-[30%] h-64 w-64 rounded-full border-[45px] border-white/[0.04]" />
+      <div className="relative z-10 mx-auto max-w-[1480px] space-y-6">
+        <section className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+          <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
+          <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+          <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
 
-            <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-              <div className="max-w-3xl">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90">
-                  <Icone tipo="calendar" className="h-4 w-4" />
-                  Gestão assistencial
-                </div>
-                <h1 className="text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">
-                  Gestão de visitas domiciliares
-                </h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base">
-                  Acompanhe solicitações, organize agendamentos e atualize o andamento dos atendimentos domiciliares da unidade.
-                </p>
-                <p className="mt-3 text-xs font-medium text-white/65">
-                  Dados carregados da API do UneSUS
-                </p>
-              </div>
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-[730px]">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">
+                <Stethoscope size={15} strokeWidth={1.8} /> Área administrativa · Gestão de visitas
+              </span>
+              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+                Gestão de visitas domiciliares
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">
+                Consulte solicitações de todas as unidades, organize os agendamentos e acompanhe o andamento dos atendimentos domiciliares.
+              </p>
+            </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => carregarDados(true)}
-                  disabled={atualizando || carregando}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Icone tipo="refresh" className={`h-4 w-4 ${atualizando ? "animate-spin" : ""}`} />
-                  Atualizar
-                </button>
-                <button
-                  type="button"
-                  onClick={exportarCSV}
-                  disabled={!visitasFiltradas.length}
-                  className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Exportar CSV
-                </button>
-              </div>
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:flex-row lg:w-auto lg:flex-col xl:flex-row">
+              <button
+                type="button"
+                onClick={() => carregarDados(true)}
+                disabled={atualizando || carregando}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw size={16} className={atualizando ? "animate-spin" : ""} />
+                Atualizar dados
+              </button>
+              <button
+                type="button"
+                onClick={exportarCSV}
+                disabled={!visitasFiltradas.length}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Download size={16} />
+                Exportar CSV
+              </button>
             </div>
           </div>
-
-          <nav
-            className="relative z-20 -mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-            aria-label="Seções de visitas domiciliares"
-          >
-            {abas.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setAba(item.id)}
-                className={`flex min-h-[82px] flex-col justify-center rounded-[22px] border bg-white px-5 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-                  aba === item.id
-                    ? "border-[#3563A7] ring-2 ring-[#3563A7]/15"
-                    : "border-[#E1EAF4] hover:border-[#3563A7]/40"
-                }`}
-              >
-                <span className="text-sm font-bold text-[#0B1756]">
-                  {item.titulo}
-                </span>
-                <span className="mt-1 text-xs text-slate-500">
-                  {item.descricao}
-                </span>
-              </button>
-            ))}
-          </nav>
         </section>
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Metrica
+            titulo="Aguardando agendamento"
+            numero={visitasSolicitadas.length}
+            legenda="Solicitações recebidas"
+            Icone={Clock3}
+            onClick={() => { setAba("visitas"); setFiltroStatus("solicitado"); }}
+          />
+          <Metrica
+            titulo="Visitas agendadas"
+            numero={visitasAgendadas.length}
+            legenda="Atendimentos programados"
+            Icone={CalendarDays}
+            onClick={() => { setAba("visitas"); setFiltroStatus("agendado"); }}
+          />
+          <Metrica
+            titulo="Em atendimento"
+            numero={visitasEmAndamento.length}
+            legenda="Visitas em andamento"
+            Icone={Activity}
+            onClick={() => { setAba("visitas"); setFiltroStatus("em_andamento"); }}
+          />
+          <Metrica
+            titulo="Concluídas"
+            numero={visitasConcluidas.length}
+            legenda="Atendimentos finalizados"
+            Icone={CheckCircle2}
+            onClick={() => { setAba("visitas"); setFiltroStatus("concluido"); }}
+          />
+        </section>
+
+        <nav
+          aria-label="Seções de visitas domiciliares"
+          className="flex gap-1 overflow-x-auto rounded-[24px] border border-[#DFEAF5] bg-white px-4 pt-2 shadow-[0_5px_18px_rgba(20,55,100,0.04)]"
+        >
+          {abas.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setAba(item.id)}
+              aria-current={aba === item.id ? "page" : undefined}
+              className={`-mb-px flex shrink-0 items-center border-b-[3px] px-3 pb-3 pt-2 text-xs font-bold transition sm:px-4 sm:text-sm ${
+                aba === item.id
+                  ? "border-[#0B1756] text-[#0B1756]"
+                  : "border-transparent text-[#3563A7] hover:text-[#023E8A]"
+              }`}
+            >
+              {item.titulo}
+            </button>
+          ))}
+        </nav>
 
         {erro && (
           <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
@@ -698,7 +701,7 @@ export default function GestaoVisitasPage() {
               <p className="font-semibold">Não foi possível carregar os atendimentos</p>
               <p className="mt-1">{erro}</p>
               <p className="mt-2 text-xs">
-                Confira se a API está ativa e se a sessão atual pertence a um profissional com acesso às visitas da unidade.
+                Confira se a API está ativa e se você está conectado com uma conta de administrador.
               </p>
             </div>
           </div>
@@ -715,49 +718,6 @@ export default function GestaoVisitasPage() {
           <>
             {aba === "geral" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {[
-                    {
-                      titulo: "Solicitações pendentes",
-                      valor: visitasSolicitadas.length,
-                      detalhe: "Aguardando agendamento",
-                      fundo: "bg-amber-50",
-                      cor: "text-amber-700",
-                    },
-                    {
-                      titulo: "Agendadas",
-                      valor: visitasAgendadas.length,
-                      detalhe: "Visitas programadas",
-                      fundo: "bg-blue-50",
-                      cor: "text-blue-700",
-                    },
-                    {
-                      titulo: "Em atendimento",
-                      valor: visitasEmAndamento.length,
-                      detalhe: "Atendimentos iniciados",
-                      fundo: "bg-violet-50",
-                      cor: "text-violet-700",
-                    },
-                    {
-                      titulo: "Concluídas",
-                      valor: visitasConcluidas.length,
-                      detalhe: "Atendimentos finalizados",
-                      fundo: "bg-emerald-50",
-                      cor: "text-emerald-700",
-                    },
-                  ].map((item) => (
-                    <Card key={item.titulo} className="flex items-center gap-4">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${item.fundo} ${item.cor}`}>
-                        <span className="text-xl font-bold">{item.valor}</span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#0B1756]">{item.titulo}</p>
-                        <p className="mt-1 text-xs text-slate-500">{item.detalhe}</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-
                 <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
                   <Card>
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -766,7 +726,7 @@ export default function GestaoVisitasPage() {
                           Solicitações que aguardam agendamento
                         </h2>
                         <p className="mt-1 text-sm text-slate-500">
-                          Solicitações recebidas pela unidade.
+                          Solicitações recebidas em todas as unidades.
                         </p>
                       </div>
                       <Badge status="solicitado">{visitasSolicitadas.length} pendente(s)</Badge>
@@ -809,10 +769,10 @@ export default function GestaoVisitasPage() {
                     </div>
                     <div className="space-y-4">
                       {[
-                        ["Solicitadas", visitasSolicitadas.length, "bg-amber-500"],
-                        ["Agendadas", visitasAgendadas.length, "bg-blue-600"],
-                        ["Em atendimento", visitasEmAndamento.length, "bg-violet-600"],
-                        ["Concluídas", visitasConcluidas.length, "bg-emerald-600"],
+                        ["Solicitadas", visitasSolicitadas.length, "bg-[#78A9E6]"],
+                        ["Agendadas", visitasAgendadas.length, "bg-[#3563A7]"],
+                        ["Em atendimento", visitasEmAndamento.length, "bg-[#023E8A]"],
+                        ["Concluídas", visitasConcluidas.length, "bg-[#0B1756]"],
                       ].map(([nome, quantidade, cor]) => {
                         const total = Math.max(1, visitas.length);
                         return (
@@ -834,7 +794,7 @@ export default function GestaoVisitasPage() {
                     <button
                       type="button"
                       onClick={() => setAba("visitas")}
-                      className="mt-6 w-full rounded-xl border border-[#C8D8EC] px-4 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#F1F6FB]"
+                      className="mt-6 w-full rounded-xl border border-[#3563A7]/20 px-4 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#EAF3F7]"
                     >
                       Ver todos os atendimentos
                     </button>
@@ -845,7 +805,7 @@ export default function GestaoVisitasPage() {
 
             {aba === "visitas" && (
               <Card className="overflow-hidden p-0">
-                <div className="border-b border-[#E8EEF6] px-5 py-5 sm:px-6">
+                <div className="border-b border-[#EAF3F7] px-5 py-5 sm:px-6">
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                     <div>
                       <h2 className="text-lg font-bold text-[#0B1756]">Todas as visitas domiciliares</h2>
@@ -857,13 +817,13 @@ export default function GestaoVisitasPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 border-b border-[#E8EEF6] bg-[#FAFCFE] p-4 sm:grid-cols-2 lg:grid-cols-[1fr_230px_220px]">
+                <div className="grid grid-cols-1 gap-3 border-b border-[#EAF3F7] bg-[#EAF3F7]/30 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_230px_220px]">
                   <div className="relative">
                     <Icone tipo="search" className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       value={busca}
                       onChange={(e) => setBusca(e.target.value)}
-                      placeholder="Buscar paciente, motivo ou bairro..."
+                      placeholder="Buscar paciente, unidade, motivo, enfermeiro ou bairro..."
                       className={`${inputCls} pl-11`}
                     />
                   </div>
@@ -890,25 +850,26 @@ export default function GestaoVisitasPage() {
 
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-                    <thead className="bg-[#F3F7FC] text-[11px] uppercase tracking-wide text-slate-500">
+                    <thead className="bg-[#EAF3F7] text-[11px] uppercase tracking-wide text-[#0B1756]">
                       <tr>
-                        {["Paciente", "Motivo", "Bairro", "Profissional", "Agendamento", "Situação", "Ação"].map((titulo) => (
+                        {["Paciente", "Unidade", "Motivo", "Bairro", "Enfermeiro responsável", "Agendamento", "Situação", "Ação"].map((titulo) => (
                           <th key={titulo} className="whitespace-nowrap px-5 py-4 font-bold">{titulo}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {visitasPaginadas.map((visita) => (
-                        <tr key={visita.id} className="transition hover:bg-[#F8FBFE]">
+                        <tr key={visita.id} className="transition hover:bg-[#EAF3F7]/70">
                           <td className="px-5 py-4">
                             <p className="font-semibold text-[#0B1756]">{visita.paciente}</p>
                             <p className="mt-1 text-xs text-slate-400">{visita.telefone || "Telefone não informado"}</p>
                           </td>
+                          <td className="px-5 py-4 text-slate-600">{visita.unidade || "—"}</td>
                           <td className="max-w-[250px] px-5 py-4">
                             <p className="font-medium text-slate-700">{visita.motivo}</p>
                           </td>
                           <td className="px-5 py-4 text-slate-600">{visita.bairro || "—"}</td>
-                          <td className="px-5 py-4 text-slate-600">{visita.medico}</td>
+                          <td className="px-5 py-4 text-slate-600">{visita.enfermeiro || "Não atribuído"}</td>
                           <td className="whitespace-nowrap px-5 py-4">
                             <p className="font-medium text-slate-700">{formatarData(visita.dataAgendada)}</p>
                             <p className="mt-1 text-xs text-slate-400">{visita.horario || "Horário pendente"}</p>
@@ -920,7 +881,7 @@ export default function GestaoVisitasPage() {
                             <button
                               type="button"
                               onClick={() => abrirDetalhes(visita)}
-                              className="whitespace-nowrap rounded-xl border border-[#C8D8EC] px-4 py-2.5 text-xs font-semibold text-[#023E8A] transition hover:bg-[#F1F6FB]"
+                              className="whitespace-nowrap rounded-xl border border-[#3563A7]/20 px-4 py-2.5 text-xs font-semibold text-[#023E8A] transition hover:bg-[#EAF3F7]"
                             >
                               Ver detalhes
                             </button>
@@ -929,7 +890,7 @@ export default function GestaoVisitasPage() {
                       ))}
                       {!visitasFiltradas.length && (
                         <tr>
-                          <td colSpan={7} className="px-5 py-14 text-center">
+                          <td colSpan={8} className="px-5 py-14 text-center">
                             <p className="font-semibold text-slate-600">Nenhum atendimento encontrado</p>
                             <p className="mt-1 text-xs text-slate-400">Tente alterar os filtros ou atualize a lista.</p>
                           </td>
@@ -940,7 +901,7 @@ export default function GestaoVisitasPage() {
                 </div>
 
                 {visitasFiltradas.length > 0 && (
-                  <div className="flex flex-col gap-3 border-t border-[#E8EEF6] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 border-t border-[#EAF3F7] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs text-slate-500">
                       Mostrando {(pagina - 1) * ITENS_POR_PAGINA + 1} a{" "}
                       {Math.min(pagina * ITENS_POR_PAGINA, visitasFiltradas.length)} de {visitasFiltradas.length}
@@ -950,7 +911,7 @@ export default function GestaoVisitasPage() {
                         type="button"
                         disabled={pagina === 1}
                         onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
-                        className="rounded-xl border border-[#C8D8EC] px-4 py-2 text-xs font-semibold text-[#023E8A] disabled:opacity-40"
+                        className="rounded-xl border border-[#3563A7]/20 px-4 py-2 text-xs font-semibold text-[#023E8A] disabled:opacity-40"
                       >
                         Anterior
                       </button>
@@ -959,7 +920,7 @@ export default function GestaoVisitasPage() {
                         type="button"
                         disabled={pagina === totalPaginas}
                         onClick={() => setPagina((atual) => Math.min(totalPaginas, atual + 1))}
-                        className="rounded-xl border border-[#C8D8EC] px-4 py-2 text-xs font-semibold text-[#023E8A] disabled:opacity-40"
+                        className="rounded-xl border border-[#3563A7]/20 px-4 py-2 text-xs font-semibold text-[#023E8A] disabled:opacity-40"
                       >
                         Próxima
                       </button>
@@ -976,7 +937,7 @@ export default function GestaoVisitasPage() {
                     <button
                       type="button"
                       onClick={() => setMesCalendario((data) => new Date(data.getFullYear(), data.getMonth() - 1, 1))}
-                      className="rounded-xl border border-[#C8D8EC] px-3 py-2 text-sm font-semibold text-[#023E8A] hover:bg-[#F1F6FB]"
+                      className="rounded-xl border border-[#3563A7]/20 px-3 py-2 text-sm font-semibold text-[#023E8A] hover:bg-[#EAF3F7]"
                       aria-label="Mês anterior"
                     >
                       ←
@@ -987,7 +948,7 @@ export default function GestaoVisitasPage() {
                     <button
                       type="button"
                       onClick={() => setMesCalendario((data) => new Date(data.getFullYear(), data.getMonth() + 1, 1))}
-                      className="rounded-xl border border-[#C8D8EC] px-3 py-2 text-sm font-semibold text-[#023E8A] hover:bg-[#F1F6FB]"
+                      className="rounded-xl border border-[#3563A7]/20 px-3 py-2 text-sm font-semibold text-[#023E8A] hover:bg-[#EAF3F7]"
                       aria-label="Próximo mês"
                     >
                       →
@@ -1009,7 +970,7 @@ export default function GestaoVisitasPage() {
                           className={`flex min-h-[68px] flex-col items-center justify-center rounded-xl border p-2 transition sm:min-h-[78px] ${
                             diaSelecionado === dia.data
                               ? "border-[#023E8A] bg-[#023E8A] text-white shadow-sm"
-                              : "border-[#E1EAF4] bg-white text-slate-700 hover:border-[#3563A7] hover:bg-[#F5F9FD]"
+                              : "border-[#DFEAF5] bg-white text-slate-700 hover:border-[#3563A7] hover:bg-[#F5F9FD]"
                           }`}
                         >
                           <span className="text-sm font-semibold">{dia.dia}</span>
@@ -1047,7 +1008,7 @@ export default function GestaoVisitasPage() {
                           key={visita.id}
                           type="button"
                           onClick={() => abrirDetalhes(visita)}
-                          className="flex w-full gap-3 py-4 text-left transition hover:bg-[#F8FBFE]"
+                          className="flex w-full gap-3 py-4 text-left transition hover:bg-[#EAF3F7]/70"
                         >
                           <span className="flex h-11 min-w-[58px] items-center justify-center rounded-xl bg-[#EAF3F7] text-xs font-bold text-[#023E8A]">
                             {visita.horario || "--:--"}
@@ -1073,34 +1034,34 @@ export default function GestaoVisitasPage() {
 
             {aba === "equipe" && (
               <Card className="overflow-hidden p-0">
-                <div className="border-b border-[#E8EEF6] px-5 py-5 sm:px-6">
-                  <h2 className="text-lg font-bold text-[#0B1756]">Profissionais vinculados aos atendimentos</h2>
+                <div className="border-b border-[#EAF3F7] px-5 py-5 sm:px-6">
+                  <h2 className="text-lg font-bold text-[#0B1756]">Enfermeiros vinculados aos atendimentos</h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Relação baseada nos profissionais que aparecem nos registros retornados pela API.
+                    Relação baseada nos enfermeiros que aparecem nos registros retornados pela API.
                   </p>
                 </div>
                 {equipeResumo.length ? (
                   <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3">
-                    {equipeResumo.map((profissional) => (
-                      <div key={profissional.id} className="rounded-2xl border border-[#E1EAF4] bg-[#FBFDFF] p-5">
+                    {equipeResumo.map((enfermeiro) => (
+                      <div key={enfermeiro.id} className="rounded-2xl border border-[#DFEAF5] bg-[#FBFDFF] p-5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">
                             <Icone tipo="user" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#0B1756]">{profissional.nome}</p>
+                            <p className="truncate font-semibold text-[#0B1756]">{enfermeiro.nome}</p>
                             <p className="mt-0.5 text-xs text-slate-500">
-                              {String(profissional.id) === String(perfilMedico?.id) ? "Profissional autenticado" : `ID ${profissional.id}`}
+                              Enfermeiro responsável · ID {enfermeiro.id}
                             </p>
                           </div>
                         </div>
                         <div className="mt-5 grid grid-cols-2 gap-3">
                           <div className="rounded-xl bg-white p-3">
-                            <p className="text-2xl font-bold text-[#023E8A]">{profissional.total}</p>
+                            <p className="text-2xl font-bold text-[#023E8A]">{enfermeiro.total}</p>
                             <p className="mt-1 text-xs text-slate-500">Visitas ativas</p>
                           </div>
                           <div className="rounded-xl bg-white p-3">
-                            <p className="text-2xl font-bold text-violet-700">{profissional.emAndamento}</p>
+                            <p className="text-2xl font-bold text-[#3563A7]">{enfermeiro.emAndamento}</p>
                             <p className="mt-1 text-xs text-slate-500">Em atendimento</p>
                           </div>
                         </div>
@@ -1109,15 +1070,15 @@ export default function GestaoVisitasPage() {
                   </div>
                 ) : (
                   <div className="px-5 py-14 text-center">
-                    <p className="font-semibold text-slate-600">Nenhum profissional identificado nos registros</p>
-                    <p className="mt-1 text-xs text-slate-400">Os profissionais serão exibidos quando estiverem vinculados a atendimentos retornados pela API.</p>
+                    <p className="font-semibold text-slate-600">Nenhum enfermeiro atribuído aos atendimentos</p>
+                    <p className="mt-1 text-xs text-slate-400">Os enfermeiros serão exibidos quando estiverem vinculados a atendimentos retornados pela API.</p>
                   </div>
                 )}
               </Card>
             )}
           </>
         )}
-      </main>
+      </div>
 
       {visitaSelecionada && (
         <div
@@ -1125,10 +1086,10 @@ export default function GestaoVisitasPage() {
           onClick={() => !salvando && setVisitaSelecionada(null)}
         >
           <div
-            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[26px] border border-white/60 bg-white shadow-2xl"
+            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-white/60 bg-white shadow-[0_22px_70px_rgba(2,62,138,0.16)]"
             onClick={(evento) => evento.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-[26px] bg-gradient-to-r from-[#023E8A] to-[#0B1756] px-5 py-5 text-white sm:px-7">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-[28px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-5 py-5 text-white sm:px-7">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Atendimento domiciliar #{visitaSelecionada.id}</p>
                 <h2 className="mt-1 text-xl font-bold">{visitaSelecionada.paciente}</h2>
@@ -1158,36 +1119,61 @@ export default function GestaoVisitasPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-[#F5F8FC] p-4">
+                <div className="rounded-2xl bg-[#EAF3F7]/45 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Motivo da solicitação</p>
                   <p className="mt-2 text-sm leading-6 text-[#0B1756]">{visitaSelecionada.motivo}</p>
                 </div>
-                <div className="rounded-2xl bg-[#F5F8FC] p-4">
+                <div className="rounded-2xl bg-[#EAF3F7]/45 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Endereço da visita</p>
                   <p className="mt-2 text-sm leading-6 text-[#0B1756]">{visitaSelecionada.endereco}</p>
                   <p className="mt-1 text-xs text-slate-500">
                     {visitaSelecionada.cep ? `CEP: ${visitaSelecionada.cep}` : "CEP não informado"}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[#F5F8FC] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Profissional responsável</p>
-                  <p className="mt-2 text-sm font-semibold text-[#0B1756]">{visitaSelecionada.medico}</p>
+                <div className="rounded-2xl bg-[#EAF3F7]/45 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Enfermeiro responsável</p>
+                  <p className="mt-2 text-sm font-semibold text-[#0B1756]">{visitaSelecionada.enfermeiro || "Não atribuído"}</p>
+                  <p className="mt-2 text-xs text-slate-500">Unidade: {visitaSelecionada.unidade || "Não identificada"}</p>
                 </div>
-                <div className="rounded-2xl bg-[#F5F8FC] p-4">
+                <div className="rounded-2xl bg-[#EAF3F7]/45 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Agendamento</p>
                   <p className="mt-2 text-sm font-semibold text-[#0B1756]">{formatarDataHora(visitaSelecionada.dataAgendada)}</p>
                 </div>
               </div>
 
-              {visitaSelecionada.statusApi === "solicitado" && (
-                <form onSubmit={agendarVisita} className="space-y-4 rounded-2xl border border-[#C8D8EC] bg-[#F8FBFE] p-4 sm:p-5">
+              {["solicitado", "agendado"].includes(visitaSelecionada.statusApi) && (
+                <form onSubmit={agendarVisita} className="space-y-4 rounded-2xl border border-[#3563A7]/20 bg-[#F8FBFE] p-4 sm:p-5">
                   <div>
-                    <h3 className="font-bold text-[#0B1756]">Agendar visita</h3>
+                    <h3 className="font-bold text-[#0B1756]">
+                      {visitaSelecionada.statusApi === "solicitado" ? "Agendar visita" : "Reagendar ou reatribuir visita"}
+                    </h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      O atendimento será atribuído ao profissional autenticado.
+                      Selecione qualquer enfermeiro ativo cadastrado no UneSUS, independentemente da unidade de vínculo.
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-xs font-semibold text-slate-600">Enfermeiro responsável</span>
+                      <select
+                        required
+                        value={enfermeiroSelecionado}
+                        onChange={(e) => setEnfermeiroSelecionado(e.target.value)}
+                        className={inputCls}
+                        disabled={carregandoDetalhe || enfermeirosDisponiveis.length === 0}
+                      >
+                        <option value="">Selecione um enfermeiro</option>
+                        {enfermeirosDisponiveis.map((enfermeiro) => (
+                          <option key={enfermeiro.id} value={String(enfermeiro.id)}>
+                            {enfermeiro.nome_completo} · COREN {enfermeiro.coren}/{enfermeiro.uf_coren}
+                          </option>
+                        ))}
+                      </select>
+                      {enfermeirosDisponiveis.length === 0 && !carregandoDetalhe && (
+                        <span className="mt-1.5 block text-xs text-rose-600">
+                          Nenhum enfermeiro ativo está cadastrado no sistema.
+                        </span>
+                      )}
+                    </label>
                     <label className="block">
                       <span className="mb-1.5 block text-xs font-semibold text-slate-600">Data da visita</span>
                       <input
@@ -1212,85 +1198,34 @@ export default function GestaoVisitasPage() {
                   </div>
                   <button
                     type="submit"
-                    disabled={salvando || !perfilMedico?.id}
+                    disabled={salvando || !enfermeiroSelecionado || enfermeirosDisponiveis.length === 0}
                     className="w-full rounded-xl bg-[#023E8A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
-                    {salvando ? "Agendando..." : "Confirmar agendamento"}
+                    {salvando ? "Salvando..." : visitaSelecionada.statusApi === "solicitado" ? "Confirmar agendamento" : "Salvar alteração"}
                   </button>
-                  {!perfilMedico?.id && (
-                    <p className="text-xs text-rose-600">O perfil profissional não foi carregado; não é possível identificar quem será responsável pelo atendimento.</p>
+                  {enfermeirosDisponiveis.length === 0 && !carregandoDetalhe && (
+                    <p className="text-xs text-rose-600">Cadastre ou reative um enfermeiro para realizar o agendamento.</p>
                   )}
                 </form>
               )}
 
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-600" htmlFor="observacoes-visita">
-                  Observações do atendimento
-                </label>
-                <textarea
-                  id="observacoes-visita"
-                  rows={4}
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  placeholder="Registre informações relevantes para salvar junto à próxima atualização de status."
-                  className={inputCls}
-                  disabled={["concluido", "cancelado"].includes(visitaSelecionada.statusApi)}
-                />
-                <p className="text-xs text-slate-400">
-                  O backend atual salva observações junto com a mudança de status.
+              <div className="rounded-2xl border border-[#DFEAF5] bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Observações registradas pelo enfermeiro</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#0B1756]">
+                  {visitaSelecionada.observacoes || "Nenhuma observação registrada até o momento."}
                 </p>
               </div>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:flex-wrap sm:justify-end">
-                {visitaSelecionada.statusApi === "solicitado" && (
+                {["solicitado", "agendado", "em_andamento"].includes(visitaSelecionada.statusApi) && (
                   <button
                     type="button"
                     onClick={() => atualizarStatus("cancelado")}
                     disabled={salvando}
                     className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                   >
-                    Cancelar solicitação
+                    {visitaSelecionada.statusApi === "solicitado" ? "Cancelar solicitação" : "Cancelar visita"}
                   </button>
-                )}
-                {visitaSelecionada.statusApi === "agendado" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => atualizarStatus("cancelado")}
-                      disabled={salvando}
-                      className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      Cancelar visita
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => atualizarStatus("em_andamento")}
-                      disabled={salvando}
-                      className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0B1756] disabled:opacity-50"
-                    >
-                      Iniciar atendimento
-                    </button>
-                  </>
-                )}
-                {visitaSelecionada.statusApi === "em_andamento" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => atualizarStatus("cancelado")}
-                      disabled={salvando}
-                      className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      Cancelar atendimento
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => atualizarStatus("concluido")}
-                      disabled={salvando}
-                      className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
-                    >
-                      Finalizar atendimento
-                    </button>
-                  </>
                 )}
                 {salvando && (
                   <span className="self-center text-xs font-medium text-slate-500">Salvando alterações...</span>
@@ -1311,6 +1246,6 @@ export default function GestaoVisitasPage() {
           {aviso.texto}
         </div>
       )}
-    </div>
+    </main>
   );
 }
