@@ -34,16 +34,6 @@ import {
   X,
 } from "lucide-react";
 
-<<<<<<< HEAD
-const especialidades = [
-  { nome: "Clínica geral", Icone: Stethoscope },
-  { nome: "Cardiologia", Icone: HeartPulse },
-  { nome: "Neurologia", Icone: Brain },
-  { nome: "Oftalmologia", Icone: Eye },
-  { nome: "Pediatria", Icone: Baby },
-  { nome: "Ortopedia", Icone: Bone },
-];
-=======
 /*
   PALETA
   Texto:            #0B1756
@@ -68,7 +58,6 @@ const iconesEspecialidade = {
   pediatria: Baby,
   ortopedia: Bone,
 };
->>>>>>> c856b6b478e270218e0c9b143462be4a5caf113d
 
 const horarios = [];
 
@@ -463,10 +452,6 @@ export default function Consultas() {
   }, []);
 
   const diaSelecionado = dia ? { texto: textoData(dia) } : null;
-<<<<<<< HEAD
-
-=======
->>>>>>> c856b6b478e270218e0c9b143462be4a5caf113d
   const amanha = new Date();
   amanha.setDate(amanha.getDate() + 1);
   const minimoIso = paraIso(amanha.getFullYear(), amanha.getMonth(), amanha.getDate());
@@ -740,14 +725,11 @@ export default function Consultas() {
           ))}
         </section>
 
-<<<<<<< HEAD
-=======
         {erro && aba === "acompanhar" && (
           <div role="alert" className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{erro}</div>
         )}
 
         {/* ===================== ABA: AGENDAR ===================== */}
->>>>>>> c856b6b478e270218e0c9b143462be4a5caf113d
         {aba === "agendar" && (
           <>
             <section className={`${cardBase} mb-7 p-4 sm:p-5`}>
@@ -816,11 +798,8 @@ export default function Consultas() {
                       </div>
                     </div>
 
-<<<<<<< HEAD
-=======
                     {carregandoDados && <p className="mb-5 rounded-lg bg-blue-50 p-4 text-sm">Carregando especialidades e unidades...</p>}
                     {/* ESPECIALIDADE */}
->>>>>>> c856b6b478e270218e0c9b143462be4a5caf113d
                     <fieldset className="mb-7">
                       <legend className="mb-3 text-sm font-bold sm:text-base">
                         Qual especialidade você procura?
