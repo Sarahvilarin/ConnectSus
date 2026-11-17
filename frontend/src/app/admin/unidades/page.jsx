@@ -192,7 +192,7 @@ function ListaEscolha({
     };
   }, [aberta]);
 
-  const IconeSelecionado = selecionada?.icone || IconePadrao;
+ 
 
   return (
     <div ref={raizRef} className="relative min-w-0">
@@ -202,15 +202,13 @@ function ListaEscolha({
         aria-haspopup="listbox"
         aria-expanded={aberta}
         onClick={() => setAberta((atual) => !atual)}
-        className={`flex min-h-12 w-full items-center gap-3 rounded-xl border bg-white px-3 py-2 text-left shadow-[0_2px_5px_rgba(15,45,85,0.035)] outline-none transition hover:border-[#AFC5DF] hover:bg-[#FCFDFF] focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10 ${
+        className={`flex h-[45px] w-full items-center gap-3 rounded-xl border bg-white px-3 py-2 text-left shadow-[0_2px_5px_rgba(15,45,85,0.035)] outline-none transition hover:border-[#AFC5DF] hover:bg-[#FCFDFF] focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10 ${
           aberta
             ? "border-[#8EADD0] ring-4 ring-[#023E8A]/[0.08]"
             : "border-[#D8E4F1]"
         }`}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF2F7] text-[#023E8A]">
-          <IconeSelecionado size={17} strokeWidth={1.9} />
-        </span>
+       
         <span
           className={`min-w-0 flex-1 truncate text-sm ${
             selecionada
@@ -279,15 +277,7 @@ function ListaEscolha({
                         : "text-[#14245B] hover:bg-[#F1F6FB]"
                     }`}
                   >
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                        ativa
-                          ? "bg-white/15 text-white"
-                          : "bg-[#EAF2F7] text-[#023E8A]"
-                      }`}
-                    >
-                      <IconeOpcao size={17} strokeWidth={1.9} />
-                    </span>
+                    
                     <span
                       className={`min-w-0 flex-1 truncate text-sm ${
                         ativa ? "font-bold" : "font-medium"
@@ -669,9 +659,7 @@ export default function GestaoUnidadesPage() {
                   Quantidade de cada categoria cadastrada.
                 </p>
               </div>
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF2FB] text-[#023E8A]">
-                <Layers3 size={19} />
-              </span>
+              
             </div>
 
             {carregando ? (
@@ -741,9 +729,7 @@ export default function GestaoUnidadesPage() {
                   Veja em quais regiões as unidades estão distribuídas.
                 </p>
               </div>
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF2FB] text-[#023E8A]">
-                <MapPinned size={19} />
-              </span>
+              
             </div>
 
             {carregando ? (
@@ -839,11 +825,11 @@ export default function GestaoUnidadesPage() {
               ariaLabel="Filtrar por tipo de unidade"
               icon={Layers3}
               options={[
-                { value: "todos", label: "Todos os tipos", icone: Layers3 },
+                { value: "todos", label: "Todos os tipos" },
                 ...tiposContagem.map(([tipo]) => ({
                   value: tipo,
                   label: tipo,
-                  icone: Building2,
+                 
                 })),
               ]}
             />
@@ -855,11 +841,11 @@ export default function GestaoUnidadesPage() {
               icon={MapPin}
               searchable
               options={[
-                { value: "todos", label: "Todos os bairros", icone: MapPin },
+                { value: "todos", label: "Todos os bairros"},
                 ...bairros.map((bairro) => ({
                   value: bairro,
                   label: bairro,
-                  icone: MapPin,
+                  
                 })),
               ]}
             />
@@ -870,9 +856,9 @@ export default function GestaoUnidadesPage() {
               ariaLabel="Filtrar por situação"
               icon={CheckCircle2}
               options={[
-                { value: "todas", label: "Todas as situações", icone: SlidersHorizontal },
-                { value: "ativas", label: "Somente ativas", icone: CheckCircle2 },
-                { value: "inativas", label: "Somente inativas", icone: AlertCircle },
+                { value: "todas", label: "Todas as situações"},
+                { value: "ativas", label: "Somente ativas"},
+                { value: "inativas", label: "Somente inativas"},
               ]}
             />
           </div>
@@ -1085,15 +1071,13 @@ export default function GestaoUnidadesPage() {
             </div>
           )}
 
-          <div className="border-t border-slate-100 bg-[#FAFCFF] px-5 py-3 text-xs text-slate-400 sm:px-7">
-            As quantidades, os tipos e os bairros são calculados a partir dos registros retornados pela API de unidades.
-          </div>
+         
         </section>
 
         {/* Modal de cadastro e edição */}
         {modalAberto && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071735]/55 p-3 backdrop-blur-[3px] sm:p-6"
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#071735]/55 p-4 backdrop-blur-[3px] sm:p-6"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget && !salvando) setModalAberto(false);
             }}
@@ -1102,7 +1086,7 @@ export default function GestaoUnidadesPage() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="titulo-modal-unidade"
-              className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl"
+              className="flex h-[640px] max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl"
             >
               <div className="flex items-start justify-between border-b border-slate-100 bg-[#FBFDFF] px-5 py-5 sm:px-7">
                 <div className="flex items-start gap-3">
