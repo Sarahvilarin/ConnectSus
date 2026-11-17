@@ -4,64 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../../../lib/api";
 import {
-  Activity,
-  ArrowLeft,
-  ArrowRight,
-  Baby,
-  Bone,
-  Brain,
-  Building2,
-  CalendarCheck,
-  CalendarDays,
-  CalendarPlus,
-  Check,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  Clock,
-  Eye,
-  FileText,
-  HeartPulse,
-  Hospital,
-  Info,
-  Lock,
-  MapPin,
-  RefreshCw,
-  ShieldCheck,
-  Stethoscope,
-  UserRound,
-  X,
+  Activity, ArrowLeft, ArrowRight, Baby, Bone, Brain, Building2, CalendarCheck, CalendarDays, CalendarPlus, Check,
+  CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock, Eye, FileText, HeartPulse, Hospital, Info, Lock,
+  MapPin, RefreshCw, ShieldCheck, Stethoscope, UserRound, X,
 } from "lucide-react";
 
 /*
-  PALETA
-  Texto:            #0B1756
-  Botões:           #023E8A  (hover: #3563A7)
-  Destaques/apoio:  #3563A7
-
+  PALETA — Texto: #0B1756 · Botões: #023E8A (hover #3563A7) · Destaques: #3563A7
   PRONTUÁRIO NO PORTAL DO PACIENTE
-  O paciente vê o prontuário em modo somente leitura, e apenas das consultas
-  "Concluída" (quando o médico já fechou o registro). As anotações rápidas do
-  médico são internas e nunca são exibidas aqui.
-
-  Em produção, os dados vêm da API do próprio paciente autenticado.
-  O prontuário é dado sensível de saúde (LGPD): o back-end deve devolver apenas
-  os registros do paciente logado e registrar log de acesso.
+  Somente leitura e apenas das consultas "Concluída" (registro já fechado pelo médico).
+  As anotações rápidas do médico são internas e nunca aparecem aqui.
+  Os dados vêm da API do paciente autenticado. Prontuário é dado sensível (LGPD): o back-end
+  deve devolver só os registros do paciente logado e registrar log de acesso.
 */
 
 const iconesEspecialidade = {
-  "clínica geral": Stethoscope,
-  cardiologia: HeartPulse,
-  neurologia: Brain,
-  oftalmologia: Eye,
-  pediatria: Baby,
-  ortopedia: Bone,
+  "clínica geral": Stethoscope, cardiologia: HeartPulse, neurologia: Brain,
+  oftalmologia: Eye, pediatria: Baby, ortopedia: Bone,
 };
 
-const horarios = [];
-
 const etapas = ["Agendamento", "Revisão", "Confirmação"];
+const filtros = ["Todas", "Agendada", "Concluída", "Cancelada"];
+const ATIVAS = ["Pendente", "Confirmada"];
+const STATUS_BANCO = { pendente: "Pendente", confirmada: "Confirmada", concluida: "Concluída", cancelada: "Cancelada", falta: "Falta" };
 
 const estiloStatus = {
   Pendente: { badge: "bg-amber-100", ponto: "bg-amber-600" },
@@ -71,84 +36,103 @@ const estiloStatus = {
   Falta: { badge: "bg-slate-100", ponto: "bg-slate-500" },
 };
 
-const filtros = ["Todas", "Agendada", "Concluída", "Cancelada"];
-
-const nomesMeses = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
+const PASSOS = [
+  ["Escolha unidade e horário", "Selecione onde será atendido e quando."],
+  ["Revise o agendamento", "Confira os dados antes de confirmar."],
+  ["Acompanhe sua consulta", "Veja o status e o prontuário em Minhas consultas."],
 ];
+
+const nomesMeses = "Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro".split(" ");
 const nomesSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function paraIso(ano, mes, dia) {
-  return `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(
-    2,
-    "0"
-  )}`;
-}
+const cardBase = "rounded-xl border border-blue-100 bg-white shadow-sm";
+const botaoPrimario =
+  "inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#3563A7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/40";
+const botaoSecundario =
+  "inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-[#023E8A] bg-white px-6 py-3 text-sm font-bold text-[#023E8A] transition hover:bg-[#3563A7]/10 focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30";
+const botaoMini = (variante) =>
+  `inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${variante}`;
+const MINI_CANCELAR = "border border-red-200 bg-white text-red-700 hover:bg-red-50";
+const MINI_PRONTUARIO = "border border-[#023E8A] bg-white text-[#023E8A] hover:bg-[#3563A7]/10 focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30";
+const MINI_PRIMARIO = "bg-[#023E8A] text-white hover:bg-[#3563A7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/40";
 
-function formatarData(iso) {
-  if (!iso) return "";
-  const [a, m, d] = iso.split("-");
-  return `${d}/${m}/${a}`;
-}
+const pad = (n) => String(n).padStart(2, "0");
+const paraIso = (ano, mes, dia) => `${ano}-${pad(mes + 1)}-${pad(dia)}`;
+const dataIso = (d) => paraIso(d.getFullYear(), d.getMonth(), d.getDate());
+const formatarData = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
 
 function textoData(iso) {
   const d = new Date(`${iso}T00:00:00`);
-  const mes = d
-    .toLocaleDateString("pt-BR", { month: "short" })
-    .replace(".", "");
-  return `${String(d.getDate()).padStart(2, "0")} de ${mes}, ${d.getFullYear()}`;
+  const mes = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+  return `${pad(d.getDate())} de ${mes}, ${d.getFullYear()}`;
 }
 
 /* IMC calculado a partir de peso (kg) e altura (cm) */
 function calcularImc(peso, altura) {
   const p = parseFloat(String(peso).replace(",", "."));
   const a = parseFloat(String(altura).replace(",", ".")) / 100;
-  if (!p || !a || a < 0.5 || a > 2.5) return null;
-  return (p / (a * a)).toFixed(1).replace(".", ",");
+  return !p || !a || a < 0.5 || a > 2.5 ? null : (p / (a * a)).toFixed(1).replace(".", ",");
 }
 
-function Portal({ children }) {
-  return createPortal(children, document.body);
+/* ===== BLOCOS REUTILIZÁVEIS ===== */
+
+function CabecalhoCard({ Icone, titulo, sub, tam = "h-11 w-11", icone = 25, tituloCls = "text-xl font-bold sm:text-2xl", mb = "mb-7" }) {
+  return (
+    <div className={`${mb} flex items-center gap-3`}>
+      <div className={`flex ${tam} shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]`}>
+        <Icone size={icone} />
+      </div>
+      <div>
+        <h2 className={tituloCls}>{titulo}</h2>
+        <p className="mt-1 text-sm">{sub}</p>
+      </div>
+    </div>
+  );
 }
 
-function DatePicker({
-  rotulo,
-  valor,
-  onChange,
-  minimo = "",
-  bloquearFinsDeSemana = false,
-  placeholder = "Selecione a data",
-  altura = "min-h-[50px]",
-  largura = "w-full",
-}) {
+const Aviso = ({ children, className = "col-span-full" }) => (
+  <p className={`${className} rounded-lg bg-blue-50 p-4 text-sm`}>{children}</p>
+);
+
+function Alerta({ children, className, comIcone = false }) {
+  return (
+    <div role="alert" className={`${className} rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 ${comIcone ? "flex items-start gap-3" : ""}`}>
+      {comIcone && <Info size={19} className="mt-0.5 shrink-0" />}
+      {comIcone ? <p>{children}</p> : children}
+    </div>
+  );
+}
+
+const Legenda = ({ children, className = "mb-3" }) => (
+  <legend className={`${className} text-sm font-bold sm:text-base`}>
+    {children}
+    <span className="ml-1 text-red-500">*</span>
+  </legend>
+);
+
+const TituloBloco = ({ children }) => (
+  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">{children}</p>
+);
+
+function Dado({ label, valor, className = "" }) {
+  const texto = String(valor ?? "").trim();
+  return (
+    <div className={className}>
+      <p className="mb-1 text-xs font-semibold text-[#3563A7]">{label}</p>
+      <p className="whitespace-pre-wrap break-words text-sm leading-6">{texto || <span className="opacity-60">Não informado</span>}</p>
+    </div>
+  );
+}
+
+function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana = false, placeholder = "Selecione a data", largura = "w-full" }) {
   const [aberto, setAberto] = useState(false);
-  const [visao, setVisao] = useState(() => {
-    const atual = new Date();
-    return { ano: atual.getFullYear(), mes: atual.getMonth() };
-  });
+  const [visao, setVisao] = useState(() => ({ ano: new Date().getFullYear(), mes: new Date().getMonth() }));
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
-
-  const hoje = new Date();
-  const hojeIso = paraIso(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-
+  const hojeIso = dataIso(new Date());
   useEffect(() => {
     if (!aberto) return;
-    const fechar = (e) => {
-      if (e.target?.closest?.("[data-popup]")) return;
-      setAberto(false);
-    };
+    const fechar = (e) => !e.target?.closest?.("[data-popup]") && setAberto(false);
     window.addEventListener("scroll", fechar, true);
     window.addEventListener("resize", fechar);
     return () => {
@@ -156,90 +140,54 @@ function DatePicker({
       window.removeEventListener("resize", fechar);
     };
   }, [aberto]);
-
   function alternar() {
     if (!aberto) {
-      const base = valor
-        ? new Date(`${valor}T00:00:00`)
-        : minimo
-        ? new Date(`${minimo}T00:00:00`)
-        : new Date();
+      const ref0 = valor || minimo;
+      const base = ref0 ? new Date(`${ref0}T00:00:00`) : new Date();
       setVisao({ ano: base.getFullYear(), mes: base.getMonth() });
-
       if (ref.current) {
         const r = ref.current.getBoundingClientRect();
         const ALT = 360;
         const LARG = 320;
         let top = r.bottom + 8;
-
         if (top + ALT > window.innerHeight - 12) {
           const acima = r.top - ALT - 8;
           top = acima >= 12 ? acima : Math.max(12, window.innerHeight - ALT - 12);
         }
-
-        setPos({
-          top,
-          left: Math.max(12, Math.min(r.left, window.innerWidth - LARG - 12)),
-        });
+        setPos({ top, left: Math.max(12, Math.min(r.left, window.innerWidth - LARG - 12)) });
       }
     }
     setAberto((a) => !a);
   }
-
-  function mudarMes(delta) {
+  const mudarMes = (delta) =>
     setVisao(({ ano, mes }) => {
       const d = new Date(ano, mes + delta, 1);
       return { ano: d.getFullYear(), mes: d.getMonth() };
     });
-  }
-
   const primeiroDia = new Date(visao.ano, visao.mes, 1).getDay();
   const totalDias = new Date(visao.ano, visao.mes + 1, 0).getDate();
-  const celulas = [
-    ...Array(primeiroDia).fill(null),
-    ...Array.from({ length: totalDias }, (_, i) => i + 1),
-  ];
-
+  const celulas = [...Array(primeiroDia).fill(null), ...Array.from({ length: totalDias }, (_, i) => i + 1)];
   // Impede voltar para meses totalmente bloqueados
-  const mesMinimo = minimo ? minimo.slice(0, 7) : "";
-  const mesAtualVisao = paraIso(visao.ano, visao.mes, 1).slice(0, 7);
-  const bloqueiaAnterior = mesMinimo && mesAtualVisao <= mesMinimo;
-
+  const bloqueiaAnterior = minimo && paraIso(visao.ano, visao.mes, 1).slice(0, 7) <= minimo.slice(0, 7);
+  const setaCls = "flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#3563A7]/10";
   return (
-    <div
-      ref={ref}
-      className={`relative ${largura}`}
-      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
-    >
+    <div ref={ref} className={`relative ${largura}`} onKeyDown={(e) => e.key === "Escape" && setAberto(false)}>
       <button
         type="button"
         aria-label={rotulo}
         aria-haspopup="dialog"
         aria-expanded={aberto}
         onClick={alternar}
-        className={`flex ${altura} w-full items-center justify-between gap-3 rounded-lg border bg-white px-4 py-2 text-left text-sm font-semibold text-[#0B1756] transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30 ${
-          aberto
-            ? "border-[#023E8A] ring-2 ring-[#3563A7]/30"
-            : "border-[#3563A7]/40 hover:border-[#3563A7]"
+        className={`flex min-h-[50px] w-full items-center justify-between gap-3 rounded-lg border bg-white px-4 py-2 text-left text-sm font-semibold text-[#0B1756] transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30 ${
+          aberto ? "border-[#023E8A] ring-2 ring-[#3563A7]/30" : "border-[#3563A7]/40 hover:border-[#3563A7]"
         }`}
       >
-        <span
-          className={`min-w-0 truncate ${valor ? "" : "font-normal opacity-60"}`}
-        >
-          {valor ? formatarData(valor) : placeholder}
-        </span>
+        <span className={`min-w-0 truncate ${valor ? "" : "font-normal opacity-60"}`}>{valor ? formatarData(valor) : placeholder}</span>
         <CalendarDays size={18} className="shrink-0 text-[#3563A7]" />
       </button>
-
       {aberto && (
         <>
-          <button
-            type="button"
-            aria-label="Fechar calendário"
-            onClick={() => setAberto(false)}
-            className="fixed inset-0 z-10 cursor-default"
-          />
-
+          <button type="button" aria-label="Fechar calendário" onClick={() => setAberto(false)} className="fixed inset-0 z-10 cursor-default" />
           <div
             data-popup
             role="dialog"
@@ -248,69 +196,37 @@ function DatePicker({
             className="fixed z-20 w-[320px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-blue-100 bg-white p-3 shadow-xl"
           >
             <div className="mb-3 flex items-center justify-between">
-              <button
-                type="button"
-                aria-label="Mês anterior"
-                disabled={bloqueiaAnterior}
-                onClick={() => mudarMes(-1)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#3563A7]/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
-              >
+              <button type="button" aria-label="Mês anterior" disabled={bloqueiaAnterior} onClick={() => mudarMes(-1)} className={`${setaCls} disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent`}>
                 <ChevronLeft size={19} />
               </button>
-
-              <p className="text-sm font-bold">
-                {nomesMeses[visao.mes]} {visao.ano}
-              </p>
-
-              <button
-                type="button"
-                aria-label="Próximo mês"
-                onClick={() => mudarMes(1)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#3563A7]/10"
-              >
+              <p className="text-sm font-bold">{nomesMeses[visao.mes]} {visao.ano}</p>
+              <button type="button" aria-label="Próximo mês" onClick={() => mudarMes(1)} className={setaCls}>
                 <ChevronRight size={19} />
               </button>
             </div>
-
-            <div className="mb-1 grid grid-cols-7 text-center">
-              {nomesSemana.map((d) => (
-                <span key={d} className="py-1 text-xs font-semibold opacity-60">
-                  {d}
-                </span>
-              ))}
-            </div>
-
+            <div className="mb-1 grid grid-cols-7 text-center">{nomesSemana.map((d) => <span key={d} className="py-1 text-xs font-semibold opacity-60">{d}</span>)}</div>
             <div className="grid grid-cols-7 gap-y-1">
               {celulas.map((dia, i) => {
                 if (!dia) return <span key={`vazio-${i}`} />;
-
                 const iso = paraIso(visao.ano, visao.mes, dia);
                 const selecionado = iso === valor;
-                const ehHoje = iso === hojeIso;
-                const fimDeSemana = [0, 6].includes(
-                  new Date(visao.ano, visao.mes, dia).getDay()
-                );
-                const bloqueado =
-                  (minimo && iso < minimo) || (bloquearFinsDeSemana && fimDeSemana);
-
+                const fimDeSemana = [0, 6].includes(new Date(visao.ano, visao.mes, dia).getDay());
+                const bloqueado = (minimo && iso < minimo) || (bloquearFinsDeSemana && fimDeSemana);
                 return (
                   <button
                     key={iso}
                     type="button"
                     disabled={bloqueado}
                     aria-pressed={selecionado}
-                    onClick={() => {
-                      onChange(iso);
-                      setAberto(false);
-                    }}
+                    onClick={() => { onChange(iso); setAberto(false); }}
                     className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm transition ${
                       bloqueado
                         ? "cursor-not-allowed opacity-30"
                         : selecionado
-                        ? "bg-[#023E8A] font-bold text-white"
-                        : ehHoje
-                        ? "border border-[#023E8A] font-bold hover:bg-[#3563A7]/10"
-                        : "hover:bg-[#3563A7]/10"
+                          ? "bg-[#023E8A] font-bold text-white"
+                          : iso === hojeIso
+                            ? "border border-[#023E8A] font-bold hover:bg-[#3563A7]/10"
+                            : "hover:bg-[#3563A7]/10"
                     }`}
                   >
                     {dia}
@@ -325,49 +241,20 @@ function DatePicker({
   );
 }
 
-function TituloBloco({ children }) {
-  return (
-    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">
-      {children}
-    </p>
-  );
-}
-
-function Dado({ label, valor, className = "" }) {
-  const texto = String(valor ?? "").trim();
-  return (
-    <div className={className}>
-      <p className="mb-1 text-xs font-semibold text-[#3563A7]">{label}</p>
-      <p className="whitespace-pre-wrap break-words text-sm leading-6">
-        {texto || <span className="opacity-60">Não informado</span>}
-      </p>
-    </div>
-  );
-}
-
 function ProntuarioPaciente({ consulta }) {
   const p = consulta.prontuario;
   const imc = calcularImc(p.vitais.peso, p.vitais.altura);
-
   const sinais = [
-    ["Pressão arterial", p.vitais.pa, "mmHg"],
-    ["Freq. cardíaca", p.vitais.fc, "bpm"],
-    ["Temperatura", p.vitais.temp, "°C"],
-    ["Saturação", p.vitais.spo2, "%"],
-    ["Peso", p.vitais.peso, "kg"],
-    ["Altura", p.vitais.altura, "cm"],
+    ["Pressão arterial", p.vitais.pa, "mmHg"], ["Freq. cardíaca", p.vitais.fc, "bpm"],
+    ["Temperatura", p.vitais.temp, "°C"], ["Saturação", p.vitais.spo2, "%"],
+    ["Peso", p.vitais.peso, "kg"], ["Altura", p.vitais.altura, "cm"],
   ];
-
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3 rounded-xl border border-[#023E8A]/20 bg-[#3563A7]/10 p-4 text-sm">
         <Lock size={18} className="mt-0.5 shrink-0 text-[#023E8A]" />
-        <p>
-          <strong>Prontuário fechado.</strong> Registrado por {p.registradoPor}{" "}
-          em {p.registradoEm}. Este registro é somente para consulta.
-        </p>
+        <p><strong>Prontuário fechado.</strong> Registrado por {p.registradoPor} em {p.registradoEm}. Este registro é somente para consulta.</p>
       </div>
-
       <div className="space-y-4">
         <TituloBloco>Anamnese</TituloBloco>
         <Dado label="Queixa principal" valor={p.queixa} />
@@ -377,26 +264,18 @@ function ProntuarioPaciente({ consulta }) {
           <Dado label="Medicamentos em uso" valor={p.medicamentos} />
         </div>
       </div>
-
       <div>
         <TituloBloco>Sinais vitais</TituloBloco>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {sinais.map(([label, valor, unidade]) => (
             <div key={label} className="rounded-xl border border-blue-100 p-3">
               <p className="text-xs font-semibold text-[#3563A7]">{label}</p>
-              <p className="mt-1 text-sm font-semibold">
-                {valor ? `${valor} ${unidade}` : "—"}
-              </p>
+              <p className="mt-1 text-sm font-semibold">{valor ? `${valor} ${unidade}` : "—"}</p>
             </div>
           ))}
         </div>
-        {imc && (
-          <p className="mt-3 text-sm">
-            <span className="font-semibold">IMC:</span> {imc} kg/m²
-          </p>
-        )}
+        {imc && <p className="mt-3 text-sm"><span className="font-semibold">IMC:</span> {imc} kg/m²</p>}
       </div>
-
       <div className="space-y-4">
         <TituloBloco>Exame físico e diagnóstico</TituloBloco>
         <Dado label="Exame físico" valor={p.exameFisico} />
@@ -405,7 +284,6 @@ function ProntuarioPaciente({ consulta }) {
           <Dado label="CID-10" valor={p.cid} />
         </div>
       </div>
-
       <div className="space-y-4">
         <TituloBloco>Conduta</TituloBloco>
         <Dado label="Conduta, prescrição e orientações" valor={p.conduta} />
@@ -416,6 +294,8 @@ function ProntuarioPaciente({ consulta }) {
   );
 }
 
+/* ===== PÁGINA ===== */
+
 export default function Consultas() {
   const [aba, setAba] = useState("agendar");
   const [etapaAtual, setEtapaAtual] = useState(1);
@@ -423,7 +303,6 @@ export default function Consultas() {
   const [unidades, setUnidades] = useState([]);
   const [especialidade, setEspecialidade] = useState("");
   const [unidade, setUnidade] = useState(null);
-  const modalidade = "Presencial";
   const [dia, setDia] = useState("");
   const [horario, setHorario] = useState("");
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
@@ -436,47 +315,33 @@ export default function Consultas() {
   const [salvando, setSalvando] = useState(false);
   const [carregandoConsultas, setCarregandoConsultas] = useState(false);
   const [prontuarioId, setProntuarioId] = useState(null);
-
-  const consultaProntuario =
-    consultas.find((c) => c.id === prontuarioId && c.prontuario) || null;
-
+  const consultaProntuario = consultas.find((c) => c.id === prontuarioId && c.prontuario) || null;
   useEffect(() => {
     document.body.style.overflow = consultaProntuario ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [consultaProntuario]);
-
   useEffect(() => {
     const aoTeclar = (e) => e.key === "Escape" && setProntuarioId(null);
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
   }, []);
-
-  const diaSelecionado = dia ? { texto: textoData(dia) } : null;
+  const textoDia = dia ? textoData(dia) : null;
   const amanha = new Date();
   amanha.setDate(amanha.getDate() + 1);
-  const minimoIso = paraIso(amanha.getFullYear(), amanha.getMonth(), amanha.getDate());
-
-  const ativas = consultas.filter((c) => ["Pendente", "Confirmada"].includes(c.status)).length;
-  const listaFiltrada = consultas.filter((c) => {
-    if (filtro === "Todas") return true;
-    if (filtro === "Agendada") return ["Pendente", "Confirmada"].includes(c.status);
-    return c.status === filtro;
-  });
-
-  const unidadesDisponiveis = unidades;
+  const minimoIso = dataIso(amanha);
+  const ativas = consultas.filter((c) => ATIVAS.includes(c.status)).length;
+  const listaFiltrada = consultas.filter((c) =>
+    filtro === "Todas" ? true : filtro === "Agendada" ? ATIVAS.includes(c.status) : c.status === filtro
+  );
   const especialidadeSelecionada = especialidades.find((item) => item.nome === especialidade) || null;
-
   function extrairLista(resposta, chaves) {
     if (Array.isArray(resposta)) return resposta;
     for (const chave of chaves) if (Array.isArray(resposta?.[chave])) return resposta[chave];
     return [];
   }
-
   function normalizarConsulta(item) {
-    const dataHora = String(item.data_hora || "").replace("T", " ");
-    const [dataParte, horaParte = ""] = dataHora.split(" ");
+    const [dataParte, horaParte = ""] = String(item.data_hora || "").replace("T", " ").split(" ");
     const statusBanco = String(item.status || "").toLowerCase();
-    const status = ({ pendente: "Pendente", confirmada: "Confirmada", concluida: "Concluída", cancelada: "Cancelada", falta: "Falta" })[statusBanco] || statusBanco;
     return {
       id: Number(item.id),
       especialidade: item.especialidade || "Especialidade não informada",
@@ -485,12 +350,11 @@ export default function Consultas() {
       unidade_id: item.unidade_id,
       data: dataParte ? textoData(dataParte.slice(0, 10)) : "Data não informada",
       horario: horaParte.slice(0, 5),
-      status,
+      status: STATUS_BANCO[statusBanco] || statusBanco,
       medico: item.medico || null,
       prontuario: null,
     };
   }
-
   async function carregarConsultas() {
     setCarregandoConsultas(true);
     try {
@@ -502,57 +366,53 @@ export default function Consultas() {
       setCarregandoConsultas(false);
     }
   }
-
   useEffect(() => {
     let ativo = true;
-    async function carregarDadosIniciais() {
+    (async () => {
       setCarregandoDados(true);
       try {
-        const [resEspecialidades, resUnidades] = await Promise.all([
-          api("/especialidades"),
-          api("/unidades"),
-        ]);
+        const [resEsp, resUni] = await Promise.all([api("/especialidades"), api("/unidades")]);
         if (!ativo) return;
-        const listaEspecialidades = extrairLista(resEspecialidades, ["especialidades", "dados", "resultados"]);
-        const listaUnidades = extrairLista(resUnidades, ["unidades", "dados", "resultados"]);
-        setEspecialidades(listaEspecialidades.map((item) => ({
-          id: Number(item.id),
-          nome: item.nome || item.nome_especialidade || "",
-          Icone: iconesEspecialidade[String(item.nome || item.nome_especialidade || "").toLocaleLowerCase("pt-BR")] || Stethoscope,
-        })).filter((item) => item.id && item.nome));
-        setUnidades(listaUnidades.filter((item) => item.ativo !== false && item.ativo !== 0).map((item) => ({
-          id: Number(item.id),
-          nome: item.nome || item.nome_unidade || "",
-          bairro: item.bairro || "Endereço não informado",
-          horario: item.horario_funcionamento || "Horário conforme unidade",
-          distancia: "",
-          rua: item.rua || "",
-        })).filter((item) => item.id && item.nome));
+        setEspecialidades(
+          extrairLista(resEsp, ["especialidades", "dados", "resultados"])
+            .map((item) => {
+              const nome = item.nome || item.nome_especialidade || "";
+              return { id: Number(item.id), nome, Icone: iconesEspecialidade[nome.toLocaleLowerCase("pt-BR")] || Stethoscope };
+            })
+            .filter((item) => item.id && item.nome)
+        );
+        setUnidades(
+          extrairLista(resUni, ["unidades", "dados", "resultados"])
+            .filter((item) => item.ativo !== false && item.ativo !== 0)
+            .map((item) => ({
+              id: Number(item.id),
+              nome: item.nome || item.nome_unidade || "",
+              bairro: item.bairro || "Endereço não informado",
+              horario: item.horario_funcionamento || "Horário conforme unidade",
+              distancia: "",
+              rua: item.rua || "",
+            }))
+            .filter((item) => item.id && item.nome)
+        );
       } catch (error) {
         if (ativo) setErro(error.message || "Não foi possível carregar especialidades e unidades.");
       } finally {
         if (ativo) setCarregandoDados(false);
       }
-    }
-    carregarDadosIniciais();
+    })();
     carregarConsultas();
     return () => { ativo = false; };
   }, []);
-
   useEffect(() => {
     let ativo = true;
     setHorariosDisponiveis([]);
     setHorario("");
     if (!unidade?.id || !especialidadeSelecionada?.id || !dia) return undefined;
-    async function carregarHorarios() {
+    (async () => {
       setCarregandoHorarios(true);
       setErro("");
       try {
-        const params = new URLSearchParams({
-          unidade_id: String(unidade.id),
-          especialidade_id: String(especialidadeSelecionada.id),
-          data: dia,
-        });
+        const params = new URLSearchParams({ unidade_id: String(unidade.id), especialidade_id: String(especialidadeSelecionada.id), data: dia });
         const resposta = await api(`/consultas/disponibilidade?${params.toString()}`);
         if (ativo) setHorariosDisponiveis(Array.isArray(resposta?.horarios) ? resposta.horarios : []);
       } catch (error) {
@@ -560,36 +420,28 @@ export default function Consultas() {
       } finally {
         if (ativo) setCarregandoHorarios(false);
       }
-    }
-    carregarHorarios();
+    })();
     return () => { ativo = false; };
   }, [unidade?.id, especialidadeSelecionada?.id, dia]);
-
-  function topo() { window.scrollTo({ top: 0, behavior: "smooth" }); }
-
-  function escolherEspecialidade(nome) {
-    setEspecialidade(nome);
-    setUnidade(null);
+  const topo = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  function limparHorario() {
     setDia("");
     setHorario("");
     setHorariosDisponiveis([]);
   }
-
+  function escolherEspecialidade(nome) {
+    setEspecialidade(nome);
+    setUnidade(null);
+    limparHorario();
+  }
   function continuar(event) {
     event.preventDefault();
     setErro("");
-    if (!especialidadeSelecionada || !unidade) {
-      setErro("Escolha a especialidade e a unidade para continuar.");
-      return;
-    }
-    if (!dia || !horario) {
-      setErro("Selecione a data e um horário disponível.");
-      return;
-    }
+    if (!especialidadeSelecionada || !unidade) return setErro("Escolha a especialidade e a unidade para continuar.");
+    if (!dia || !horario) return setErro("Selecione a data e um horário disponível.");
     setEtapaAtual(2);
     topo();
   }
-
   async function confirmar() {
     if (salvando) return;
     setSalvando(true);
@@ -614,27 +466,21 @@ export default function Consultas() {
       setSalvando(false);
     }
   }
-
   function voltar() {
     setErro("");
     setEtapaAtual((atual) => Math.max(1, atual - 1));
     topo();
   }
-
   function novoAgendamento(consulta) {
-    const especialidadeAnterior = consulta?.especialidade || "";
-    setEspecialidade(especialidadeAnterior);
+    setEspecialidade(consulta?.especialidade || "");
     setUnidade(unidades.find((u) => u.id === Number(consulta?.unidade_id)) || null);
-    setDia("");
-    setHorario("");
-    setHorariosDisponiveis([]);
+    limparHorario();
     setMotivo("");
     setErro("");
     setEtapaAtual(1);
     setAba("agendar");
     topo();
   }
-
   async function cancelarConsulta(id) {
     setErro("");
     try {
@@ -644,69 +490,42 @@ export default function Consultas() {
       setErro(error.message || "Não foi possível cancelar a consulta.");
     }
   }
-
-  const cardBase = "rounded-xl border border-blue-100 bg-white shadow-sm";
-  const botaoPrimario =
-    "inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#3563A7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/40";
-  const botaoSecundario =
-    "inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-[#023E8A] bg-white px-6 py-3 text-sm font-bold text-[#023E8A] transition hover:bg-[#3563A7]/10 focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30";
-
+  const acompanhar = aba === "acompanhar";
+  const titulo = acompanhar ? "Acompanhe suas consultas" : ["Agende sua consulta", "Revise seu agendamento", "Consulta agendada"][etapaAtual - 1];
+  const subtitulo = acompanhar
+    ? "Veja o status dos seus atendimentos, consulte o prontuário das consultas concluídas, reagende ou cancele quando precisar."
+    : [
+        "Escolha a especialidade, a unidade mais próxima e o melhor dia e horário para você.",
+        "Confira os dados da consulta antes de confirmar.",
+        "Sua solicitação foi enviada e aguarda confirmação da unidade.",
+      ][etapaAtual - 1];
+  const plural = unidades.length === 1;
+  const iconeCls = (sel) => (sel ? "bg-[#023E8A] text-white" : "bg-[#3563A7]/15 text-[#023E8A]");
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#f5faff] text-[#0B1756]">
-
       <div className="pointer-events-none absolute -right-28 -top-36 z-0 h-[430px] w-[430px] rounded-full bg-[#B8D6FC]/50" />
       <div className="pointer-events-none absolute -left-40 top-10 z-0 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
       <div className="pointer-events-none absolute -bottom-36 -left-24 z-0 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 z-0 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
-
       <div className="relative z-10 mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-10">
-
         <section className="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div>
             <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#3563A7]/15 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[#0B1756]">
               <CalendarDays size={15} />
               Consultas
             </span>
-
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-[42px]">
-              {aba === "acompanhar" && "Acompanhe suas consultas"}
-              {aba === "agendar" && etapaAtual === 1 && "Agende sua consulta"}
-              {aba === "agendar" && etapaAtual === 2 && "Revise seu agendamento"}
-              {aba === "agendar" && etapaAtual === 3 && "Consulta agendada"}
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-7 sm:text-base">
-              {aba === "acompanhar" &&
-                "Veja o status dos seus atendimentos, consulte o prontuário das consultas concluídas, reagende ou cancele quando precisar."}
-              {aba === "agendar" &&
-                etapaAtual === 1 &&
-                "Escolha a especialidade, a unidade mais próxima e o melhor dia e horário para você."}
-              {aba === "agendar" &&
-                etapaAtual === 2 &&
-                "Confira os dados da consulta antes de confirmar."}
-              {aba === "agendar" &&
-                etapaAtual === 3 &&
-                "Sua solicitação foi enviada e aguarda confirmação da unidade."}
-            </p>
+            <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-[42px]">{titulo}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 sm:text-base">{subtitulo}</p>
           </div>
-
           <div className="flex max-w-md items-start gap-3 rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-4">
             <Info className="mt-0.5 shrink-0 text-[#023E8A]" size={23} />
-            <p className="text-sm leading-6">
-              Chegue com 15 minutos de antecedência nas consultas presenciais e
-              leve um documento com foto.
-            </p>
+            <p className="text-sm leading-6">Chegue com 15 minutos de antecedência nas consultas presenciais e leve um documento com foto.</p>
           </div>
         </section>
-
         <section className={`${cardBase} mb-7 flex gap-2 p-2`}>
           {[
             { id: "agendar", rotulo: "Agendar consulta", Icone: CalendarPlus },
-            {
-              id: "acompanhar",
-              rotulo: `Minhas consultas (${ativas})`,
-              Icone: ClipboardList,
-            },
+            { id: "acompanhar", rotulo: `Minhas consultas (${ativas})`, Icone: ClipboardList },
           ].map(({ id, rotulo, Icone }) => (
             <button
               key={id}
@@ -714,9 +533,7 @@ export default function Consultas() {
               aria-pressed={aba === id}
               onClick={() => setAba(id)}
               className={`flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${
-                aba === id
-                  ? "bg-[#023E8A] text-white"
-                  : "text-[#0B1756] hover:bg-[#3563A7]/10"
+                aba === id ? "bg-[#023E8A] text-white" : "text-[#0B1756] hover:bg-[#3563A7]/10"
               }`}
             >
               <Icone size={18} />
@@ -724,12 +541,8 @@ export default function Consultas() {
             </button>
           ))}
         </section>
-
-        {erro && aba === "acompanhar" && (
-          <div role="alert" className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{erro}</div>
-        )}
-
-        {/* ===================== ABA: AGENDAR ===================== */}
+        {erro && acompanhar && <Alerta className="mb-5">{erro}</Alerta>}
+        {/* ===== ABA: AGENDAR ===== */}
         {aba === "agendar" && (
           <>
             <section className={`${cardBase} mb-7 p-4 sm:p-5`}>
@@ -738,97 +551,43 @@ export default function Consultas() {
                   const numero = index + 1;
                   const ativa = etapaAtual === numero;
                   const concluida = etapaAtual > numero;
-
+                  const destaque = ativa || concluida;
                   return (
-                    <div
-                      key={etapa}
-                      className={`flex min-w-0 items-center ${
-                        index < etapas.length - 1 ? "flex-1" : "shrink-0"
-                      }`}
-                    >
+                    <div key={etapa} className={`flex min-w-0 items-center ${index < etapas.length - 1 ? "flex-1" : "shrink-0"}`}>
                       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                        <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${
-                            ativa || concluida
-                              ? "bg-[#023E8A] text-white"
-                              : "border border-[#3563A7]/40 bg-white text-[#0B1756]"
-                          }`}
-                        >
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${destaque ? "bg-[#023E8A] text-white" : "border border-[#3563A7]/40 bg-white text-[#0B1756]"}`}>
                           {concluida ? <Check size={19} /> : numero}
                         </div>
-
-                        <span
-                          className={`hidden text-xs font-semibold sm:block sm:text-sm ${
-                            ativa || concluida ? "" : "opacity-60"
-                          }`}
-                        >
-                          {etapa}
-                        </span>
+                        <span className={`hidden text-xs font-semibold sm:block sm:text-sm ${destaque ? "" : "opacity-60"}`}>{etapa}</span>
                       </div>
-
-                      {index < etapas.length - 1 && (
-                        <div
-                          className={`mx-2 h-0.5 flex-1 rounded sm:mx-4 ${
-                            concluida ? "bg-[#3563A7]" : "bg-blue-100"
-                          }`}
-                        />
-                      )}
+                      {index < etapas.length - 1 && <div className={`mx-2 h-0.5 flex-1 rounded sm:mx-4 ${concluida ? "bg-[#3563A7]" : "bg-blue-100"}`} />}
                     </div>
                   );
                 })}
               </div>
             </section>
-
             {etapaAtual === 1 && (
               <form onSubmit={continuar}>
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 lg:items-stretch">
-
                   <section className={`${cardBase} p-5 sm:p-7 lg:col-span-3`}>
-                    <div className="mb-7 flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
-                        <CalendarPlus size={25} />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold sm:text-2xl">
-                          Dados da consulta
-                        </h2>
-                        <p className="mt-1 text-sm">
-                          Preencha as informações abaixo.
-                        </p>
-                      </div>
-                    </div>
-
-                    {carregandoDados && <p className="mb-5 rounded-lg bg-blue-50 p-4 text-sm">Carregando especialidades e unidades...</p>}
-                    {/* ESPECIALIDADE */}
+                    <CabecalhoCard Icone={CalendarPlus} titulo="Dados da consulta" sub="Preencha as informações abaixo." />
+                    {carregandoDados && <Aviso className="mb-5">Carregando especialidades e unidades...</Aviso>}
                     <fieldset className="mb-7">
-                      <legend className="mb-3 text-sm font-bold sm:text-base">
-                        Qual especialidade você procura?
-                        <span className="ml-1 text-red-500">*</span>
-                      </legend>
-
+                      <Legenda>Qual especialidade você procura?</Legenda>
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         {especialidades.map(({ nome, Icone }) => {
-                          const selecionado = especialidade === nome;
-
+                          const sel = especialidade === nome;
                           return (
                             <button
                               key={nome}
                               type="button"
-                              aria-pressed={selecionado}
+                              aria-pressed={sel}
                               onClick={() => escolherEspecialidade(nome)}
                               className={`flex min-h-[110px] flex-col items-center justify-center rounded-xl border p-3 text-center transition ${
-                                selecionado
-                                  ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]"
-                                  : "border-blue-100 bg-[#fbfdff] hover:border-[#3563A7] hover:bg-[#3563A7]/10"
+                                sel ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]" : "border-blue-100 bg-[#fbfdff] hover:border-[#3563A7] hover:bg-[#3563A7]/10"
                               }`}
                             >
-                              <div
-                                className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${
-                                  selecionado
-                                    ? "bg-[#023E8A] text-white"
-                                    : "bg-[#3563A7]/15 text-[#023E8A]"
-                                }`}
-                              >
+                              <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${iconeCls(sel)}`}>
                                 <Icone size={22} />
                               </div>
                               <span className="text-sm font-bold">{nome}</span>
@@ -837,119 +596,66 @@ export default function Consultas() {
                         })}
                       </div>
                     </fieldset>
-
                     <fieldset className="mb-7">
                       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <legend className="text-sm font-bold sm:text-base">
-                          Qual unidade mais próxima de você?
-                          <span className="ml-1 text-red-500">*</span>
-                        </legend>
-
+                        <Legenda className="">Qual unidade mais próxima de você?</Legenda>
                         {especialidade && (
                           <span className="w-fit rounded-full bg-[#3563A7]/15 px-3 py-1.5 text-xs font-semibold">
-                            {unidadesDisponiveis.length} unidade
-                            {unidadesDisponiveis.length === 1 ? "" : "s"} disponíve
-                            {unidadesDisponiveis.length === 1 ? "l" : "is"}
+                            {unidades.length} unidade{plural ? "" : "s"} disponíve{plural ? "l" : "is"}
                           </span>
                         )}
                       </div>
-
                       {!especialidade ? (
                         <div className="flex flex-col items-center rounded-xl border border-dashed border-[#3563A7]/40 px-4 py-8 text-center">
                           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#3563A7]/10 text-[#023E8A]">
                             <Hospital size={24} />
                           </div>
-                          <p className="text-sm font-bold">
-                            Escolha a especialidade primeiro
-                          </p>
-                          <p className="mt-1 text-xs">
-                            As unidades disponíveis aparecerão automaticamente.
-                          </p>
+                          <p className="text-sm font-bold">Escolha a especialidade primeiro</p>
+                          <p className="mt-1 text-xs">As unidades disponíveis aparecerão automaticamente.</p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                          {unidadesDisponiveis.map((u, i) => {
-                            const selecionada = unidade?.id === u.id;
-
+                          {unidades.map((u) => {
+                            const sel = unidade?.id === u.id;
                             return (
                               <button
                                 key={u.id}
                                 type="button"
-                                aria-pressed={selecionada}
+                                aria-pressed={sel}
                                 onClick={() => setUnidade(u)}
                                 className={`group relative overflow-hidden rounded-[22px] border p-5 text-left transition-all ${
-                                  selecionada
+                                  sel
                                     ? "border-[#023E8A] bg-[#3563A7]/15 shadow-[0_10px_28px_rgba(2,62,138,0.12)]"
                                     : "border-blue-100 bg-[#fbfdff] hover:-translate-y-0.5 hover:border-[#3563A7] hover:bg-white hover:shadow-sm"
                                 }`}
                               >
                                 <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#3563A7]/10" />
-
                                 <div className="relative z-10">
                                   <div className="flex items-start justify-between gap-3">
-                                    <div
-                                      className={`flex h-12 w-12 items-center justify-center rounded-xl ${
-                                        selecionada
-                                          ? "bg-[#023E8A] text-white"
-                                          : "bg-[#3563A7]/15 text-[#023E8A]"
-                                      }`}
-                                    >
+                                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconeCls(sel)}`}>
                                       <Hospital size={22} />
                                     </div>
-
-                                    <div className="flex items-center gap-2">
-                                      {false && i === 0 && (
-                                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold">
-                                          Mais próxima
-                                        </span>
-                                      )}
-
-                                      {selecionada && (
-                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#023E8A] text-white">
-                                          <Check size={14} />
-                                        </div>
-                                      )}
-                                    </div>
+                                    {sel && (
+                                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#023E8A] text-white">
+                                        <Check size={14} />
+                                      </div>
+                                    )}
                                   </div>
-
-                                  <h3 className="mt-4 text-sm font-bold leading-5">
-                                    {u.nome}
-                                  </h3>
-
+                                  <h3 className="mt-4 text-sm font-bold leading-5">{u.nome}</h3>
                                   <div className="mt-4 space-y-2.5 text-sm">
-                                    <p className="flex items-center gap-2">
-                                      <MapPin
-                                        size={15}
-                                        className="shrink-0 text-[#3563A7]"
-                                      />
-                                      {u.bairro}
-                                    </p>
-                                    <p className="flex items-center gap-2">
-                                      <Clock
-                                        size={15}
-                                        className="shrink-0 text-[#3563A7]"
-                                      />
-                                      {u.horario}
-                                    </p>
-                                    <p className="flex items-center gap-2">
-                                      <Building2
-                                        size={15}
-                                        className="shrink-0 text-[#3563A7]"
-                                      />
-                                      {u.rua || u.bairro}
-                                    </p>
+                                    {[[MapPin, u.bairro], [Clock, u.horario], [Building2, u.rua || u.bairro]].map(([Icone, texto], k) => (
+                                      <p key={k} className="flex items-center gap-2">
+                                        <Icone size={15} className="shrink-0 text-[#3563A7]" />
+                                        {texto}
+                                      </p>
+                                    ))}
                                   </div>
-
                                   <div className="mt-4 flex items-center justify-between border-t border-blue-100 pt-4">
                                     <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
                                       <CheckCircle2 size={13} />
                                       Atende {especialidade}
                                     </span>
-
-                                    <ArrowRight
-                                      size={15}
-                                      className="text-[#023E8A] transition group-hover:translate-x-1"
-                                    />
+                                    <ArrowRight size={15} className="text-[#023E8A] transition group-hover:translate-x-1" />
                                   </div>
                                 </div>
                               </button>
@@ -958,84 +664,42 @@ export default function Consultas() {
                         </div>
                       )}
                     </fieldset>
-
                     <fieldset className="mb-7">
-                      <legend className="mb-3 text-sm font-bold sm:text-base">
-                        Qual dia é melhor para você?
-                        <span className="ml-1 text-red-500">*</span>
-                      </legend>
-
-                      <DatePicker
-                        rotulo="Data da consulta"
-                        valor={dia}
-                        onChange={setDia}
-                        minimo={minimoIso}
-                        bloquearFinsDeSemana
-                        placeholder="Selecione o dia"
-                        largura="w-full sm:w-60"
-                      />
+                      <Legenda>Qual dia é melhor para você?</Legenda>
+                      <DatePicker rotulo="Data da consulta" valor={dia} onChange={setDia} minimo={minimoIso} bloquearFinsDeSemana placeholder="Selecione o dia" largura="w-full sm:w-60" />
                     </fieldset>
-
                     <fieldset>
-                      <legend className="mb-3 text-sm font-bold sm:text-base">
-                        Escolha o horário
-                        <span className="ml-1 text-red-500">*</span>
-                      </legend>
-
+                      <Legenda>Escolha o horário</Legenda>
                       {carregandoHorarios ? (
-                        <p className="col-span-full rounded-lg bg-blue-50 p-4 text-sm">Buscando horários disponíveis...</p>
+                        <Aviso>Buscando horários disponíveis...</Aviso>
                       ) : !dia || !unidade || !especialidadeSelecionada ? (
-                        <p className="col-span-full rounded-lg bg-blue-50 p-4 text-sm">Selecione a especialidade, a unidade e a data para consultar os horários.</p>
+                        <Aviso>Selecione a especialidade, a unidade e a data para consultar os horários.</Aviso>
                       ) : horariosDisponiveis.length === 0 ? (
-                        <p className="col-span-full rounded-lg bg-blue-50 p-4 text-sm">Não há horários disponíveis para esta data. Escolha outro dia.</p>
+                        <Aviso>Não há horários disponíveis para esta data. Escolha outro dia.</Aviso>
                       ) : null}
                       <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-                        {horariosDisponiveis.map((h) => {
-                          const selecionado = horario === h;
-
-                          return (
-                            <button
-                              key={h}
-                              type="button"
-                              aria-pressed={selecionado}
-                              onClick={() => setHorario(h)}
-                              className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold transition ${
-                                selecionado
-                                  ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]"
-                                  : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
-                              }`}
-                            >
-                              <Clock size={15} />
-                              {h}
-                            </button>
-                          );
-                        })}
+                        {horariosDisponiveis.map((h) => (
+                          <button
+                            key={h}
+                            type="button"
+                            aria-pressed={horario === h}
+                            onClick={() => setHorario(h)}
+                            className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold transition ${
+                              horario === h ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]" : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
+                            }`}
+                          >
+                            <Clock size={15} />
+                            {h}
+                          </button>
+                        ))}
                       </div>
                     </fieldset>
                   </section>
-
                   <aside className="flex h-full flex-col gap-5 lg:col-span-2">
                     <section className={`${cardBase} p-5 sm:p-6`}>
-                      <div className="mb-7 flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
-                          <ClipboardList size={24} />
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-bold">
-                            Informações adicionais
-                          </h2>
-                          <p className="mt-1 text-sm">Conte um pouco mais.</p>
-                        </div>
-                      </div>
-
+                      <CabecalhoCard Icone={ClipboardList} icone={24} titulo="Informações adicionais" sub="Conte um pouco mais." tituloCls="text-xl font-bold" />
                       <div className="mb-7">
-                        <label
-                          htmlFor="motivo"
-                          className="mb-3 block text-sm font-bold leading-6"
-                        >
-                          Motivo da consulta (opcional)
-                        </label>
-
+                        <label htmlFor="motivo" className="mb-3 block text-sm font-bold leading-6">Motivo da consulta (opcional)</label>
                         <textarea
                           id="motivo"
                           value={motivo}
@@ -1045,71 +709,30 @@ export default function Consultas() {
                           placeholder="Conte brevemente o motivo..."
                           className="w-full resize-y rounded-lg border border-[#3563A7]/40 bg-white px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-[#0B1756]/50 focus:border-[#023E8A] focus:ring-2 focus:ring-[#3563A7]/30"
                         />
-
-                        <p className="mt-2 text-right text-xs">
-                          {motivo.length}/300
-                        </p>
+                        <p className="mt-2 text-right text-xs">{motivo.length}/300</p>
                       </div>
-
                       <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-[#3563A7]/10 to-white p-4 sm:p-5">
                         <div className="mb-3 flex items-center gap-3">
-                          <ShieldCheck
-                            size={24}
-                            className="shrink-0 text-[#023E8A]"
-                          />
+                          <ShieldCheck size={24} className="shrink-0 text-[#023E8A]" />
                           <h3 className="font-bold">Resumo escolhido</h3>
                         </div>
-
                         <p className="text-sm leading-6">
                           {especialidade || "Especialidade não escolhida"}
                           {unidade && ` · ${unidade.nome}`}
                           <br />
-                          {diaSelecionado
-                            ? `${diaSelecionado.texto}${
-                                horario ? ` às ${horario}` : ""
-                              }`
-                            : "Data e horário não escolhidos"}
+                          {textoDia ? `${textoDia}${horario ? ` às ${horario}` : ""}` : "Data e horário não escolhidos"}
                         </p>
                       </div>
                     </section>
-
-                    <section
-                      className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}
-                    >
-                      <h3 className="mb-6 mt-1 text-lg font-bold">
-                        Próximos passos
-                      </h3>
-
+                    <section className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}>
+                      <h3 className="mb-6 mt-1 text-lg font-bold">Próximos passos</h3>
                       <div className="flex flex-1 flex-col justify-evenly gap-6 pb-4">
-                        {[
-                          {
-                            titulo: "Escolha unidade e horário",
-                            descricao: "Selecione onde será atendido e quando.",
-                          },
-                          {
-                            titulo: "Revise o agendamento",
-                            descricao: "Confira os dados antes de confirmar.",
-                          },
-                          {
-                            titulo: "Acompanhe sua consulta",
-                            descricao:
-                              "Veja o status e o prontuário em Minhas consultas.",
-                          },
-                        ].map((item, i) => (
-                          <div
-                            key={item.titulo}
-                            className="flex items-start gap-3"
-                          >
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/15 text-sm font-bold">
-                              {i + 1}
-                            </div>
+                        {PASSOS.map(([titulo, descricao], i) => (
+                          <div key={titulo} className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/15 text-sm font-bold">{i + 1}</div>
                             <div>
-                              <h4 className="text-sm font-bold">
-                                {item.titulo}
-                              </h4>
-                              <p className="mt-1 text-xs leading-5 sm:text-sm">
-                                {item.descricao}
-                              </p>
+                              <h4 className="text-sm font-bold">{titulo}</h4>
+                              <p className="mt-1 text-xs leading-5 sm:text-sm">{descricao}</p>
                             </div>
                           </div>
                         ))}
@@ -1117,138 +740,66 @@ export default function Consultas() {
                     </section>
                   </aside>
                 </div>
-
-                {erro && (
-                  <div
-                    role="alert"
-                    className="mt-5 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
-                  >
-                    <Info size={19} className="mt-0.5 shrink-0" />
-                    <p>{erro}</p>
-                  </div>
-                )}
-
+                {erro && <Alerta className="mt-5" comIcone>{erro}</Alerta>}
                 <div className="mt-7 flex justify-end">
-                  <button
-                    type="submit"
-                    className={`${botaoPrimario} w-full gap-3 px-7 sm:w-auto`}
-                  >
+                  <button type="submit" className={`${botaoPrimario} w-full gap-3 px-7 sm:w-auto`}>
                     Continuar agendamento
                     <ArrowRight size={21} />
                   </button>
                 </div>
               </form>
             )}
-
             {etapaAtual === 2 && (
               <section className={`${cardBase} p-5 sm:p-8`}>
-                <div className="mb-7 flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
-                    <ClipboardList size={26} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold sm:text-2xl">
-                      Confira os dados
-                    </h2>
-                    <p className="mt-1 text-sm">
-                      Verifique as informações antes de confirmar.
-                    </p>
-                  </div>
-                </div>
-
+                <CabecalhoCard Icone={ClipboardList} icone={26} tam="h-12 w-12" titulo="Confira os dados" sub="Verifique as informações antes de confirmar." />
                 <div className="grid gap-4 md:grid-cols-2">
-                  {[
-                    ["Especialidade", especialidade],
-                    ["Unidade", unidade?.nome],
-                    ["Data", diaSelecionado?.texto],
-                    ["Horário", horario],
-                  ].map(([rotulo, valor]) => (
-                    <div
-                      key={rotulo}
-                      className="rounded-xl border border-blue-100 p-5"
-                    >
+                  {[["Especialidade", especialidade], ["Unidade", unidade?.nome], ["Data", textoDia], ["Horário", horario]].map(([rotulo, valor]) => (
+                    <div key={rotulo} className="rounded-xl border border-blue-100 p-5">
                       <p className="mb-2 text-sm font-semibold">{rotulo}</p>
                       <p className="font-semibold">{valor}</p>
                     </div>
                   ))}
-
                   <div className="rounded-xl border border-blue-100 p-5 md:col-span-2">
                     <p className="mb-2 text-sm font-semibold">Motivo</p>
-                    <p className="whitespace-pre-wrap break-words text-sm leading-6">
-                      {motivo.trim() || "Não informado"}
-                    </p>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-6">{motivo.trim() || "Não informado"}</p>
                   </div>
                 </div>
-
                 <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={voltar}
-                    className={botaoSecundario}
-                  >
+                  <button type="button" onClick={voltar} className={botaoSecundario}>
                     <ArrowLeft size={19} />
                     Voltar e editar
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={confirmar}
-                    className={botaoPrimario}
-                  >
+                  <button type="button" onClick={confirmar} className={botaoPrimario}>
                     Confirmar agendamento
                     <ArrowRight size={20} />
                   </button>
                 </div>
               </section>
             )}
-
             {etapaAtual === 3 && (
               <section className={`${cardBase} p-6 text-center sm:p-12`}>
                 <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#3563A7]/10 text-[#023E8A]">
                   <CheckCircle2 size={46} />
                 </div>
-
-                <h2 className="text-2xl font-extrabold sm:text-3xl">
-                  Solicitação enviada!
-                </h2>
-
+                <h2 className="text-2xl font-extrabold sm:text-3xl">Solicitação enviada!</h2>
                 <p className="mx-auto mt-4 max-w-xl text-sm leading-7 sm:text-base">
-                  Sua solicitação de consulta de {especialidade} na {unidade?.nome} foi registrada para {diaSelecionado?.texto} às {horario}. Ela ficará pendente até a confirmação da unidade.
+                  Sua solicitação de consulta de {especialidade} na {unidade?.nome} foi registrada para {textoDia} às {horario}. Ela ficará pendente até a confirmação da unidade.
                 </p>
-
                 <div className="mx-auto mt-7 max-w-xl rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-5 text-left">
                   <div className="flex items-start gap-3">
-                    <Stethoscope
-                      size={25}
-                      className="mt-1 shrink-0 text-[#023E8A]"
-                    />
+                    <Stethoscope size={25} className="mt-1 shrink-0 text-[#023E8A]" />
                     <div>
                       <h3 className="font-bold">Importante</h3>
-                      <p className="mt-2 text-sm leading-6">
-                        O horário foi solicitado, mas ainda depende da confirmação da unidade. Acompanhe o andamento em Minhas consultas.
-                      </p>
+                      <p className="mt-2 text-sm leading-6">O horário foi solicitado, mas ainda depende da confirmação da unidade. Acompanhe o andamento em Minhas consultas.</p>
                     </div>
                   </div>
                 </div>
-
                 <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAba("acompanhar");
-                      topo();
-                    }}
-                    className={botaoPrimario}
-                  >
+                  <button type="button" onClick={() => { setAba("acompanhar"); topo(); }} className={botaoPrimario}>
                     <CalendarCheck size={19} />
                     Ver minhas consultas
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => novoAgendamento()}
-                    className={botaoSecundario}
-                  >
+                  <button type="button" onClick={() => novoAgendamento()} className={botaoSecundario}>
                     <Activity size={19} />
                     Novo agendamento
                   </button>
@@ -1257,25 +808,18 @@ export default function Consultas() {
             )}
           </>
         )}
-
-        {aba === "acompanhar" && (
+        {/* ===== ABA: ACOMPANHAR ===== */}
+        {acompanhar && (
           <section className={`${cardBase} p-5 sm:p-8`}>
             <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
-                  <CalendarCheck size={26} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold sm:text-2xl">
-                    Minhas consultas
-                  </h2>
-                  <p className="mt-1 text-sm">
-                    {ativas} consulta{ativas === 1 ? "" : "s"} agendada
-                    {ativas === 1 ? "" : "s"}.
-                  </p>
-                </div>
-              </div>
-
+              <CabecalhoCard
+                Icone={CalendarCheck}
+                icone={26}
+                tam="h-12 w-12"
+                mb=""
+                titulo="Minhas consultas"
+                sub={`${ativas} consulta${ativas === 1 ? "" : "s"} agendada${ativas === 1 ? "" : "s"}.`}
+              />
               <div className="flex flex-wrap gap-2">
                 {filtros.map((f) => (
                   <button
@@ -1284,9 +828,7 @@ export default function Consultas() {
                     aria-pressed={filtro === f}
                     onClick={() => setFiltro(f)}
                     className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                      filtro === f
-                        ? "border-[#023E8A] bg-[#023E8A] text-white"
-                        : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
+                      filtro === f ? "border-[#023E8A] bg-[#023E8A] text-white" : "border-blue-100 bg-white hover:border-[#3563A7] hover:bg-[#3563A7]/10"
                     }`}
                   >
                     {f === "Todas" ? f : `${f}s`}
@@ -1294,101 +836,61 @@ export default function Consultas() {
                 ))}
               </div>
             </div>
-
             {carregandoConsultas ? (
               <div className="rounded-xl border border-blue-100 p-10 text-center text-sm">Carregando suas consultas...</div>
             ) : listaFiltrada.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[#3563A7]/40 p-10 text-center">
                 <p className="font-semibold">Nenhuma consulta encontrada.</p>
-                <p className="mt-1 text-sm">
-                  Tente outro filtro ou agende uma nova consulta.
-                </p>
+                <p className="mt-1 text-sm">Tente outro filtro ou agende uma nova consulta.</p>
               </div>
             ) : (
               <div className="grid gap-4">
                 {listaFiltrada.map((c) => {
                   const estilo = estiloStatus[c.status] || estiloStatus.Pendente;
-
+                  const ativa = ATIVAS.includes(c.status);
                   return (
-                    <article
-                      key={c.id}
-                      className="flex flex-col justify-between gap-4 rounded-xl border border-blue-100 p-5 lg:flex-row lg:items-center"
-                    >
+                    <article key={c.id} className="flex flex-col justify-between gap-4 rounded-xl border border-blue-100 p-5 lg:flex-row lg:items-center">
                       <div className="flex items-start gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3563A7]/10 text-[#023E8A]">
                           <MapPin size={24} />
                         </div>
-
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-bold">{c.especialidade}</h3>
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${estilo.badge}`}
-                            >
-                              <span
-                                className={`h-2 w-2 rounded-full ${estilo.ponto}`}
-                              />
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${estilo.badge}`}>
+                              <span className={`h-2 w-2 rounded-full ${estilo.ponto}`} />
                               {c.status}
                             </span>
                           </div>
-
                           <p className="mt-1 text-sm">{c.unidade}</p>
-
                           {c.medico && (
                             <p className="mt-1 flex items-center gap-1.5 text-sm">
-                              <UserRound
-                                size={15}
-                                className="shrink-0 text-[#3563A7]"
-                              />
+                              <UserRound size={15} className="shrink-0 text-[#3563A7]" />
                               {c.medico}
                             </p>
                           )}
-
                           <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                            <span className="inline-flex items-center gap-1.5">
-                              <CalendarDays size={15} />
-                              {c.data}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5">
-                              <Clock size={15} />
-                              {c.horario}
-                            </span>
+                            <span className="inline-flex items-center gap-1.5"><CalendarDays size={15} />{c.data}</span>
+                            <span className="inline-flex items-center gap-1.5"><Clock size={15} />{c.horario}</span>
                           </p>
                         </div>
                       </div>
-
                       <div className="flex flex-col gap-2 sm:flex-row">
-                        {["Pendente", "Confirmada"].includes(c.status) && (
-                          <button
-                            type="button"
-                            onClick={() => cancelarConsulta(c.id)}
-                            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
-                          >
+                        {ativa && (
+                          <button type="button" onClick={() => cancelarConsulta(c.id)} className={botaoMini(MINI_CANCELAR)}>
                             <X size={17} />
                             Cancelar
                           </button>
                         )}
-
                         {c.status === "Concluída" && c.prontuario && (
-                          <button
-                            type="button"
-                            onClick={() => setProntuarioId(c.id)}
-                            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#023E8A] bg-white px-4 py-2 text-sm font-bold text-[#023E8A] transition hover:bg-[#3563A7]/10 focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30"
-                          >
+                          <button type="button" onClick={() => setProntuarioId(c.id)} className={botaoMini(MINI_PRONTUARIO)}>
                             <FileText size={17} />
                             Ver prontuário
                           </button>
                         )}
-
-                        <button
-                          type="button"
-                          onClick={() => novoAgendamento(c)}
-                          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#3563A7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/40"
-                        >
+                        <button type="button" onClick={() => novoAgendamento(c)} className={botaoMini(MINI_PRIMARIO)}>
                           <RefreshCw size={17} />
-                          {["Pendente", "Confirmada"].includes(c.status)
-                            ? "Reagendar"
-                            : "Agendar novamente"}
+                          {ativa ? "Reagendar" : "Agendar novamente"}
                         </button>
                       </div>
                     </article>
@@ -1396,13 +898,8 @@ export default function Consultas() {
                 })}
               </div>
             )}
-
             <div className="mt-7 flex justify-end">
-              <button
-                type="button"
-                onClick={() => novoAgendamento()}
-                className={botaoSecundario}
-              >
+              <button type="button" onClick={() => novoAgendamento()} className={botaoSecundario}>
                 <CalendarPlus size={19} />
                 Agendar nova consulta
               </button>
@@ -1410,57 +907,32 @@ export default function Consultas() {
           </section>
         )}
       </div>
-
-      {consultaProntuario && (
-        <Portal>
+      {consultaProntuario && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/40 p-4 backdrop-blur-sm" onClick={() => setProntuarioId(null)}>
           <div
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/40 p-4 backdrop-blur-sm"
-            onClick={() => setProntuarioId(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-prontuario"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 text-[#0B1756] shadow-xl"
           >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="titulo-prontuario"
-              onClick={(e) => e.stopPropagation()}
-              className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 text-[#0B1756] shadow-xl"
-            >
-              <div className="flex items-start justify-between border-b border-blue-100 pb-4">
-                <div>
-                  <h3 id="titulo-prontuario" className="text-2xl font-bold">
-                    Prontuário · {consultaProntuario.especialidade}
-                  </h3>
-                  <p className="mt-1 text-sm">
-                    {consultaProntuario.data} às {consultaProntuario.horario} ·{" "}
-                    {consultaProntuario.medico}
-                  </p>
-                  <p className="mt-1 text-sm opacity-80">
-                    {consultaProntuario.unidade}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Fechar"
-                  onClick={() => setProntuarioId(null)}
-                  className="rounded-lg p-2 transition hover:bg-[#3563A7]/10"
-                >
-                  <X size={20} />
-                </button>
+            <div className="flex items-start justify-between border-b border-blue-100 pb-4">
+              <div>
+                <h3 id="titulo-prontuario" className="text-2xl font-bold">Prontuário · {consultaProntuario.especialidade}</h3>
+                <p className="mt-1 text-sm">{consultaProntuario.data} às {consultaProntuario.horario} · {consultaProntuario.medico}</p>
+                <p className="mt-1 text-sm opacity-80">{consultaProntuario.unidade}</p>
               </div>
-
-              <ProntuarioPaciente consulta={consultaProntuario} />
-
-              <div className="border-t border-blue-100 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setProntuarioId(null)}
-                  className={`${botaoSecundario} w-full`}
-                >
-                  Fechar
-                </button>
-              </div>
+              <button type="button" aria-label="Fechar" onClick={() => setProntuarioId(null)} className="rounded-lg p-2 transition hover:bg-[#3563A7]/10">
+                <X size={20} />
+              </button>
+            </div>
+            <ProntuarioPaciente consulta={consultaProntuario} />
+            <div className="border-t border-blue-100 pt-4">
+              <button type="button" onClick={() => setProntuarioId(null)} className={`${botaoSecundario} w-full`}>Fechar</button>
             </div>
           </div>
-        </Portal>
+        </div>,
+        document.body
       )}
     </main>
   );

@@ -43,7 +43,7 @@ export default function SelecionarAcesso() {
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
             Bem-vindo ao
             <span className="mt-1 block text-[#023E8A]">
-              ConectaSUS
+              UneSUS
             </span>
           </h1>
 
