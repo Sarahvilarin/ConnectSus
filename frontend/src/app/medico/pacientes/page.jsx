@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { api } from "@/lib/api";
 import {
   Activity,
   AlertTriangle,
@@ -23,164 +24,11 @@ import {
   X,
 } from "lucide-react";
 
-// Dados fictícios para demonstração da interface. A lista real do pronto atendimento e o objeto paciente.triagem devem vir da API autenticada da triagem do UneSUS.
-// Contrato esperado em cada paciente recebido da API de triagem:
-// paciente.triagem = { queixaPrincipal, descricaoSintomas, inicioSintomas, intensidadeDor,
-// pressaoArterial, frequenciaCardiaca, temperatura, saturacaoOxigenio, frequenciaRespiratoria,
-// glicemiaCapilar, historicoSaude, alergias, medicamentosEmUso, classificacaoRisco,
-// observacoesEnfermagem, registradaEm }.
-const PACIENTES_INICIAIS = [
-  {
-    id: "TRI-0841",
-    nome: "Mariana Silva Costa",
-    cpf: "***.456.***-00",
-    idade: 28,
-    sexo: "Feminino",
-    chegada: "13:08",
-    espera: 42,
-    unidade: "UPA Centro",
-    prioridade: "Urgente",
-    status: "Aguardando",
-    motivo: "Investigação clínica em atendimento de urgência.",
-    exame: "Hemograma completo",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0839",
-    nome: "João Pedro Alves",
-    cpf: "***.654.***-21",
-    idade: 44,
-    sexo: "Masculino",
-    chegada: "13:19",
-    espera: 31,
-    unidade: "UPA Centro",
-    prioridade: "Emergência",
-    status: "Em atendimento",
-    motivo: "Avaliação cardíaca solicitada pela equipe assistencial.",
-    exame: "Eletrocardiograma",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0835",
-    nome: "Carlos Eduardo Lima",
-    cpf: "***.222.***-44",
-    idade: 61,
-    sexo: "Masculino",
-    chegada: "12:52",
-    espera: 58,
-    unidade: "UPA Vila Luzita",
-    prioridade: "Urgente",
-    status: "Aguardando",
-    motivo: "Investigação clínica por exame de imagem.",
-    exame: "Raio-X de tórax",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0828",
-    nome: "Ana Clara Oliveira",
-    cpf: "***.913.***-08",
-    idade: 35,
-    sexo: "Feminino",
-    chegada: "12:34",
-    espera: 76,
-    unidade: "UPA Vila Luzita",
-    prioridade: "Prioritário",
-    status: "Aguardando",
-    motivo: "Dosagem solicitada durante avaliação clínica.",
-    exame: "Glicemia",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0806",
-    nome: "Lucas Henrique Santos",
-    cpf: "***.731.***-19",
-    idade: 19,
-    sexo: "Masculino",
-    chegada: "10:14",
-    espera: 18,
-    unidade: "UPA Centro",
-    prioridade: "Prioritário",
-    status: "Alta",
-    motivo: "Investigação de sintomas abdominais.",
-    exame: "Ultrassom abdominal",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0798",
-    nome: "Fernanda Martins Souza",
-    cpf: "***.285.***-67",
-    idade: 52,
-    sexo: "Feminino",
-    chegada: "09:48",
-    espera: 12,
-    unidade: "UPA Vila Luzita",
-    prioridade: "Urgente",
-    status: "Alta",
-    motivo: "Avaliação laboratorial em atendimento de urgência.",
-    exame: "Hemograma completo",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0782",
-    nome: "Roberto Almeida Santos",
-    cpf: "***.104.***-55",
-    idade: 67,
-    sexo: "Masculino",
-    chegada: "08:26",
-    espera: 7,
-    unidade: "UPA Centro",
-    prioridade: "Emergência",
-    status: "Alta",
-    motivo: "Avaliação cardíaca durante atendimento emergencial.",
-    exame: "Eletrocardiograma",
-    atendimentoAtual: null,
-  },
-  {
-    id: "TRI-0775",
-    nome: "Beatriz Nascimento Lima",
-    cpf: "***.908.***-12",
-    idade: 23,
-    sexo: "Feminino",
-    chegada: "08:02",
-    espera: 24,
-    unidade: "UPA Vila Luzita",
-    prioridade: "Prioritário",
-    status: "Alta",
-    motivo: "Análise laboratorial solicitada durante atendimento.",
-    exame: "Urina tipo I",
-    atendimentoAtual: null,
-  },
-];
-
-// Histórico ilustrativo. Ausência de informação significa "não informado", não ausência clínica.
-const HISTORICOS = {
-  "TRI-0841": {
-    problemas: ["Asma (registro anterior; confirmar com a paciente)"],
-    alergias: ["Dipirona — relato prévio; confirmar"],
-    medicamentos: ["Salbutamol inalatório — uso anterior; confirmar"],
-    sinaisVitais: [
-      ["Pressão arterial", "118/76 mmHg"],
-      ["Frequência cardíaca", "88 bpm"],
-      ["SpO₂", "98%"],
-      ["Temperatura", "36,7 °C"],
-    ],
-  },
-  "TRI-0839": {
-    problemas: ["Hipertensão arterial (registro anterior; confirmar)"],
-    alergias: [],
-    medicamentos: ["Losartana — uso anterior; confirmar"],
-    sinaisVitais: [
-      ["Pressão arterial", "142/90 mmHg"],
-      ["Frequência cardíaca", "96 bpm"],
-      ["SpO₂", "97%"],
-    ],
-  },
-};
+// A tela utiliza exclusivamente registros retornados pela API autenticada.
 
 const ABAS = [
   { id: "Aguardando", nome: "Aguardando" },
   { id: "Em atendimento", nome: "Em atendimento" },
-  { id: "Alta", nome: "Altas" },
   { id: "Todos", nome: "Todos" },
 ];
 
@@ -189,7 +37,6 @@ const CARD = "rounded-[24px] border border-[#DFEAF5] bg-white shadow-[0_5px_18px
 const STATUS_COR = {
   Aguardando: "border border-amber-200 bg-amber-50 text-amber-800",
   "Em atendimento": "border border-blue-200 bg-blue-50 text-blue-800",
-  Alta: "border border-emerald-200 bg-emerald-50 text-emerald-800",
 };
 const PRIORIDADE_COR = {
   Emergência: "bg-[#0B1756] text-white",
@@ -291,10 +138,10 @@ function Select({ valor, alterar, titulo, opcoes }) {
   );
 }
 
-function AtendimentoModal({ paciente, onClose, onFinish }) {
-  const historico = HISTORICOS[paciente.id] || { problemas: [], alergias: [], medicamentos: [], sinaisVitais: [] };
+function AtendimentoModal({ paciente, onClose, onFinish, atualizando = false }) {
+
   const triagem = paciente.triagem || paciente.dadosTriagem || paciente;
-  const somenteLeitura = paciente.status === "Alta";
+  const somenteLeitura = false;
   const valor = (campo) => {
     const dado = triagem[campo];
     if (Array.isArray(dado)) return dado.length ? dado.join("; ") : "Não informado na triagem";
@@ -373,13 +220,8 @@ function AtendimentoModal({ paciente, onClose, onFinish }) {
             </div>
           </Secao>
 
-          <Secao titulo="Prontuário anterior" subtitulo="Registros prévios disponíveis no cadastro do paciente; confirme durante a consulta" Icone={ClipboardList}>
-            <div className="grid gap-3 lg:grid-cols-3">
-              <div className="rounded-xl border border-[#DFEAF5] bg-[#F8FBFE] p-3"><p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#52709A]">Alergias registradas</p><p className="text-sm text-[#0B1756]">{historico.alergias.length ? historico.alergias.join("; ") : "Sem registro anterior"}</p></div>
-              <div className="rounded-xl border border-[#DFEAF5] bg-[#F8FBFE] p-3"><p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#52709A]">Condições de saúde</p><p className="text-sm text-[#0B1756]">{historico.problemas.length ? historico.problemas.join("; ") : "Sem registro anterior"}</p></div>
-              <div className="rounded-xl border border-[#DFEAF5] bg-[#F8FBFE] p-3"><p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#52709A]">Medicamentos anteriores</p><p className="text-sm text-[#0B1756]">{historico.medicamentos.length ? historico.medicamentos.join("; ") : "Sem registro anterior"}</p></div>
-            </div>
-            {historico.sinaisVitais.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{historico.sinaisVitais.map(([nome, valor]) => <Info key={nome} titulo={`${nome} · registro anterior`} valor={valor} />)}</div>}
+          <Secao titulo="Prontuário anterior" subtitulo="Esta tela ainda não possui uma rota de histórico clínico anterior" Icone={ClipboardList}>
+            <Info titulo="Registros anteriores" valor="Não disponibilizados pela API nesta integração" />
           </Secao>
 
           <Secao titulo="Ações do atendimento" subtitulo="As telas de prescrição e atestado já existentes serão abertas com o identificador deste paciente" Icone={FileText}>
@@ -406,7 +248,7 @@ function AtendimentoModal({ paciente, onClose, onFinish }) {
               <p className="text-[11px] text-[#52709A]">Após concluir as ações necessárias, finalize o atendimento para registrar a alta.</p>
               <div className="flex flex-wrap justify-end gap-2">
                 <button type="button" onClick={onClose} className="rounded-xl border border-[#D7E4F1] bg-white px-3.5 py-2.5 text-xs font-bold text-[#0B1756] hover:bg-slate-50">Fechar</button>
-                <button type="button" onClick={() => onFinish(paciente.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#0B1756] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#023E8A]"><CheckCircle2 size={15} /> Finalizar atendimento e dar alta</button>
+                <button type="button" disabled={atualizando} onClick={() => onFinish(paciente.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#0B1756] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#023E8A]"><CheckCircle2 size={15} /> {atualizando ? "Finalizando..." : "Finalizar atendimento"}</button>
               </div>
             </div>
           )}
@@ -416,18 +258,119 @@ function AtendimentoModal({ paciente, onClose, onFinish }) {
   );
 }
 
+
+
+function dataValida(valor) {
+  if (!valor) return null;
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? null : data;
+}
+
+function idadeEmAnos(dataNascimento) {
+  const nascimento = dataValida(dataNascimento);
+  if (!nascimento) return null;
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
+  const aniversario = new Date(hoje.getFullYear(), nascimento.getMonth(), nascimento.getDate());
+  if (hoje < aniversario) idade -= 1;
+  return idade >= 0 ? idade : null;
+}
+
+function formatarHora(valor) {
+  const data = dataValida(valor);
+  return data ? data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—";
+}
+
+function mapearPrioridade(valor) {
+  const mapa = {
+    vermelho: "Emergência",
+    laranja: "Urgente",
+    amarelo: "Prioritário",
+    verde: "Rotina",
+    azul: "Rotina",
+    urgente: "Urgente",
+    preferencial: "Prioritário",
+    normal: "Rotina",
+  };
+  return mapa[String(valor || "").toLowerCase()] || "Rotina";
+}
+
+function mapearStatus(valor) {
+  if (valor === "em_atendimento") return "Em atendimento";
+  if (valor === "chamado") return "Aguardando";
+  return "Aguardando";
+}
+
+function mapearFila(item) {
+  const nascimento = item.paciente_data_nascimento || item.data_nascimento;
+  const triagem = item.triagem_id ? {
+    queixaPrincipal: item.queixa_principal,
+    descricaoSintomas: item.sintomas,
+    inicioSintomas: item.inicio_sintomas,
+    intensidadeDor: item.intensidade_dor,
+    pressaoArterial: item.pressao_arterial,
+    frequenciaCardiaca: item.frequencia_cardiaca,
+    temperatura: item.temperatura,
+    saturacaoOxigenio: item.saturacao_oxigenio,
+    frequenciaRespiratoria: item.frequencia_respiratoria,
+    glicemiaCapilar: item.glicemia,
+    classificacaoRisco: item.classificacao_risco,
+    observacoesEnfermagem: item.observacoes_triagem,
+    registradaEm: formatarHora(item.triagem_criada_em),
+  } : null;
+
+  return {
+    id: String(item.id),
+    filaId: Number(item.id),
+    pacienteId: item.paciente_id,
+    nome: item.paciente || item.nome_completo || "Paciente sem nome informado",
+    cpf: item.paciente_cpf || item.cpf || "Não informado",
+    idade: idadeEmAnos(nascimento),
+    sexo: item.paciente_sexo || item.sexo || "Não informado",
+    chegada: formatarHora(item.entrada_em),
+    espera: null,
+    unidade: item.unidade || item.nome_unidade || "Unidade não informada",
+    unidadeId: Number(item.unidade_id),
+    setorId: Number(item.setor_id),
+    prioridade: mapearPrioridade(triagem?.classificacaoRisco || item.prioridade),
+    status: mapearStatus(item.status),
+    motivo: triagem?.queixaPrincipal || "Queixa não registrada na triagem",
+    exame: null,
+    triagem,
+    rawStatus: item.status,
+  };
+}
 export default function PacientesProntoAtendimentoPage() {
-  const [pacientes, setPacientes] = useState(PACIENTES_INICIAIS);
+  const [pacientes, setPacientes] = useState([]);
   const [aba, setAba] = useState("Aguardando");
   const [busca, setBusca] = useState("");
   const [prioridade, setPrioridade] = useState("Todas as prioridades");
   const [selecionadoId, setSelecionadoId] = useState(null);
   const [pagina, setPagina] = useState(1);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [atualizando, setAtualizando] = useState(false);
+
+  const carregarFila = useCallback(async () => {
+    setCarregando(true);
+    setErro("");
+    try {
+      const resposta = await api("/filas/medico/me");
+      const registros = Array.isArray(resposta) ? resposta : resposta?.filas || resposta?.data?.filas || [];
+      setPacientes(registros.map(mapearFila));
+    } catch (error) {
+      setErro(error.message || "Não foi possível carregar a fila do pronto atendimento.");
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => { carregarFila(); }, [carregarFila]);
 
   const totais = useMemo(() => ({
     aguardando: pacientes.filter((p) => p.status === "Aguardando").length,
     atendimento: pacientes.filter((p) => p.status === "Em atendimento").length,
-    alta: pacientes.filter((p) => p.status === "Alta").length,
+    alta: 0,
     total: pacientes.length,
   }), [pacientes]);
 
@@ -435,10 +378,10 @@ export default function PacientesProntoAtendimentoPage() {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
     return pacientes.filter((p) => {
       const statusOk = aba === "Todos" || p.status === aba;
-      const prioridadeOk = prioridade === "Todas as prioridades" || (p.triagem?.classificacaoRisco || p.prioridade) === prioridade;
+      const prioridadeOk = prioridade === "Todas as prioridades" || p.prioridade === prioridade;
       const buscaOk = !termo || [p.nome, p.cpf, p.id, p.motivo, p.unidade, p.triagem?.queixaPrincipal, p.triagem?.descricaoSintomas].some((valor) => String(valor || "").toLocaleLowerCase("pt-BR").includes(termo));
       return statusOk && prioridadeOk && buscaOk;
-    }).sort((a, b) => (ORDEM[a.triagem?.classificacaoRisco || a.prioridade] ?? 9) - (ORDEM[b.triagem?.classificacaoRisco || b.prioridade] ?? 9) || b.espera - a.espera);
+    }).sort((a, b) => (ORDEM[a.prioridade] ?? 9) - (ORDEM[b.prioridade] ?? 9));
   }, [pacientes, aba, prioridade, busca]);
 
   useEffect(() => { setPagina(1); }, [aba, busca, prioridade]);
@@ -451,9 +394,48 @@ export default function PacientesProntoAtendimentoPage() {
   const fim = Math.min(paginaAtual * porPagina, lista.length);
   const selecionado = pacientes.find((p) => p.id === selecionadoId) || null;
 
-  function abrirAtendimento(paciente) {
-    if (paciente.status === "Aguardando") {
-      setPacientes((atuais) => atuais.map((p) => p.id === paciente.id ? { ...p, status: "Em atendimento", atendimento: horaAtual() } : p));
+  async function atualizarFila(paciente, novoStatus) {
+    setAtualizando(true);
+    setErro("");
+    try {
+      await api(`/filas/${paciente.filaId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          unidade_id: paciente.unidadeId,
+          setor_id: paciente.setorId,
+          status: novoStatus,
+        }),
+      });
+      setSelecionadoId(null);
+      await carregarFila();
+    } catch (error) {
+      setErro(error.message || "Não foi possível atualizar o atendimento.");
+    } finally {
+      setAtualizando(false);
+    }
+  }
+
+  async function abrirAtendimento(paciente) {
+    if (paciente.rawStatus === "aguardando" || paciente.rawStatus === "chamado") {
+      setAtualizando(true);
+      setErro("");
+      try {
+        await api(`/filas/${paciente.filaId}/status`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            unidade_id: paciente.unidadeId,
+            setor_id: paciente.setorId,
+            status: "em_atendimento",
+          }),
+        });
+        await carregarFila();
+      } catch (error) {
+        setErro(error.message || "Não foi possível iniciar o atendimento.");
+        setAtualizando(false);
+        return;
+      } finally {
+        setAtualizando(false);
+      }
     }
     setSelecionadoId(paciente.id);
   }
@@ -462,9 +444,9 @@ export default function PacientesProntoAtendimentoPage() {
     setSelecionadoId(null);
   }
 
-  function finalizarRegistro(id) {
-    setPacientes((atuais) => atuais.map((p) => p.id === id ? { ...p, status: "Alta", altaEm: horaAtual() } : p));
-    setSelecionadoId(null);
+  async function finalizarRegistro(id) {
+    const paciente = pacientes.find((p) => p.id === id);
+    if (paciente) await atualizarFila(paciente, "concluido");
   }
 
   return (
@@ -491,16 +473,18 @@ export default function PacientesProntoAtendimentoPage() {
           </div>
         </section>
 
+        {erro && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{erro}</div>}
+        {carregando && <div className="rounded-2xl border border-[#DFEAF5] bg-white px-5 py-6 text-sm text-[#52709A]">Carregando fila do pronto atendimento...</div>}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Metrica titulo="Aguardando" numero={totais.aguardando} legenda="Na fila do pronto atendimento" Icone={Clock3} ativo={aba === "Aguardando"} onClick={() => setAba("Aguardando")} />
           <Metrica titulo="Em atendimento" numero={totais.atendimento} legenda="Com profissional" Icone={Stethoscope} ativo={aba === "Em atendimento"} onClick={() => setAba("Em atendimento")} />
-          <Metrica titulo="Altas" numero={totais.alta} legenda="Atendimentos finalizados" Icone={CheckCircle2} ativo={aba === "Alta"} onClick={() => setAba("Alta")} />
-          <Metrica titulo="Total no PA" numero={totais.total} legenda="Registros demonstrativos" Icone={Users} ativo={aba === "Todos"} onClick={() => setAba("Todos")} />
+          <Metrica titulo="Triagens recebidas" numero={pacientes.filter((p) => p.triagem).length} legenda="Com registro de enfermagem" Icone={ClipboardList} ativo={false} onClick={() => setAba("Todos")} />
+          <Metrica titulo="Total no PA" numero={totais.total} legenda="Registros ativos da fila" Icone={Users} ativo={aba === "Todos"} onClick={() => setAba("Todos")} />
         </section>
 
         <section className={`${CARD} overflow-visible`}>
           <div className="border-b border-[#EAF3F7] px-5 pb-4 pt-5 sm:px-6">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-bold text-[#0B1756]">Pacientes no pronto atendimento</h2><p className="mt-1 text-xs text-[#52709A]">Selecione um paciente para iniciar ou continuar o atendimento.</p></div><span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><AlertTriangle size={13} /> Dados demonstrativos</span></div>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-bold text-[#0B1756]">Pacientes no pronto atendimento</h2><p className="mt-1 text-xs text-[#52709A]">Selecione um paciente para iniciar ou continuar o atendimento.</p></div><span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><AlertTriangle size={13} /> Dados carregados da API</span></div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
               <label className="relative"><span className="sr-only">Buscar paciente</span><Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#52709A]" /><input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, CPF, protocolo, queixa ou unidade" className="h-11 w-full rounded-xl border border-[#D7E4F1] bg-white pl-11 pr-4 text-sm outline-none focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10" /></label>
               <Select valor={prioridade} alterar={setPrioridade} titulo="Prioridade" opcoes={["Todas as prioridades", "Emergência", "Urgente", "Prioritário", "Rotina"]} />
@@ -514,21 +498,21 @@ export default function PacientesProntoAtendimentoPage() {
           <div className="hidden overflow-x-auto lg:block">
             <table className="w-full min-w-[900px] text-left">
               <thead><tr className="bg-[#EAF3F7] text-[11px] uppercase tracking-wide text-[#0B1756]"><th className="px-6 py-4">Paciente</th><th className="px-5 py-4">Queixa / motivo</th><th className="px-5 py-4">Prioridade</th><th className="px-5 py-4">Chegada</th><th className="px-5 py-4">Situação</th><th className="px-6 py-4 text-right">Ação</th></tr></thead>
-              <tbody>{pacientesPagina.map((p) => <tr key={p.id} className="border-t border-[#EAF3F7] transition hover:bg-[#F7FAFD]"><td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar nome={p.nome} /><div><p className="font-bold text-[#0B1756]">{p.nome}</p><p className="mt-1 text-xs text-[#52709A]">{p.idade} anos · {p.cpf}</p><p className="mt-1 text-[11px] text-[#52709A]">{p.id} · {p.unidade}</p></div></div></td><td className="max-w-[320px] px-5 py-4"><p className="line-clamp-2 text-sm font-medium text-[#0B1756]">{p.triagem?.queixaPrincipal || p.motivo}</p><p className="mt-1 text-xs text-[#52709A]">{p.exame ? `Solicitação: ${p.exame}` : "Sem solicitação vinculada"}</p></td><td className="px-5 py-4"><Prioridade valor={p.triagem?.classificacaoRisco || p.prioridade} /></td><td className="px-5 py-4"><p className="font-semibold text-[#0B1756]">{p.chegada}</p><p className="mt-1 text-xs text-[#52709A]">{p.status === "Alta" ? `Alta às ${p.altaEm || "—"}` : `${p.espera} min registrados`}</p></td><td className="px-5 py-4"><Status valor={p.status} /></td><td className="px-6 py-4 text-right"><button type="button" onClick={() => abrirAtendimento(p)} className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${p.status === "Alta" ? "border border-[#D7E4F1] bg-white text-[#0B1756] hover:bg-[#F1F6FB]" : "bg-[#023E8A] text-white hover:bg-[#0B1756]"}`}>{p.status === "Alta" ? "Ver resumo" : p.status === "Aguardando" ? "Atender paciente" : "Continuar atendimento"}<ChevronRight size={15} /></button></td></tr>)}</tbody>
+              <tbody>{pacientesPagina.map((p) => <tr key={p.id} className="border-t border-[#EAF3F7] transition hover:bg-[#F7FAFD]"><td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar nome={p.nome} /><div><p className="font-bold text-[#0B1756]">{p.nome}</p><p className="mt-1 text-xs text-[#52709A]">{p.idade} anos · {p.cpf}</p><p className="mt-1 text-[11px] text-[#52709A]">{p.id} · {p.unidade}</p></div></div></td><td className="max-w-[320px] px-5 py-4"><p className="line-clamp-2 text-sm font-medium text-[#0B1756]">{p.triagem?.queixaPrincipal || p.motivo}</p><p className="mt-1 text-xs text-[#52709A]">{p.exame ? `Solicitação: ${p.exame}` : "Sem solicitação vinculada"}</p></td><td className="px-5 py-4"><Prioridade valor={p.triagem?.classificacaoRisco || p.prioridade} /></td><td className="px-5 py-4"><p className="font-semibold text-[#0B1756]">{p.chegada}</p><p className="mt-1 text-xs text-[#52709A]">{p.status === "Alta" ? `Alta às ${p.altaEm || "—"}` : `Posição ${p.posicao ?? "—"}`}</p></td><td className="px-5 py-4"><Status valor={p.status} /></td><td className="px-6 py-4 text-right"><button type="button" disabled={atualizando} onClick={() => abrirAtendimento(p)} className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${p.status === "Alta" ? "border border-[#D7E4F1] bg-white text-[#0B1756] hover:bg-[#F1F6FB]" : "bg-[#023E8A] text-white hover:bg-[#0B1756]"}`}>{p.status === "Alta" ? "Ver resumo" : p.status === "Aguardando" ? "Atender paciente" : "Continuar atendimento"}<ChevronRight size={15} /></button></td></tr>)}</tbody>
             </table>
           </div>
 
-          <div className="space-y-3 p-4 lg:hidden">{pacientesPagina.map((p) => <article key={p.id} className="rounded-2xl border border-[#D7E4F1] bg-white p-4"><div className="flex items-start gap-3"><Avatar nome={p.nome} /><div className="min-w-0 flex-1"><p className="font-bold text-[#0B1756]">{p.nome}</p><p className="mt-1 text-xs text-[#52709A]">{p.idade} anos · {p.id}</p><p className="mt-1 text-xs text-[#52709A]">{p.unidade}</p></div><Prioridade valor={p.triagem?.classificacaoRisco || p.prioridade} /></div><div className="mt-3 rounded-xl bg-[#F8FBFE] p-3"><p className="text-[10px] font-bold uppercase text-[#52709A]">Queixa / motivo</p><p className="mt-1 text-sm text-[#0B1756]">{p.triagem?.queixaPrincipal || p.motivo}</p></div><div className="mt-3 flex flex-wrap items-center justify-between gap-2"><Status valor={p.status} /><span className="text-xs text-[#52709A]">Chegada {p.chegada}</span></div><button type="button" onClick={() => abrirAtendimento(p)} className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl bg-[#023E8A] px-4 py-3 text-xs font-bold text-white">{p.status === "Alta" ? "Ver resumo" : p.status === "Aguardando" ? "Atender paciente" : "Continuar atendimento"}<ChevronRight size={15} /></button></article>)}</div>
+          <div className="space-y-3 p-4 lg:hidden">{pacientesPagina.map((p) => <article key={p.id} className="rounded-2xl border border-[#D7E4F1] bg-white p-4"><div className="flex items-start gap-3"><Avatar nome={p.nome} /><div className="min-w-0 flex-1"><p className="font-bold text-[#0B1756]">{p.nome}</p><p className="mt-1 text-xs text-[#52709A]">{p.idade} anos · {p.id}</p><p className="mt-1 text-xs text-[#52709A]">{p.unidade}</p></div><Prioridade valor={p.triagem?.classificacaoRisco || p.prioridade} /></div><div className="mt-3 rounded-xl bg-[#F8FBFE] p-3"><p className="text-[10px] font-bold uppercase text-[#52709A]">Queixa / motivo</p><p className="mt-1 text-sm text-[#0B1756]">{p.triagem?.queixaPrincipal || p.motivo}</p></div><div className="mt-3 flex flex-wrap items-center justify-between gap-2"><Status valor={p.status} /><span className="text-xs text-[#52709A]">Chegada {p.chegada}</span></div><button type="button" disabled={atualizando} onClick={() => abrirAtendimento(p)} className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl bg-[#023E8A] px-4 py-3 text-xs font-bold text-white">{p.status === "Alta" ? "Ver resumo" : p.status === "Aguardando" ? "Atender paciente" : "Continuar atendimento"}<ChevronRight size={15} /></button></article>)}</div>
 
-          {!lista.length && <div className="px-5 py-14 text-center"><Search className="mx-auto text-[#52709A]" size={28} /><p className="mt-3 text-sm font-bold text-[#0B1756]">Nenhum paciente encontrado</p><p className="mt-1 text-xs text-[#52709A]">Tente outra busca ou ajuste os filtros.</p><button type="button" onClick={() => { setBusca(""); setPrioridade("Todas as prioridades"); }} className="mt-4 text-xs font-bold text-[#023E8A]">Limpar filtros</button></div>}
+          {!carregando && !lista.length && <div className="px-5 py-14 text-center"><Search className="mx-auto text-[#52709A]" size={28} /><p className="mt-3 text-sm font-bold text-[#0B1756]">Nenhum paciente encontrado</p><p className="mt-1 text-xs text-[#52709A]">Tente outra busca ou ajuste os filtros.</p><button type="button" onClick={() => { setBusca(""); setPrioridade("Todas as prioridades"); }} className="mt-4 text-xs font-bold text-[#023E8A]">Limpar filtros</button></div>}
 
-          <div className="flex flex-col gap-3 border-t border-[#D7E4F1] bg-white px-5 py-4 text-xs text-[#52709A] sm:flex-row sm:items-center sm:justify-between sm:px-6"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span>Mostrando <strong>{inicio}–{fim}</strong> de <strong>{lista.length}</strong> paciente(s)</span><span className="rounded-full bg-[#EAF3F7] px-2.5 py-1 font-bold text-[#023E8A]">Até 10 por página</span></div><div className="flex flex-wrap items-center gap-2"><button type="button" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="rounded-xl border border-[#D7E4F1] bg-white px-3 py-2 font-bold text-[#023E8A] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40">Anterior</button><span className="min-w-[96px] text-center font-semibold">Página {paginaAtual} de {totalPaginas}</span><button type="button" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="rounded-xl border border-[#D7E4F1] bg-white px-3 py-2 font-bold text-[#023E8A] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40">Próxima</button></div><span className="flex items-center gap-1.5"><ShieldCheck size={14} /> Protótipo com dados fictícios</span></div>
+          <div className="flex flex-col gap-3 border-t border-[#D7E4F1] bg-white px-5 py-4 text-xs text-[#52709A] sm:flex-row sm:items-center sm:justify-between sm:px-6"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span>Mostrando <strong>{inicio}–{fim}</strong> de <strong>{lista.length}</strong> paciente(s)</span><span className="rounded-full bg-[#EAF3F7] px-2.5 py-1 font-bold text-[#023E8A]">Até 10 por página</span></div><div className="flex flex-wrap items-center gap-2"><button type="button" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="rounded-xl border border-[#D7E4F1] bg-white px-3 py-2 font-bold text-[#023E8A] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40">Anterior</button><span className="min-w-[96px] text-center font-semibold">Página {paginaAtual} de {totalPaginas}</span><button type="button" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="rounded-xl border border-[#D7E4F1] bg-white px-3 py-2 font-bold text-[#023E8A] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40">Próxima</button></div><span className="flex items-center gap-1.5"><ShieldCheck size={14} /> Dados reais da fila</span></div>
         </section>
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"><strong>Importante:</strong> esta versão demonstra o fluxo e mantém as alterações apenas no estado da página. A listagem real e os dados da triagem dependem da integração com a API autenticada. Prescrições e atestados são abertos nas telas próprias do sistema.</div>
       </div>
 
-      {selecionado && <AtendimentoModal key={selecionado.id} paciente={selecionado} onClose={fecharAtendimento} onFinish={finalizarRegistro} />}
+      {selecionado && <AtendimentoModal key={selecionado.id} paciente={selecionado} onClose={fecharAtendimento} onFinish={finalizarRegistro} atualizando={atualizando} />}
     </main>
   );
 }

@@ -276,3 +276,52 @@ export async function realizarCheckin(req, res, next) {
         return erroResposta(res, error);
     }
 }
+
+// Enfermeiro consulta a fila de uma unidade e setor selecionados
+export async function listarFilaDoEnfermeiro(req, res, next) {
+    try {
+        const { unidade_id, setor_id } = req.query;
+
+        if (
+            !/^[1-9]\d*$/.test(String(unidade_id ?? "")) ||
+            !/^[1-9]\d*$/.test(String(setor_id ?? ""))
+        ) {
+            return res.status(400).json({
+                mensagem: "Informe unidade_id e setor_id válidos."
+            });
+        }
+
+        const unidadeId = Number(unidade_id);
+        const setorId = Number(setor_id);
+
+        const [vinculos] = await pool.query(
+            `SELECT 1
+             FROM unidades u
+             INNER JOIN unidade_setores us
+                ON us.unidade_id = u.id
+             WHERE u.id = ?
+               AND u.ativo = TRUE
+               AND us.setor_id = ?
+             LIMIT 1`,
+            [unidadeId, setorId]
+        );
+
+        if (vinculos.length === 0) {
+            return res.status(404).json({
+                mensagem: "Unidade ou setor não encontrado."
+            });
+        }
+
+        const filas = await listarFilaPorUnidadeSetor(
+            unidadeId,
+            setorId
+        );
+
+        return res.status(200).json({
+            total: filas.length,
+            filas
+        });
+    } catch (error) {
+        next(error);
+    }
+}
