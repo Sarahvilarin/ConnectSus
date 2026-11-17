@@ -3,22 +3,24 @@
 
 import Image from "next/image";
 
+const IMAGEM_PADRAO = "/auth-saude.jpg";
+
 export default function AuthShell({
   children,
   titulo,
   descricao,
+  imagem = IMAGEM_PADRAO,
+  imagemAlt = "Atendimento de saúde",
+  posicaoImagem,
 }) {
+  const posicao =
+    posicaoImagem ?? (imagem === IMAGEM_PADRAO ? "70% center" : "center");
+
   return (
     <main
       className="
-        relative
-        isolate
-        min-h-[calc(100vh-96px)]
-        overflow-hidden
-        bg-[#EAF3F7]
-        px-4
-        py-6
-        sm:px-6
+        relative isolate min-h-[calc(100vh-96px)]
+        overflow-hidden bg-[#EAF3F7] px-4 py-6 sm:px-6
       "
     >
       {/* FUNDO COM ILUSTRAÇÕES DE CÍRCULOS */}
@@ -35,45 +37,35 @@ export default function AuthShell({
 
       <div
         className="
-          relative
-          z-10
-          mx-auto
-          flex
-          min-h-[calc(100vh-144px)]
-          max-w-[1280px]
-          items-center
-          justify-center
+          relative z-10 mx-auto flex min-h-[calc(100vh-144px)]
+          max-w-[1280px] items-center justify-center
         "
       >
         <div
           className="
-            grid
-            w-full
-            min-h-[620px]
-            overflow-hidden
-            rounded-[28px]
-            border
-            border-white
-            bg-white
+            grid w-full min-h-[620px] overflow-hidden
+            rounded-[28px] border border-white bg-white
             shadow-[0_22px_70px_rgba(2,62,138,0.12)]
             lg:grid-cols-[0.95fr_1.05fr]
           "
         >
           {/* IMAGEM */}
 
-          <section className="relative hidden overflow-hidden lg:block">
+          <section className="relative min-h-[300px] overflow-hidden sm:min-h-[360px] lg:min-h-full">
             <Image
-              src="/auth-saude.jpg"
-              alt="Atendimento de saúde"
+              src={imagem}
+              alt={imagemAlt}
               fill
               priority
+              unoptimized
+              sizes="(max-width: 1023px) 100vw, 50vw"
               className="object-cover"
+              style={{ objectPosition: posicao }}
             />
 
             <div
               className="
-                absolute
-                inset-0
+                absolute inset-0
                 bg-gradient-to-t
                 from-[#06194e]/95
                 via-[#023E8A]/55
@@ -85,22 +77,14 @@ export default function AuthShell({
 
             <div
               className="
-                absolute
-                bottom-0
-                left-0
-                right-0
-                p-9
-                xl:p-10
+                absolute bottom-0 left-0 right-0
+                p-9 xl:p-10
               "
             >
               <h1
                 className="
-                  max-w-xl
-                  text-4xl
-                  font-bold
-                  leading-tight
-                  text-white
-                  xl:text-[42px]
+                  max-w-xl text-4xl font-bold
+                  leading-tight text-white xl:text-[42px]
                 "
               >
                 {titulo}
@@ -108,12 +92,8 @@ export default function AuthShell({
 
               <p
                 className="
-                  mt-3
-                  max-w-lg
-                  text-sm
-                  leading-6
-                  text-blue-100
-                  xl:text-base
+                  mt-3 max-w-lg text-sm
+                  leading-6 text-blue-100 xl:text-base
                 "
               >
                 {descricao}
@@ -125,25 +105,11 @@ export default function AuthShell({
 
           <section
             className="
-              relative
-              flex
-              items-center
-              justify-center
-              px-6
-              py-8
-              sm:px-10
-              lg:px-12
-              xl:px-14
+              relative flex items-center justify-center
+              px-6 py-8 sm:px-10 lg:px-12 xl:px-14
             "
           >
-            <div
-              className="
-                relative
-                z-10
-                w-full
-                max-w-[500px]
-              "
-            >
+            <div className="relative z-10 w-full max-w-[500px]">
               {children}
             </div>
           </section>
