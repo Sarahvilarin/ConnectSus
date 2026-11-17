@@ -257,6 +257,7 @@ function Barras({ dados }) {
 }
  
 /* Menu suspenso: aceita textos simples ou { valor, texto }. Abre para cima se faltar espaço. */
+
 function Dropdown({
   rotulo,
   valor,
@@ -270,19 +271,28 @@ function Dropdown({
   const [aberto, setAberto] = useState(false);
   const [paraCima, setParaCima] = useState(false);
   const ref = useRef(null);
- 
-  const lista = opcoes.map((o) => (typeof o === "string" ? { valor: o, texto: o } : o));
+
+  const lista = opcoes.map((o) =>
+    typeof o === "string" ? { valor: o, texto: o } : o
+  );
+
   const atual = lista.find((o) => o.valor === valor);
- 
+
   function alternar() {
     if (!aberto && ref.current) {
       const r = ref.current.getBoundingClientRect();
       const abaixo = window.innerHeight - r.bottom;
       setParaCima(abaixo < 280 && r.top > abaixo);
     }
+
     setAberto((a) => !a);
   }
- 
+
+  function selecionar(novoValor) {
+    onChange(novoValor);
+    setAberto(false);
+  }
+
   return (
     <div
       ref={ref}
@@ -296,23 +306,26 @@ function Dropdown({
         aria-expanded={aberto}
         disabled={desabilitado}
         onClick={alternar}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 ${
+        className={`flex h-[54px] w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 text-left text-sm font-medium text-[#0B1756] outline-none transition focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/15 ${
           desabilitado
             ? "cursor-not-allowed border-[#C8D8EC] opacity-60"
             : aberto
-              ? "border-[#0B1756] ring-4 ring-[#0B1756]/15"
-              : "border-[#C8D8EC] hover:border-[#3563A7]"
+              ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.12)]"
+              : "border-slate-200 hover:border-[#3563A7]"
         }`}
       >
         <span className={`min-w-0 truncate ${atual ? "" : "text-slate-400"}`}>
           {atual ? atual.texto : placeholder}
         </span>
+
         <ChevronDown
-          size={16}
-          className={`shrink-0 transition-transform ${aberto ? "rotate-180" : ""}`}
+          size={17}
+          className={`shrink-0 transition-transform ${
+            aberto ? "rotate-180" : ""
+          }`}
         />
       </button>
- 
+
       {aberto && !desabilitado && (
         <>
           <button
@@ -321,33 +334,37 @@ function Dropdown({
             onClick={() => setAberto(false)}
             className="fixed inset-0 z-10 cursor-default"
           />
+
           <div
             role="listbox"
             aria-label={rotulo}
-            className={`absolute left-0 z-20 max-h-60 w-full ${larguraLista} overflow-y-auto rounded-2xl border border-[#D5E2F1] bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)] ${
+            className={`absolute left-0 z-20 max-h-60 w-full ${larguraLista} overflow-y-auto rounded-2xl border border-[#D5E0ED] bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)] ${
               paraCima ? "bottom-full mb-2" : "top-full mt-2"
             }`}
           >
             {lista.map((opcao) => {
-              const ativo = opcao.valor === valor;
+              const selecionado = opcao.valor === valor;
+
               return (
                 <button
                   key={opcao.valor}
                   type="button"
                   role="option"
-                  aria-selected={ativo}
-                  onClick={() => {
-                    onChange(opcao.valor);
-                    setAberto(false);
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
-                    ativo
-                      ? "bg-[#0B1756] font-semibold text-white"
-                      : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                  aria-selected={selecionado}
+                  onClick={() => selecionar(opcao.valor)}
+                  className={`flex min-h-[42px] w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                    selecionado
+                      ? "bg-[#1E438D] font-semibold text-white shadow-sm"
+                      : "font-medium text-[#0B1756] hover:bg-[#EAF3F7]"
                   }`}
                 >
-                  <span>{opcao.texto}</span>
-                  {ativo && <Check size={16} className="shrink-0" />}
+                  <span className="min-w-0 truncate">
+                    {opcao.texto}
+                  </span>
+
+                  {selecionado && (
+                    <Check size={17} className="shrink-0 text-white" />
+                  )}
                 </button>
               );
             })}
@@ -357,74 +374,7 @@ function Dropdown({
     </div>
   );
 }
- 
-function Paginacao({ pagina, totalPaginas, totalItens, onChange }) {
-  if (totalPaginas <= 1) return null;
- 
-  const inicio = (pagina - 1) * POR_PAGINA + 1;
-  const fim = Math.min(pagina * POR_PAGINA, totalItens);
-  const botao =
-    "flex h-10 min-w-[40px] items-center justify-center rounded-lg border px-3 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[#3563A7]/20";
-  const base = "border-[#D5E0ED] bg-white text-[#3563A7] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40";
- 
-  return (
-    <nav
-      aria-label="Paginação"
-      className="mt-6 flex flex-col items-center justify-between gap-3 sm:flex-row"
-    >
-      <p className="text-sm text-slate-600">
-        Mostrando <strong className="font-semibold text-[#0B1756]">{inicio}</strong> a{" "}
-        <strong className="font-semibold text-[#0B1756]">{fim}</strong> de{" "}
-        <strong className="font-semibold text-[#0B1756]">{totalItens}</strong> profissionais
-      </p>
- 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Página anterior"
-          disabled={pagina === 1}
-          onClick={() => onChange(pagina - 1)}
-          className={`${botao} ${base}`}
-        >
-          <ChevronLeft size={18} />
-        </button>
- 
-        {paginasVisiveis(pagina, totalPaginas).map((n) =>
-          typeof n === "string" ? (
-            <span key={n} className="px-1 text-sm font-semibold text-slate-400">
-              …
-            </span>
-          ) : (
-            <button
-              key={n}
-              type="button"
-              aria-label={`Página ${n}`}
-              aria-current={n === pagina ? "page" : undefined}
-              onClick={() => onChange(n)}
-              className={`${botao} ${
-                n === pagina
-                  ? "border-[#0B1756] bg-[#0B1756] text-white"
-                  : "border-[#D5E0ED] bg-white text-[#0B1756] hover:bg-[#EAF3F7]"
-              }`}
-            >
-              {n}
-            </button>
-          )
-        )}
- 
-        <button
-          type="button"
-          aria-label="Próxima página"
-          disabled={pagina === totalPaginas}
-          onClick={() => onChange(pagina + 1)}
-          className={`${botao} ${base}`}
-        >
-          <ChevronRight size={18} />
-        </button>
-      </div>
-    </nav>
-  );
-}
+
  
 function Portal({ children }) {
   return createPortal(children, document.body);
