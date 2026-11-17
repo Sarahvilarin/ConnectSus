@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CalendarClock, ShieldCheck } from "lucide-react";
 
 /* =========================
    DADOS DEMONSTRATIVOS
@@ -10,7 +11,7 @@ import { useEffect, useState } from "react";
 const HOJE = "2026-10-27";
 
 // Mesma largura e padding da página de admin. Se o seu header usar outras classes, copie-as para cá.
-const CONTAINER = "mx-auto w-full max-w-[1480px] px-4 sm:px-6 xl:px-8";
+const CONTAINER = "mx-auto w-full max-w-[1600px] px-6 2xl:px-10";
 
 const ENFERMEIRO = { nome: "Juliana Ribeiro", cargo: "Enfermeira", regiao: "Cerâmica" };
 
@@ -160,6 +161,18 @@ function Badge({ children, tipo }) {
 
 function Chip({ children }) {
   return <span className="inline-flex items-center rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-medium text-[#0B1756]">{children}</span>;
+}
+
+function HeroInfo({ icon, title, text }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">{icon}</span>
+      <span>
+        <span className="block text-xs font-semibold">{title}</span>
+        <span className="mt-0.5 block text-xs font-normal text-blue-100">{text}</span>
+      </span>
+    </div>
+  );
 }
 
 function Campo({ label, erro, children, className = "" }) {
@@ -451,19 +464,23 @@ export default function EnfermeiroVisitasPage() {
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
       <main className={`relative z-10 py-8 ${CONTAINER}`}>
-        {/* TOPO */}
-        <section className="mb-6">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#DCE9FB] px-3 py-1.5 text-xs font-bold text-[#0B1756]">
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v10h14V10" />
-            </svg>
-            Enfermagem · Visita domiciliar
-          </span>
-          <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px] lg:leading-tight">Minhas visitas</h1>
-          <p className="mt-3 text-base leading-7 text-slate-600">
-            {ENFERMEIRO.cargo} {ENFERMEIRO.nome} · Região {ENFERMEIRO.regiao}. Avalie, registre e acompanhe seus pacientes em casa.
-          </p>
-        </section>
+        {/* TOPO (header padrão, igual às outras páginas) */}
+        <header className="relative mb-6 overflow-hidden rounded-[30px] bg-gradient-to-br from-[#3563A7] via-[#023E8A] to-[#0B1756] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+          <div className="pointer-events-none absolute -right-16 -top-32 h-80 w-80 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute left-[42%] top-10 h-56 w-56 rounded-full border-[36px] border-white/[0.05]" />
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <h1 className="text-4xl font-bold leading-tight lg:text-[42px]">Minhas visitas</h1>
+              <p className="mt-3 max-w-2xl text-base font-normal leading-6 text-blue-100">
+                {ENFERMEIRO.cargo} {ENFERMEIRO.nome} · Região {ENFERMEIRO.regiao}. Avalie, registre e acompanhe seus pacientes em casa.
+              </p>
+            </div>
+            <div className="grid w-full max-w-[420px] grid-cols-2 gap-3">
+              <HeroInfo icon={<ShieldCheck size={18} />} title="Área profissional" text="Visitas e atendimentos" />
+              <HeroInfo icon={<CalendarClock size={18} />} title="Agenda da região" text={`Região ${ENFERMEIRO.regiao}`} />
+            </div>
+          </div>
+        </header>
 
         {/* RESUMO */}
         <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

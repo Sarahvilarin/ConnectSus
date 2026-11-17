@@ -1,29 +1,7 @@
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  AlertCircle,
-  CalendarDays,
-  CalendarClock,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  ClipboardList,
-  Clock3,
-  FileHeart,
-  SlidersHorizontal,
-  Info,
-  MapPin,
-  Search,
-  ShieldCheck,
-  UserRound,
-  Users,
-  X,
-  Edit3,
-  Trash2,
-  Building2,
-  ArrowRight,
-} from "lucide-react";
 
 const EXAMES = [
   { id: 1, nome: "Hemograma completo", categoria: "Laboratorial", preparo: "Siga as orientações da equipe responsável. O preparo pode variar conforme a solicitação." },
@@ -218,8 +196,6 @@ export default function GestaoExamesPage() {
     return solicitacoes.filter((item) => {
       const correspondeBusca = !termo || [item.paciente.nome, item.paciente.prontuario, item.exame.nome, item.unidade.nome, item.status]
         .some((valor) => String(valor || "").toLocaleLowerCase("pt-BR").includes(termo));
-      // Aguardando confirmação e Confirmado são situações ativas.
-      // Realizado e Cancelado são situações inativas.
       const ativa = !["Realizado", "Cancelado"].includes(item.status);
       const correspondeSituacao = filtroSituacao === "Todas as situações"
         || (filtroSituacao === "Somente ativas" && ativa)
@@ -260,14 +236,17 @@ export default function GestaoExamesPage() {
 
   function salvarSolicitacao(event) {
     event.preventDefault();
+
     if (!pacienteSelecionado || !exameSelecionado || !unidadeSelecionada || !data || !horario || !justificativa.trim()) {
       setErro("Confira o prontuário e preencha exame, justificativa, unidade, data e horário.");
       return;
     }
+
     if (data < dataLocalISO()) {
       setErro("A data do exame não pode ser anterior a hoje.");
       return;
     }
+
     if (horariosOcupados.includes(horario)) {
       setErro("Este horário já está ocupado nesta unidade. Selecione outro horário.");
       return;
@@ -321,7 +300,9 @@ export default function GestaoExamesPage() {
 
   function excluirSolicitacao() {
     if (!solicitacaoExcluir) return;
+
     const pacienteExcluidoId = solicitacaoExcluir.paciente.id;
+
     setSolicitacoes((atuais) => atuais.filter((item) => item.id !== solicitacaoExcluir.id));
     setPacientes((atuais) => atuais.map((item) => item.id === pacienteExcluidoId ? { ...item, status: "Aguardando análise" } : item));
     setSolicitacaoExcluir(null);
@@ -343,116 +324,189 @@ export default function GestaoExamesPage() {
       <div className="pointer-events-none absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-[#D3E5F7]/70" />
       <div className="pointer-events-none absolute right-[12%] top-[1050px] h-56 w-56 rounded-full border-[42px] border-white/80" />
 
-      <div className="relative z-10 mx-auto max-w-[1500px] space-y-6">
+      <div className="relative z-10 mx-auto max-w-[1500px] space-y-5">
+        {/* CABEÇALHO */}
         <header className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#3563A7] via-[#023E8A] to-[#0B1756] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
           <div className="pointer-events-none absolute -right-16 -top-32 h-80 w-80 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute left-[42%] top-10 h-56 w-56 rounded-full border-[36px] border-white/[0.05]" />
-          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <h1 className="text-4xl font-bold leading-tight lg:text-[42px]">Análise de prontuários e exames</h1>
-              <p className="mt-3 max-w-2xl text-base font-normal leading-6 text-blue-100">
-                Consulte os prontuários encaminhados, confira a indicação clínica e organize a solicitação e o agendamento do exame para cada paciente.
-              </p>
-            </div>
-            <div className="grid w-full max-w-[420px] grid-cols-2 gap-3">
-              <HeroInfo icon={<ShieldCheck size={18} />} title="Área profissional" text="Prontuário e encaminhamentos" />
-              <HeroInfo icon={<CalendarClock size={18} />} title="Agenda da rede" text="Unidade, data e horário" />
-            </div>
+          <div className="relative z-10 max-w-3xl">
+            <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-[42px]">Análise de prontuários e exames</h1>
+            <p className="mt-3 max-w-2xl text-sm font-normal leading-6 text-blue-100 sm:text-base">
+              Consulte os prontuários encaminhados, confira a indicação clínica e organize a solicitação e o agendamento do exame para cada paciente.
+            </p>
           </div>
         </header>
 
-        <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/90 px-4 py-3 text-sm font-normal text-[#0B1756]">
-          <Info size={19} className="mt-0.5 shrink-0 text-[#3563A7]" />
-          <p className="leading-6"><strong className="font-semibold">Importante:</strong> o sistema organiza os prontuários e os pedidos recebidos. A escolha ou alteração do exame deve ser validada pelo profissional habilitado, com base na avaliação clínica e no encaminhamento. A tela não faz diagnóstico nem recomenda exames automaticamente.</p>
+        {/* AVISO */}
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/90 px-4 py-3 text-sm font-normal leading-6 text-[#0B1756]">
+          <strong className="font-semibold">Importante:</strong> o sistema organiza os prontuários e os pedidos recebidos. A escolha ou alteração do exame deve ser validada pelo profissional habilitado, com base na avaliação clínica e no encaminhamento. A tela não faz diagnóstico nem recomenda exames automaticamente.
         </div>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard icon={<FileHeart size={20} />} label="Prontuários aguardando análise" value={indicadores.pendentes} />
-          <MetricCard icon={<AlertCircle size={20} />} label="Prioridade elevada" value={indicadores.prioridade} />
-          <MetricCard icon={<CalendarDays size={20} />} label="Solicitações cadastradas" value={indicadores.agendados} />
-          <MetricCard icon={<Clock3 size={20} />} label="Aguardando confirmação" value={indicadores.confirmacao} />
+        {/* INDICADORES */}
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard label="Prontuários aguardando análise" value={indicadores.pendentes} />
+          <MetricCard label="Prioridade elevada" value={indicadores.prioridade} />
+          <MetricCard label="Solicitações cadastradas" value={indicadores.agendados} />
+          <MetricCard label="Aguardando confirmação" value={indicadores.confirmacao} />
         </section>
 
-        <section className="overflow-hidden rounded-[26px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
+        {/* ABAS */}
+        <section className="overflow-hidden rounded-[22px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
           <div className="grid grid-cols-2 gap-2 p-2 sm:p-3">
-            <TabButton active={aba === "prontuarios"} onClick={() => { setAba("prontuarios"); setAviso(""); }} icon={<FileHeart size={17} />}>Prontuários para análise ({pacientes.filter((item) => item.status !== "Exame agendado").length})</TabButton>
-            <TabButton active={aba === "solicitacoes"} onClick={() => { setAba("solicitacoes"); setAviso(""); }} icon={<ClipboardList size={17} />}>Solicitações de exames ({solicitacoes.length})</TabButton>
+            <TabButton active={aba === "prontuarios"} onClick={() => { setAba("prontuarios"); setAviso(""); }}>
+              Prontuários para análise ({pacientes.filter((item) => item.status !== "Exame agendado").length})
+            </TabButton>
+            <TabButton active={aba === "solicitacoes"} onClick={() => { setAba("solicitacoes"); setAviso(""); }}>
+              Solicitações de exames ({solicitacoes.length})
+            </TabButton>
           </div>
         </section>
 
-        {aviso && <div className="flex items-start gap-3 rounded-2xl border border-[#C9DDF0] bg-[#EAF3F7] px-4 py-3 text-sm font-normal text-[#0B1756]"><Info size={18} className="mt-0.5 shrink-0 text-[#3563A7]" /><p className="flex-1">{aviso}</p><button type="button" onClick={() => setAviso("")} aria-label="Fechar aviso"><X size={17} /></button></div>}
+        {aviso && (
+          <div className="flex items-start justify-between gap-4 rounded-2xl border border-[#C9DDF0] bg-[#EAF3F7] px-4 py-3 text-sm font-normal text-[#0B1756]">
+            <p className="flex-1">{aviso}</p>
+            <button type="button" onClick={() => setAviso("")} className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-[#3563A7] hover:bg-white">
+              Fechar
+            </button>
+          </div>
+        )}
 
         {aba === "prontuarios" ? (
-          <section className="grid items-start gap-5 xl:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.8fr)]">
-            <aside className="relative z-30 overflow-visible rounded-[24px] border border-[#DCE8F3] bg-white shadow-sm">
-              <div className="border-b border-slate-100 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#3563A7]"><Users size={20} /></span>
-                  <div><h2 className="text-2xl font-bold">Pacientes encaminhados</h2><p className="mt-0.5 text-sm font-normal text-slate-500">Selecione um prontuário para analisar.</p></div>
-                </div>
-                <div className="relative mt-4"><Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Nome, CPF ou prontuário" className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-normal outline-none focus:border-[#3563A7]" /></div>
-                <div className="relative z-50 mt-3">
-                  <SituationFilter value={filtroSituacaoPacientes} onChange={setFiltroSituacaoPacientes} />
+          <section className="flex flex-col gap-4">
+            {/* PACIENTES ENCAMINHADOS - AGORA OCUPA TODA A LARGURA */}
+            <aside className="relative z-30 overflow-visible rounded-[22px] border border-[#DCE8F3] bg-white shadow-sm">
+              <div className="border-b border-slate-100 p-4 sm:p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold sm:text-2xl">Pacientes encaminhados</h2>
+                    <p className="mt-1 text-sm font-normal text-slate-500">Selecione um prontuário para analisar.</p>
+                  </div>
+
+                  <div className="grid w-full gap-3 sm:grid-cols-[minmax(0,1fr)_250px] lg:max-w-[650px]">
+                    <input
+                      value={busca}
+                      onChange={(event) => setBusca(event.target.value)}
+                      placeholder="Nome, CPF ou prontuário"
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-normal outline-none focus:border-[#3563A7]"
+                    />
+                    <SituationFilter value={filtroSituacaoPacientes} onChange={setFiltroSituacaoPacientes} />
+                  </div>
                 </div>
               </div>
-              <div className="max-h-[760px] space-y-2 overflow-y-auto p-3">
-                {pacientesFiltrados.map((item) => <PatientListItem key={item.id} patient={item} active={pacienteId === item.id} onClick={() => selecionarPaciente(item)} />)}
-                {pacientesFiltrados.length === 0 && <EmptyState icon={<Search size={22} />} title="Nenhum prontuário encontrado" description="Altere a busca ou o filtro de situação." />}
+
+              <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 xl:grid-cols-4">
+                {pacientesFiltrados.map((item) => (
+                  <PatientListItem
+                    key={item.id}
+                    patient={item}
+                    active={pacienteId === item.id}
+                    onClick={() => selecionarPaciente(item)}
+                  />
+                ))}
+
+                {pacientesFiltrados.length === 0 && (
+                  <div className="sm:col-span-2 xl:col-span-4">
+                    <EmptyState title="Nenhum prontuário encontrado" description="Altere a busca ou o filtro de situação." />
+                  </div>
+                )}
               </div>
-              <div className="border-t border-slate-100 bg-[#EEF5F9] px-4 py-3 text-xs font-normal text-slate-500">{pacientesFiltrados.length} prontuário(s) exibido(s) · Dados demonstrativos</div>
+
+              <div className="border-t border-slate-100 bg-[#EEF5F9] px-4 py-3 text-xs font-normal text-slate-500">
+                {pacientesFiltrados.length} prontuário(s) exibido(s) · Dados demonstrativos
+              </div>
             </aside>
 
-            <div className="space-y-5">
+            {/* CONTEÚDO DO PRONTUÁRIO E AGENDAMENTO */}
+            <div className="space-y-4">
               {pacienteSelecionado ? (
                 <>
-                  <section className="overflow-hidden rounded-[24px] border border-[#DCE8F3] bg-white shadow-sm">
-                    <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                      <div className="flex items-center gap-4">
+                  {/* PRONTUÁRIO */}
+                  <section className="overflow-hidden rounded-[22px] border border-[#DCE8F3] bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                      <div className="flex min-w-0 items-center gap-3">
                         <Avatar name={pacienteSelecionado.nome} large />
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-bold">{pacienteSelecionado.nome}</h2><PriorityBadge value={pacienteSelecionado.prioridade} /></div>
-                          <p className="mt-1 text-xs font-normal text-slate-500">Prontuário {pacienteSelecionado.prontuario} · {pacienteSelecionado.idade} anos · {pacienteSelecionado.sexo}</p>
-                          <p className="mt-1 text-xs font-normal text-slate-500">CPF {pacienteSelecionado.cpf} · Nascimento {pacienteSelecionado.nascimento}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-lg font-bold sm:text-xl">{pacienteSelecionado.nome}</h2>
+                            <PriorityBadge value={pacienteSelecionado.prioridade} />
+                          </div>
+                          <p className="mt-1 text-xs font-normal text-slate-500">
+                            Prontuário {pacienteSelecionado.prontuario} · {pacienteSelecionado.idade} anos · {pacienteSelecionado.sexo}
+                          </p>
+                          <p className="mt-1 text-xs font-normal text-slate-500">
+                            CPF {pacienteSelecionado.cpf} · Nascimento {pacienteSelecionado.nascimento}
+                          </p>
                         </div>
                       </div>
-                      <span className="inline-flex w-fit items-center rounded-full bg-[#EAF3F7] px-3 py-2 text-xs font-semibold text-[#3563A7]">{pacienteSelecionado.status}</span>
+                      <span className="inline-flex w-fit items-center rounded-full bg-[#EAF3F7] px-3 py-2 text-xs font-semibold text-[#3563A7]">
+                        {pacienteSelecionado.status}
+                      </span>
                     </div>
-                    <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+
+                    <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
                       <ClinicalBlock title="Queixa principal" items={[pacienteSelecionado.queixa]} />
                       <ClinicalBlock title="Diagnósticos registrados" items={pacienteSelecionado.diagnosticos} />
                       <ClinicalBlock title="Sintomas relatados" items={pacienteSelecionado.sintomas} />
                       <ClinicalBlock title="Medicamentos em uso" items={pacienteSelecionado.medicamentos} />
-                      <ClinicalBlock title="Alergias" items={pacienteSelecionado.alergias} warning />
+                      <ClinicalBlock title="Alergias" items={pacienteSelecionado.alergias} />
                       <ClinicalBlock title="Antecedentes clínicos" items={pacienteSelecionado.antecedentes} />
-                      <div className="sm:col-span-2"><ClinicalBlock title="Exames anteriores" items={pacienteSelecionado.examesAnteriores} /></div>
+                      <div className="sm:col-span-2">
+                        <ClinicalBlock title="Exames anteriores" items={pacienteSelecionado.examesAnteriores} />
+                      </div>
                     </div>
-                    <div className="mx-5 mb-5 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:mx-6 sm:mb-6">
-                      <h3 className="text-lg font-bold text-[#3563A7]">Encaminhamento e indicação registrados</h3>
-                      <p className="mt-2 text-sm font-normal leading-6 text-slate-600">{pacienteSelecionado.indicacao}</p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-normal text-slate-500"><span>Solicitante: <strong className="font-semibold text-slate-600">{pacienteSelecionado.solicitante}</strong></span><span>•</span><span>Recebido em {pacienteSelecionado.dataEncaminhamento}</span></div>
-                      {pacienteSelecionado.exameSolicitadoId && <p className="mt-2 text-sm font-normal text-[#3563A7]">Exame mencionado no encaminhamento: <strong className="font-semibold">{EXAMES.find((item) => item.id === pacienteSelecionado.exameSolicitadoId)?.nome}</strong></p>}
+
+                    <div className="mx-4 mb-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3 sm:mx-5 sm:mb-5 sm:p-4">
+                      <h3 className="text-base font-bold text-[#3563A7]">Encaminhamento e indicação registrados</h3>
+                      <p className="mt-1.5 text-sm font-normal leading-5 text-slate-600">{pacienteSelecionado.indicacao}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-normal text-slate-500">
+                        <span>Solicitante: <strong className="font-semibold text-slate-600">{pacienteSelecionado.solicitante}</strong></span>
+                        <span>•</span>
+                        <span>Recebido em {pacienteSelecionado.dataEncaminhamento}</span>
+                      </div>
+                      {pacienteSelecionado.exameSolicitadoId && (
+                        <p className="mt-2 text-sm font-normal text-[#3563A7]">
+                          Exame mencionado no encaminhamento: <strong className="font-semibold">{EXAMES.find((item) => item.id === pacienteSelecionado.exameSolicitadoId)?.nome}</strong>
+                        </p>
+                      )}
                     </div>
                   </section>
 
-                  <form onSubmit={salvarSolicitacao} className="rounded-[24px] border border-[#DCE8F3] bg-white p-5 shadow-sm sm:p-6">
+                  {/* DEFINIR EXAME E AGENDAMENTO */}
+                  <form onSubmit={salvarSolicitacao} className="rounded-[22px] border border-[#DCE8F3] bg-white p-4 shadow-sm sm:p-5">
                     <div>
-                      <h2 className="text-2xl font-bold">Definir exame e agendamento</h2>
-                      <p className="mt-1 text-sm font-normal leading-5 text-slate-500">Confira a indicação do prontuário e registre a decisão do profissional responsável.</p>
+                      <h2 className="text-xl font-bold sm:text-2xl">Definir exame e agendamento</h2>
+                      <p className="mt-1 text-sm font-normal leading-5 text-slate-500">
+                        Confira a indicação do prontuário e registre a decisão do profissional responsável.
+                      </p>
                     </div>
-                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-normal leading-5 text-amber-900"><strong className="font-semibold">Validação clínica obrigatória.</strong> O exame indicado no encaminhamento é exibido como referência. Confirme ou ajuste somente conforme avaliação e responsabilidade profissional; registre a justificativa.</div>
 
-                    <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm font-normal leading-5 text-amber-900">
+                      <strong className="font-semibold">Validação clínica obrigatória.</strong> O exame indicado no encaminhamento é exibido como referência. Confirme ou ajuste somente conforme avaliação e responsabilidade profissional; registre a justificativa.
+                    </div>
+
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
                       <div className="lg:col-span-2">
-                        <label className="mb-2 block text-xs font-semibold">Exame a solicitar <span className="text-red-500">*</span></label>
-                        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        <label className="mb-2 block text-xs font-semibold">
+                          Exame a solicitar <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                           {EXAMES.map((item) => {
                             const ativo = exameId === String(item.id);
                             const indicado = pacienteSelecionado.exameSolicitadoId === item.id;
+
                             return (
-                              <button key={item.id} type="button" onClick={() => { setExameId(String(item.id)); setUnidadeId(""); setHorario(""); }} className={`rounded-xl border p-3 text-left transition ${ativo ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-200 bg-white hover:border-[#3563A7]"}`}>
-                                <span className="flex items-start justify-between gap-2"><span className="text-base font-semibold">{item.nome}</span>{indicado && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">No pedido</span>}</span>
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => { setExameId(String(item.id)); setUnidadeId(""); setHorario(""); }}
+                                className={`rounded-xl border p-3 text-left transition ${ativo ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-200 bg-white hover:border-[#3563A7]"}`}
+                              >
+                                <span className="flex flex-wrap items-start justify-between gap-1">
+                                  <span className="text-sm font-semibold">{item.nome}</span>
+                                  {indicado && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">No pedido</span>}
+                                </span>
                                 <span className="mt-1 block text-xs font-normal text-slate-500">{item.categoria}</span>
-                                {ativo && <span className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#3563A7]"><Check size={13} /> Selecionado</span>}
+                                {ativo && <span className="mt-2 block text-xs font-semibold text-[#3563A7]">Selecionado</span>}
                               </button>
                             );
                           })}
@@ -460,23 +514,50 @@ export default function GestaoExamesPage() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-xs font-semibold">Prioridade registrada <span className="text-red-500">*</span></label>
+                        <label className="mb-2 block text-xs font-semibold">
+                          Prioridade registrada <span className="text-red-500">*</span>
+                        </label>
                         <PrioritySelect value={prioridade} onChange={setPrioridade} options={PRIORIDADES} />
                         <p className="mt-2 text-xs font-normal text-slate-500">Mantenha a classificação definida na avaliação clínica.</p>
                       </div>
 
-                      <div className="lg:col-span-2"><label className="mb-2 block text-xs font-semibold">Justificativa / indicação clínica <span className="text-red-500">*</span></label><textarea value={justificativa} onChange={(event) => setJustificativa(event.target.value)} rows={3} maxLength={700} placeholder="Registre a justificativa conforme avaliação e encaminhamento..." className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#3563A7]" /><p className="mt-1 text-right text-xs text-slate-400">{justificativa.length}/700</p></div>
+                      <div className="lg:col-span-2">
+                        <label className="mb-2 block text-xs font-semibold">
+                          Justificativa / indicação clínica <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          value={justificativa}
+                          onChange={(event) => setJustificativa(event.target.value)}
+                          rows={3}
+                          maxLength={700}
+                          placeholder="Registre a justificativa conforme avaliação e encaminhamento..."
+                          className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#3563A7]"
+                        />
+                        <p className="mt-1 text-right text-xs text-slate-400">{justificativa.length}/700</p>
+                      </div>
 
                       <div className="lg:col-span-2">
-                        <label className="mb-2 block text-xs font-semibold">Unidade que realizará o exame <span className="text-red-500">*</span></label>
-                        {!exameSelecionado ? <EmptyState icon={<Building2 size={20} />} title="Selecione um exame" description="As unidades habilitadas para o procedimento aparecerão aqui." /> : (
-                          <div className="grid gap-3 md:grid-cols-2">
+                        <label className="mb-2 block text-xs font-semibold">
+                          Unidade que realizará o exame <span className="text-red-500">*</span>
+                        </label>
+
+                        {!exameSelecionado ? (
+                          <EmptyState title="Selecione um exame" description="As unidades habilitadas para o procedimento aparecerão aqui." />
+                        ) : (
+                          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                             {unidadesDisponiveis.map((item) => {
                               const ativo = unidadeId === String(item.id);
+
                               return (
-                                <button key={item.id} type="button" onClick={() => { setUnidadeId(String(item.id)); setHorario(""); }} className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${ativo ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-200 hover:border-[#3563A7]"}`}>
-                                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ativo ? "bg-[#3563A7] text-white" : "bg-[#EAF3F7] text-[#3563A7]"}`}><Building2 size={19} /></span>
-                                  <span className="min-w-0 flex-1"><span className="block text-base font-semibold">{item.nome}</span><span className="mt-1 flex items-center gap-1 text-xs font-normal text-slate-500"><MapPin size={12} /> {item.bairro} · {item.endereco}</span>{ativo && <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#3563A7]"><Check size={13} /> Unidade selecionada</span>}</span>
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => { setUnidadeId(String(item.id)); setHorario(""); }}
+                                  className={`rounded-xl border p-3 text-left transition ${ativo ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-200 hover:border-[#3563A7]"}`}
+                                >
+                                  <span className="block text-sm font-semibold">{item.nome}</span>
+                                  <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">{item.bairro} · {item.endereco}</span>
+                                  {ativo && <span className="mt-2 inline-block text-xs font-semibold text-[#3563A7]">Unidade selecionada</span>}
                                 </button>
                               );
                             })}
@@ -487,16 +568,38 @@ export default function GestaoExamesPage() {
                       {unidadeSelecionada && (
                         <>
                           <div>
-                            <label className="mb-2 block text-xs font-semibold">Data do exame <span className="text-red-500">*</span></label>
-                            <div className="relative"><CalendarDays size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#3563A7]" /><input type="date" min={dataLocalISO()} value={data} onChange={(event) => { setData(event.target.value); setHorario(""); }} className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-normal outline-none focus:border-[#3563A7]" /></div>
+                            <label className="mb-2 block text-xs font-semibold">
+                              Data do exame <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              min={dataLocalISO()}
+                              value={data}
+                              onChange={(event) => { setData(event.target.value); setHorario(""); }}
+                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal outline-none focus:border-[#3563A7]"
+                            />
                           </div>
+
                           <div>
-                            <label className="mb-2 block text-xs font-semibold">Horário disponível <span className="text-red-500">*</span></label>
+                            <label className="mb-2 block text-xs font-semibold">
+                              Horário disponível <span className="text-red-500">*</span>
+                            </label>
                             <div className="grid grid-cols-4 gap-2">
                               {HORARIOS.map((hora) => {
                                 const ocupado = horariosOcupados.includes(hora);
                                 const ativo = horario === hora;
-                                return <button key={hora} type="button" disabled={ocupado} onClick={() => setHorario(hora)} className={`rounded-lg border px-2 py-2.5 text-xs font-semibold transition ${ocupado ? "cursor-not-allowed border-slate-100 bg-slate-100 text-slate-300 line-through" : ativo ? "border-[#3563A7] bg-[#3563A7] text-white" : "border-slate-200 text-[#3563A7] hover:border-[#3563A7] hover:bg-[#EAF3F7]"}`}>{hora}</button>;
+
+                                return (
+                                  <button
+                                    key={hora}
+                                    type="button"
+                                    disabled={ocupado}
+                                    onClick={() => setHorario(hora)}
+                                    className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${ocupado ? "cursor-not-allowed border-slate-100 bg-slate-100 text-slate-300 line-through" : ativo ? "border-[#3563A7] bg-[#3563A7] text-white" : "border-slate-200 text-[#3563A7] hover:border-[#3563A7] hover:bg-[#EAF3F7]"}`}
+                                  >
+                                    {hora}
+                                  </button>
+                                );
                               })}
                             </div>
                             <p className="mt-2 text-xs font-normal text-slate-500">Horários ocupados na mesma unidade e data ficam indisponíveis.</p>
@@ -504,36 +607,96 @@ export default function GestaoExamesPage() {
                         </>
                       )}
 
-                      <div className="lg:col-span-2"><label className="mb-2 block text-xs font-semibold">Orientações ao paciente (opcional)</label><textarea value={orientacoes} onChange={(event) => setOrientacoes(event.target.value)} rows={2} maxLength={500} placeholder="Orientações confirmadas pela unidade, documentos necessários e preparo..." className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#3563A7]" /><p className="mt-1 text-right text-xs text-slate-400">{orientacoes.length}/500</p></div>
+                      <div className="lg:col-span-2">
+                        <label className="mb-2 block text-xs font-semibold">Orientações ao paciente (opcional)</label>
+                        <textarea
+                          value={orientacoes}
+                          onChange={(event) => setOrientacoes(event.target.value)}
+                          rows={2}
+                          maxLength={500}
+                          placeholder="Orientações confirmadas pela unidade, documentos necessários e preparo..."
+                          className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#3563A7]"
+                        />
+                        <p className="mt-1 text-right text-xs text-slate-400">{orientacoes.length}/500</p>
+                      </div>
                     </div>
 
-                    {exameSelecionado && <div className="mt-5 flex gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4"><Info size={18} className="mt-0.5 shrink-0 text-[#3563A7]" /><div><p className="text-base font-semibold text-[#3563A7]">Orientação geral do exame</p><p className="mt-1 text-sm font-normal leading-5 text-slate-600">{exameSelecionado.preparo}</p></div></div>}
-                    {erro && <p className="mt-4 flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-normal text-red-700"><AlertCircle size={16} /> {erro}</p>}
+                    {exameSelecionado && (
+                      <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+                        <p className="text-sm font-semibold text-[#3563A7]">Orientação geral do exame</p>
+                        <p className="mt-1 text-sm font-normal leading-5 text-slate-600">{exameSelecionado.preparo}</p>
+                      </div>
+                    )}
 
-                    <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="max-w-xl text-xs font-normal leading-5 text-slate-500">O registro nesta versão é demonstrativo e fica no estado da página. A gravação definitiva exige integração com a API do UneSUS.</p>
+                    {erro && (
+                      <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-normal text-red-700">
+                        {erro}
+                      </p>
+                    )}
+
+                    <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="max-w-xl text-xs font-normal leading-5 text-slate-500">
+                        O registro nesta versão é demonstrativo e fica no estado da página. A gravação definitiva exige integração com a API do UneSUS.
+                      </p>
+
                       <div className="flex flex-col gap-2 sm:flex-row">
-                        <button type="button" onClick={() => { setExameId(pacienteSelecionado.exameSolicitadoId ? String(pacienteSelecionado.exameSolicitadoId) : ""); setUnidadeId(""); setHorario(""); setErro(""); }} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">Restaurar pedido</button>
-                        {editandoId && <button type="button" onClick={cancelarEdicao} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">Cancelar edição</button>}
-                        <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756]"><CheckCircle2 size={17} /> {editandoId ? "Salvar alterações" : "Registrar exame e agendamento"}</button>
+                        <button
+                          type="button"
+                          onClick={() => { setExameId(pacienteSelecionado.exameSolicitadoId ? String(pacienteSelecionado.exameSolicitadoId) : ""); setUnidadeId(""); setHorario(""); setErro(""); }}
+                          className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          Restaurar pedido
+                        </button>
+
+                        {editandoId && (
+                          <button
+                            type="button"
+                            onClick={cancelarEdicao}
+                            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600"
+                          >
+                            Cancelar edição
+                          </button>
+                        )}
+
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-[#023E8A] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756]"
+                        >
+                          {editandoId ? "Salvar alterações" : "Registrar exame e agendamento"}
+                        </button>
                       </div>
                     </div>
                   </form>
                 </>
-              ) : <EmptyState icon={<UserRound size={22} />} title="Selecione um prontuário" description="Escolha um paciente na lista para consultar as informações clínicas." />}
+              ) : (
+                <EmptyState title="Selecione um prontuário" description="Escolha um paciente na lista para consultar as informações clínicas." />
+              )}
             </div>
           </section>
         ) : (
-          <section className="relative rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
-            <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-              <div><h2 className="text-2xl font-bold">Solicitações de exames</h2><p className="mt-1 text-sm font-normal text-slate-500">Acompanhe, edite ou remova os agendamentos registrados.</p></div>
-              <button type="button" onClick={() => { setAba("prontuarios"); setEditandoId(null); setAviso(""); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0B1756]"><ArrowRight size={16} /> Analisar prontuário</button>
+          <section className="relative rounded-[22px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
+            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <h2 className="text-xl font-bold sm:text-2xl">Solicitações de exames</h2>
+                <p className="mt-1 text-sm font-normal text-slate-500">Acompanhe, edite ou remova os agendamentos registrados.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setAba("prontuarios"); setEditandoId(null); setAviso(""); }}
+                className="rounded-xl bg-[#023E8A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0B1756]"
+              >
+                Analisar prontuário
+              </button>
             </div>
 
-            <div className="relative z-30 flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:p-6">
-              <div className="relative min-w-0 flex-1">
-                <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar paciente, prontuário, exame ou unidade" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-normal outline-none focus:border-[#3563A7]" />
+            <div className="relative z-30 flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:p-5">
+              <div className="min-w-0 flex-1">
+                <input
+                  value={busca}
+                  onChange={(event) => setBusca(event.target.value)}
+                  placeholder="Buscar paciente, prontuário, exame ou unidade"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-normal outline-none focus:border-[#3563A7]"
+                />
               </div>
               <div className="w-full sm:w-[290px] sm:shrink-0">
                 <SituationFilter value={filtroSituacao} onChange={setFiltroSituacao} />
@@ -543,52 +706,144 @@ export default function GestaoExamesPage() {
             <div className="hidden overflow-x-auto border-t border-slate-100 md:block">
               <table className="w-full min-w-[1050px] text-left text-sm">
                 <thead className="bg-[#EEF5F9] text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <tr><th className="px-6 py-4">Paciente / prontuário</th><th className="px-4 py-4">Exame</th><th className="px-4 py-4">Prioridade</th><th className="px-4 py-4">Unidade</th><th className="px-4 py-4">Data e horário</th><th className="px-4 py-4">Situação</th><th className="px-6 py-4 text-right">Ações</th></tr>
+                  <tr>
+                    <th className="px-6 py-4">Paciente / prontuário</th>
+                    <th className="px-4 py-4">Exame</th>
+                    <th className="px-4 py-4">Prioridade</th>
+                    <th className="px-4 py-4">Unidade</th>
+                    <th className="px-4 py-4">Data e horário</th>
+                    <th className="px-4 py-4">Situação</th>
+                    <th className="px-6 py-4 text-right">Ações</th>
+                  </tr>
                 </thead>
+
                 <tbody className="divide-y divide-slate-100">
                   {solicitacoesFiltradas.map((item) => (
                     <tr key={item.id} className="hover:bg-[#F8FBFD]">
-                      <td className="px-6 py-4"><p className="text-sm font-semibold">{item.paciente.nome}</p><p className="mt-1 text-xs font-normal text-slate-500">{item.paciente.prontuario}</p></td>
-                      <td className="px-4 py-4"><p className="text-sm font-semibold">{item.exame.nome}</p><p className="mt-1 text-xs font-normal text-slate-500">{item.exame.categoria}</p></td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold">{item.paciente.nome}</p>
+                        <p className="mt-1 text-xs font-normal text-slate-500">{item.paciente.prontuario}</p>
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm font-semibold">{item.exame.nome}</p>
+                        <p className="mt-1 text-xs font-normal text-slate-500">{item.exame.categoria}</p>
+                      </td>
                       <td className="px-4 py-4"><PriorityBadge value={item.prioridade} /></td>
-                      <td className="max-w-[230px] px-4 py-4 text-sm font-normal">{item.unidade.nome}<p className="mt-1 text-xs text-slate-500">{item.unidade.bairro}</p></td>
-                      <td className="px-4 py-4 text-sm font-semibold">{formatarData(item.data)}<p className="mt-1 flex items-center gap-1 text-xs font-normal text-slate-500"><Clock3 size={12} /> {item.horario}</p></td>
+                      <td className="max-w-[230px] px-4 py-4 text-sm font-normal">
+                        {item.unidade.nome}
+                        <p className="mt-1 text-xs text-slate-500">{item.unidade.bairro}</p>
+                      </td>
+                      <td className="px-4 py-4 text-sm font-semibold">
+                        {formatarData(item.data)}
+                        <p className="mt-1 text-xs font-normal text-slate-500">{item.horario}</p>
+                      </td>
                       <td className="px-4 py-4"><StatusBadge status={item.status} /></td>
-                      <td className="px-6 py-4"><div className="flex justify-end gap-1"><button type="button" title="Editar" onClick={() => editarSolicitacao(item)} className="rounded-lg p-2 text-[#3563A7] hover:bg-[#EAF3F7]"><Edit3 size={17} /></button><button type="button" title="Excluir" onClick={() => setSolicitacaoExcluir(item)} className="rounded-lg p-2 text-red-500 hover:bg-red-50"><Trash2 size={17} /></button></div></td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => editarSolicitacao(item)}
+                            className="rounded-lg px-3 py-2 text-xs font-semibold text-[#3563A7] hover:bg-[#EAF3F7]"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSolicitacaoExcluir(item)}
+                            className="rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {solicitacoesFiltradas.length === 0 && <EmptyState icon={<Search size={22} />} title="Nenhuma solicitação cadastrada" description="As solicitações registradas a partir dos prontuários aparecerão aqui." />}
+
+              {solicitacoesFiltradas.length === 0 && (
+                <EmptyState title="Nenhuma solicitação cadastrada" description="As solicitações registradas a partir dos prontuários aparecerão aqui." />
+              )}
             </div>
 
             <div className="space-y-3 border-t border-slate-100 p-4 md:hidden">
               {solicitacoesFiltradas.map((item) => (
-                <article key={item.id} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-base font-semibold">{item.paciente.nome}</p><p className="mt-1 text-xs font-normal text-slate-500">{item.paciente.prontuario}</p></div><StatusBadge status={item.status} /></div>
-                  <div className="mt-3 space-y-1 text-sm font-normal"><p><span className="text-slate-500">Exame: </span>{item.exame.nome}</p><p><span className="text-slate-500">Unidade: </span>{item.unidade.nome}</p><p><span className="text-slate-500">Agendamento: </span>{formatarData(item.data)} às {item.horario}</p></div>
-                  <div className="mt-3 flex gap-2"><button type="button" onClick={() => editarSolicitacao(item)} className="flex-1 rounded-lg bg-[#EAF3F7] px-3 py-2 text-xs font-semibold text-[#3563A7]">Editar</button><button type="button" onClick={() => setSolicitacaoExcluir(item)} className="rounded-lg bg-red-50 px-3 py-2 text-red-600"><Trash2 size={16} /></button></div>
+                <article key={item.id} className="rounded-xl border border-slate-200 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-base font-semibold">{item.paciente.nome}</p>
+                      <p className="mt-1 text-xs font-normal text-slate-500">{item.paciente.prontuario}</p>
+                    </div>
+                    <StatusBadge status={item.status} />
+                  </div>
+
+                  <div className="mt-3 space-y-1 text-sm font-normal">
+                    <p><span className="text-slate-500">Exame: </span>{item.exame.nome}</p>
+                    <p><span className="text-slate-500">Unidade: </span>{item.unidade.nome}</p>
+                    <p><span className="text-slate-500">Agendamento: </span>{formatarData(item.data)} às {item.horario}</p>
+                  </div>
+
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => editarSolicitacao(item)}
+                      className="flex-1 rounded-lg bg-[#EAF3F7] px-3 py-2 text-xs font-semibold text-[#3563A7]"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSolicitacaoExcluir(item)}
+                      className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </article>
               ))}
-              {solicitacoesFiltradas.length === 0 && <EmptyState icon={<Search size={22} />} title="Nenhuma solicitação cadastrada" description="As solicitações registradas a partir dos prontuários aparecerão aqui." />}
+
+              {solicitacoesFiltradas.length === 0 && (
+                <EmptyState title="Nenhuma solicitação cadastrada" description="As solicitações registradas a partir dos prontuários aparecerão aqui." />
+              )}
             </div>
 
-            <div className="border-t border-slate-100 px-5 py-4 text-xs font-normal text-slate-500">Exibindo {solicitacoesFiltradas.length} de {solicitacoes.length} solicitação(ões) · Dados demonstrativos</div>
+            <div className="border-t border-slate-100 px-5 py-4 text-xs font-normal text-slate-500">
+              Exibindo {solicitacoesFiltradas.length} de {solicitacoes.length} solicitação(ões) · Dados demonstrativos
+            </div>
           </section>
         )}
       </div>
 
       {solicitacaoExcluir && (
         <Modal title="Excluir solicitação" onClose={() => setSolicitacaoExcluir(null)}>
-          <div className="flex gap-3 rounded-xl border border-red-100 bg-red-50 p-4"><AlertCircle size={20} className="mt-0.5 shrink-0 text-red-600" /><p className="text-sm font-normal leading-6 text-red-800">Deseja remover a solicitação de <strong className="font-semibold">{solicitacaoExcluir.paciente.nome}</strong> para <strong className="font-semibold">{solicitacaoExcluir.exame.nome}</strong>? O prontuário voltará para a lista de análise nesta demonstração.</p></div>
-          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={() => setSolicitacaoExcluir(null)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">Manter solicitação</button><button type="button" onClick={excluirSolicitacao} className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700">Excluir solicitação</button></div>
+          <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+            <p className="text-sm font-normal leading-6 text-red-800">
+              Deseja remover a solicitação de <strong className="font-semibold">{solicitacaoExcluir.paciente.nome}</strong> para <strong className="font-semibold">{solicitacaoExcluir.exame.nome}</strong>? O prontuário voltará para a lista de análise nesta demonstração.
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setSolicitacaoExcluir(null)}
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600"
+            >
+              Manter solicitação
+            </button>
+            <button
+              type="button"
+              onClick={excluirSolicitacao}
+              className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Excluir solicitação
+            </button>
+          </div>
         </Modal>
       )}
     </main>
   );
 }
 
-/* Caixa de seleção no padrão do site (mesmo visual da imagem de referência) */
 function PrioritySelect({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -597,11 +852,14 @@ function PrioritySelect({ value, onChange, options }) {
     function handlePointerDown(event) {
       if (!containerRef.current?.contains(event.target)) setOpen(false);
     }
+
     function handleKeyDown(event) {
       if (event.key === "Escape") setOpen(false);
     }
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
@@ -615,16 +873,17 @@ function PrioritySelect({ value, onChange, options }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-normal text-[#0B1756] transition focus:outline-none ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.12)]" : "border-slate-200 hover:border-[#3563A7]"}`}
+        className={`flex h-11 w-full items-center justify-between rounded-xl border bg-white px-4 text-left text-sm font-normal text-[#0B1756] transition focus:outline-none ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.12)]" : "border-slate-200 hover:border-[#3563A7]"}`}
       >
         <span className="truncate">{value}</span>
-        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="text-xs font-semibold text-slate-400">{open ? "Fechar" : "Selecionar"}</span>
       </button>
 
       {open && (
-        <div role="listbox" aria-label="Prioridade registrada" className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] max-h-64 space-y-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
+        <div role="listbox" aria-label="Prioridade registrada" className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] max-h-64 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
           {options.map((option) => {
             const active = option === value;
+
             return (
               <button
                 key={option}
@@ -632,10 +891,10 @@ function PrioritySelect({ value, onChange, options }) {
                 role="option"
                 aria-selected={active}
                 onClick={() => { onChange(option); setOpen(false); }}
-                className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-sm transition ${active ? "bg-[#023E8A] font-semibold text-white" : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"}`}
+                className={`flex h-10 w-full items-center justify-between rounded-lg px-3 text-left text-sm transition ${active ? "bg-[#023E8A] font-semibold text-white" : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"}`}
               >
                 <span>{option}</span>
-                {active && <Check size={16} className="shrink-0" />}
+                {active && <span className="text-xs">Selecionado</span>}
               </button>
             );
           })}
@@ -648,23 +907,25 @@ function PrioritySelect({ value, onChange, options }) {
 function SituationFilter({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
+
   const options = [
-    { value: "Todas as situações", label: "Todas as situações", icon: SlidersHorizontal },
-    { value: "Somente ativas", label: "Somente ativas", icon: CheckCircle2 },
-    { value: "Somente inativas", label: "Somente inativas", icon: AlertCircle },
+    { value: "Todas as situações", label: "Todas as situações" },
+    { value: "Somente ativas", label: "Somente ativas" },
+    { value: "Somente inativas", label: "Somente inativas" },
   ];
-  const selectedOption = options.find((option) => option.value === value) || options[0];
-  const TriggerIcon = selectedOption.icon;
 
   useEffect(() => {
     function handlePointerDown(event) {
       if (!containerRef.current?.contains(event.target)) setOpen(false);
     }
+
     function handleKeyDown(event) {
       if (event.key === "Escape") setOpen(false);
     }
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
@@ -678,21 +939,18 @@ function SituationFilter({ value, onChange }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-[54px] w-full items-center gap-3 rounded-2xl border bg-white px-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/20 ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.10)]" : "border-slate-200 hover:border-[#3563A7]"}`}
+        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/20 ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.10)]" : "border-slate-200 hover:border-[#3563A7]"}`}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#3563A7]">
-          <TriggerIcon size={17} />
-        </span>
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#0B1756]">{value}</span>
-        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="text-xs font-semibold text-slate-400">{open ? "Fechar" : "Filtrar"}</span>
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+9px)] z-[90] rounded-[22px] border border-[#E1EAF3] bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[90] rounded-xl border border-[#E1EAF3] bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
           <div role="menu" aria-label="Filtrar por situação" className="space-y-1">
             {options.map((option) => {
               const active = option.value === value;
-              const OptionIcon = option.icon;
+
               return (
                 <button
                   key={option.value}
@@ -703,13 +961,10 @@ function SituationFilter({ value, onChange }) {
                     onChange(option.value);
                     setOpen(false);
                   }}
-                  className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition ${active ? "bg-[#023E8A] font-semibold text-white shadow-sm" : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"}`}
+                  className={`flex min-h-10 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${active ? "bg-[#023E8A] font-semibold text-white" : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"}`}
                 >
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-white/15 text-white" : "bg-[#EAF3F7] text-[#3563A7]"}`}>
-                    <OptionIcon size={16} />
-                  </span>
-                  <span className="min-w-0 flex-1">{option.label}</span>
-                  {active && <Check size={16} className="shrink-0" />}
+                  <span>{option.label}</span>
+                  {active && <span className="text-xs">Selecionado</span>}
                 </button>
               );
             })}
@@ -720,44 +975,136 @@ function SituationFilter({ value, onChange }) {
   );
 }
 
-function HeroInfo({ icon, title, text }) {
-  return <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">{icon}</span><span><span className="block text-xs font-semibold">{title}</span><span className="mt-0.5 block text-xs font-normal text-blue-100">{text}</span></span></div>;
+function MetricCard({ label, value }) {
+  return (
+    <div className="flex min-h-[105px] flex-col justify-center rounded-xl border border-[#DCE8F3] bg-white px-4 py-4 shadow-[0_8px_24px_rgba(2,62,138,0.04)]">
+      <span className="text-2xl font-bold leading-none text-[#0B1756]">{value}</span>
+      <span className="mt-2 text-xs font-semibold leading-5 text-slate-500">{label}</span>
+    </div>
+  );
 }
 
-function MetricCard({ icon, label, value }) {
-  return <div className="flex items-center gap-4 rounded-2xl border border-[#DCE8F3] bg-white p-5 shadow-[0_8px_24px_rgba(2,62,138,0.04)]"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#3563A7]">{icon}</span><span><span className="block text-2xl font-bold leading-none">{value}</span><span className="mt-2 block text-xs font-semibold text-slate-500">{label}</span></span></div>;
-}
-
-function TabButton({ active, onClick, icon, children }) {
-  return <button type="button" onClick={onClick} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition sm:px-4 ${active ? "bg-[#023E8A] text-white shadow-sm" : "text-[#3563A7] hover:bg-[#EAF3F7]"}`}>{icon}{children}</button>;
+function TabButton({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-11 items-center justify-center rounded-xl px-3 py-3 text-center text-xs font-semibold transition sm:text-sm sm:px-4 ${active ? "bg-[#023E8A] text-white shadow-sm" : "text-[#3563A7] hover:bg-[#EAF3F7]"}`}
+    >
+      {children}
+    </button>
+  );
 }
 
 function PatientListItem({ patient, active, onClick }) {
-  return <button type="button" onClick={onClick} className={`w-full rounded-2xl border p-4 text-left transition ${active ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-100 bg-white hover:border-[#3563A7] hover:bg-[#F8FBFD]"}`}><div className="flex items-start gap-3"><Avatar name={patient.nome} /><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><span className="text-base font-semibold">{patient.nome}</span><PriorityBadge value={patient.prioridade} /></span><span className="mt-1 block text-xs font-normal text-slate-500">{patient.prontuario} · {patient.idade} anos</span><span className="mt-2 block truncate text-sm font-normal text-slate-600">{patient.queixa}</span><span className="mt-2 block text-xs font-semibold text-[#3563A7]">{patient.status}</span></span></div></button>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-[145px] w-full flex-col rounded-xl border p-3 text-left transition ${active ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-100 bg-white hover:border-[#3563A7] hover:bg-[#F8FBFD]"}`}
+    >
+      <div className="flex min-w-0 items-start gap-2.5">
+        <Avatar name={patient.nome} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold leading-5">{patient.nome}</span>
+          <span className="mt-1 block text-xs font-normal text-slate-500">{patient.prontuario} · {patient.idade} anos</span>
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PriorityBadge value={patient.prioridade} />
+        <span className="text-[11px] font-semibold text-[#3563A7]">{patient.status}</span>
+      </div>
+
+      <span className="mt-2 line-clamp-2 text-xs font-normal leading-5 text-slate-600">{patient.queixa}</span>
+    </button>
+  );
 }
 
 function Avatar({ name, large = false }) {
-  return <span className={`flex shrink-0 items-center justify-center rounded-full bg-[#EAF3F7] font-semibold text-[#3563A7] ${large ? "h-14 w-14 text-base" : "h-11 w-11 text-sm"}`}>{iniciais(name)}</span>;
+  return (
+    <span className={`flex shrink-0 items-center justify-center rounded-full bg-[#EAF3F7] font-semibold text-[#3563A7] ${large ? "h-12 w-12 text-base" : "h-10 w-10 text-sm"}`}>
+      {iniciais(name)}
+    </span>
+  );
 }
 
-function ClinicalBlock({ title, items, warning = false }) {
-  return <div className={`rounded-xl border p-4 ${warning ? "border-amber-100 bg-amber-50/50" : "border-slate-100 bg-white"}`}><h3 className={`text-lg font-bold ${warning ? "text-amber-900" : "text-[#3563A7]"}`}>{title}</h3><ul className="mt-3 space-y-1.5">{items.map((item, index) => <li key={index} className="flex items-start gap-2 text-sm font-normal leading-5 text-slate-600"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-50" />{item}</li>)}</ul></div>;
+function ClinicalBlock({ title, items }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-3">
+      <h3 className="text-sm font-bold text-[#3563A7]">{title}</h3>
+      <ul className="mt-2 space-y-1">
+        {items.map((item, index) => (
+          <li key={index} className="flex items-start gap-2 text-xs font-normal leading-5 text-slate-600">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-50" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function PriorityBadge({ value }) {
-  const style = value === "Emergência" ? "border-red-200 bg-red-50 text-red-700" : value === "Urgente" ? "border-orange-200 bg-orange-50 text-orange-700" : value === "Prioritário" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-slate-50 text-slate-600";
-  return <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${style}`}>{value}</span>;
+  const style = value === "Emergência"
+    ? "border-red-200 bg-red-50 text-red-700"
+    : value === "Urgente"
+      ? "border-orange-200 bg-orange-50 text-orange-700"
+      : value === "Prioritário"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-slate-200 bg-slate-50 text-slate-600";
+
+  return (
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold ${style}`}>
+      {value}
+    </span>
+  );
 }
 
 function StatusBadge({ status }) {
-  const style = status === "Confirmado" ? "border-emerald-100 bg-emerald-50 text-emerald-700" : status === "Realizado" ? "border-blue-100 bg-blue-50 text-blue-700" : status === "Cancelado" ? "border-red-100 bg-red-50 text-red-700" : "border-amber-100 bg-amber-50 text-amber-700";
-  return <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${style}`}>{status}</span>;
+  const style = status === "Confirmado"
+    ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+    : status === "Realizado"
+      ? "border-blue-100 bg-blue-50 text-blue-700"
+      : status === "Cancelado"
+        ? "border-red-100 bg-red-50 text-red-700"
+        : "border-amber-100 bg-amber-50 text-amber-700";
+
+  return (
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${style}`}>
+      {status}
+    </span>
+  );
 }
 
-function EmptyState({ icon, title, description }) {
-  return <div className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6E3F0] bg-[#EEF5F9] px-4 py-7 text-center"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#3563A7] shadow-sm">{icon}</span><p className="mt-3 text-base font-semibold text-[#3563A7]">{title}</p><p className="mt-1 text-sm font-normal text-slate-500">{description}</p></div>;
+function EmptyState({ title, description }) {
+  return (
+    <div className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-dashed border-[#D6E3F0] bg-[#EEF5F9] px-4 py-6 text-center">
+      <p className="text-base font-semibold text-[#3563A7]">{title}</p>
+      <p className="mt-1 text-sm font-normal text-slate-500">{description}</p>
+    </div>
+  );
 }
 
 function Modal({ title, onClose, children }) {
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#06194E]/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="w-full max-w-xl rounded-[24px] bg-white p-5 shadow-2xl sm:p-7"><div className="flex items-center justify-between gap-4"><h2 className="text-xl font-bold text-[#0B1756]">{title}</h2><button type="button" onClick={onClose} aria-label="Fechar" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={19} /></button></div><div className="mt-5">{children}</div></div></div>;
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#06194E]/55 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-xl rounded-[22px] bg-white p-5 shadow-2xl sm:p-6">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl font-bold text-[#0B1756]">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100"
+          >
+            Fechar
+          </button>
+        </div>
+        <div className="mt-4">{children}</div>
+      </div>
+    </div>
+  );
 }
