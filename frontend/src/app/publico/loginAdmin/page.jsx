@@ -35,12 +35,37 @@ export default function LoginPage() {
     setErro("");
     setCarregando(true);
 
+    const credenciais = {
+      email: dados.email.trim(),
+      senha: dados.senha,
+    };
+
     try {
+      // Autenticação exclusiva de administrador.
       const resposta = await api("/auth/admin/login", {
         method: "POST",
-        body: JSON.stringify(dados),
+        body: JSON.stringify(credenciais),
       });
 
+      // Verifica se o backend retornou os dados necessários.
+      if (!resposta?.token) {
+        throw new Error(
+          "O servidor não retornou o token de autenticação."
+        );
+      }
+
+      if (!resposta?.administrador) {
+        throw new Error(
+          "Os dados do administrador não foram retornados."
+        );
+      }
+
+      // Limpa dados de outros perfis.
+      localStorage.removeItem("unesus_paciente");
+      localStorage.removeItem("unesus_profissional");
+      localStorage.removeItem("unesus_admin");
+
+      // Salva os dados da autenticação administrativa.
       localStorage.setItem("unesus_token", resposta.token);
 
       localStorage.setItem(
@@ -48,9 +73,21 @@ export default function LoginPage() {
         JSON.stringify(resposta.administrador)
       );
 
+      // Mantém as informações de perfil utilizadas pelo frontend.
+      localStorage.setItem("role", "admin");
+
+      localStorage.setItem(
+        "usuario",
+        JSON.stringify(resposta.administrador)
+      );
+
+      // Redireciona para o painel administrativo.
       router.push("/admin/dashboard");
+
     } catch (error) {
-      setErro(error.message || "Não foi possível realizar o login.");
+      setErro(
+        error.message || "Não foi possível realizar o login."
+      );
     } finally {
       setCarregando(false);
     }
@@ -213,7 +250,9 @@ export default function LoginPage() {
               disabled:opacity-60
             "
           >
-            {carregando ? "Entrando..." : "Acessar painel administrativo"}
+            {carregando
+              ? "Entrando..."
+              : "Acessar painel administrativo"}
 
             {!carregando && <ArrowRight size={17} />}
           </button>

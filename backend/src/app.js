@@ -24,8 +24,14 @@ const app = express();
 // Configurações de segurança
 app.use(helmet());
 
+const origensPermitidas = [
+  process.env.FRONTEND_URL,
+  "http://localhost:3000",
+  "http://conectasus.10.189.87.231.sslip.io"
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000"
+  origin: origensPermitidas
 }));
 
 // Permite receber JSON

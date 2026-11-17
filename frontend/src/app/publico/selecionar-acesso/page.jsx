@@ -1,13 +1,12 @@
-
 "use client";
 
 import Link from "next/link";
 
 const perfis = [
   {
-    titulo: "Paciente ou Administrador",
-    descricao: "Acesse seus serviços e gerencie a plataforma.",
-    identificacao: "ÁREA DO USUÁRIO",
+    titulo: "Paciente",
+    descricao: "Acesse seus serviços e acompanhe seus atendimentos.",
+    identificacao: "ÁREA DO PACIENTE",
     href: "/publico/login",
   },
   {
@@ -15,6 +14,12 @@ const perfis = [
     descricao: "Acesse sua área profissional e gerencie os atendimentos.",
     identificacao: "PROFISSIONAL DE SAÚDE",
     href: "/publico/login-profissional",
+  },
+  {
+    titulo: "Administrador",
+    descricao: "Gerencie a plataforma, as equipes e as solicitações.",
+    identificacao: "ÁREA ADMINISTRATIVA",
+    href: "/publico/loginAdmin",
   },
 ];
 
@@ -54,7 +59,7 @@ export default function SelecionarAcesso() {
         </div>
 
         {/* CARDS */}
-        <div className="mx-auto grid max-w-[680px] grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="mx-auto grid max-w-[960px] grid-cols-1 gap-5 sm:grid-cols-3">
 
           {perfis.map((perfil) => (
             <Link
