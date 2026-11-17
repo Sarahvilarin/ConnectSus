@@ -3,276 +3,131 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  CalendarDays,
-  CalendarOff,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  Clock,
-  FileText,
-  Hospital,
-  Lock,
-  Phone,
-  Play,
-  RotateCcw,
-  Search,
-  UserX,
-  X,
+  CalendarDays, CalendarOff, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList,
+  Clock, FileText, Hospital, Lock, Phone, Play, RotateCcw, Search, UserX, X,
 } from "lucide-react";
 
 /*
   PORTAL DO MÉDICO – Minhas consultas
 
-  PRONTUÁRIO + TRIAGEM
-  Cada consulta pode ter uma `triagem` (registrada pelo enfermeiro na tela de
-  Triagem de Enfermagem). O prontuário já nasce preenchido com esses dados
-  (queixa, sintomas, alergias, medicamentos e sinais vitais) e o médico pode
-  editar tudo durante o atendimento. O resumo original da triagem fica sempre
-  visível, somente leitura, no topo do prontuário.
-
-  RETORNO AUTOMÁTICO
-  Ao concluir o atendimento, se o médico escolheu um retorno (15 dias, 30 dias...),
-  o sistema agenda a consulta sozinho: conta os dias a partir de hoje e usa o
-  primeiro dia em que o médico atende, não está afastado e tem horário livre
-  (prefere o mesmo horário da consulta de origem).
-
-  Em produção: MEDICO, consultas, triagens e prontuários vêm da API.
-  A `triagem` deve ser buscada pelo vínculo paciente + consulta (a triagem com
-  status "Encaminhada ao médico" / "Aguardando atendimento médico").
-  O prontuário é dado sensível de saúde (LGPD): exigir autenticação, controle
-  de acesso por perfil e log de acessos/alterações no back-end.
+  - Cada consulta pode ter uma `triagem` (feita pelo enfermeiro). O prontuário já nasce
+    preenchido com ela e o médico pode editar tudo; o resumo original fica visível no topo.
+  - Ao concluir, se houver retorno escolhido, a consulta é agendada automaticamente no
+    primeiro dia em que o médico atende, não está afastado e tem horário livre.
+  - Em produção: dados vêm da API. Prontuário é dado sensível (LGPD): exigir autenticação,
+    controle de acesso por perfil e log de acessos/alterações no back-end.
 */
 
 /* =========================
-   DADOS DEMONSTRATIVOS
+   DADOS E CONSTANTES
 ========================= */
 
 const MEDICO = {
-  id: 1,
   nome: "Dra. Helena Duarte",
   especialidade: "Clínica geral",
+  unidade: "Atende Fácil Saúde Pedro Kassab",
   unidadeId: 3,
   dias: ["Seg", "Ter", "Qui"],
 };
 
-const UNIDADES = [
-  { id: 1, nome: "Hospital Municipal de Emergências Albert Sabin" },
-  { id: 2, nome: "Hospital Municipal Maria Braido" },
-  { id: 3, nome: "Atende Fácil Saúde Pedro Kassab" },
-];
-
 const statusLista = ["Agendada", "Em atendimento", "Concluída", "Faltou", "Cancelada"];
-
 const opcoesRetorno = ["Sem retorno", "15 dias", "30 dias", "60 dias", "90 dias", "6 meses"];
+const DIAS_RETORNO = { "15 dias": 15, "30 dias": 30, "60 dias": 60, "90 dias": 90, "6 meses": 180 };
+const POR_PAGINA = 8;
 
-const DIAS_RETORNO = {
-  "15 dias": 15,
-  "30 dias": 30,
-  "60 dias": 60,
-  "90 dias": 90,
-  "6 meses": 180,
-};
+const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const nomesSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const diasSemana = nomesSemana.slice(1);
 
 /* Horários de atendimento (manhã e tarde, de 30 em 30 min) */
-const HORARIOS = (() => {
-  const faixas = [
-    [8 * 60, 12 * 60],
-    [14 * 60, 18 * 60],
-  ];
-  const lista = [];
-  faixas.forEach(([ini, fim]) => {
-    for (let m = ini; m < fim; m += 30) {
-      lista.push(
-        `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
-      );
-    }
-  });
-  return lista;
-})();
+const HORARIOS = [[480, 720], [840, 1080]].flatMap(([ini, fim]) =>
+  Array.from({ length: (fim - ini) / 30 }, (_, i) => {
+    const m = ini + i * 30;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  })
+);
+
+const pad = (n) => String(n).padStart(2, "0");
+const paraIso = (ano, mes, dia) => `${ano}-${pad(mes + 1)}-${pad(dia)}`;
+const dataIso = (d) => paraIso(d.getFullYear(), d.getMonth(), d.getDate());
+const dataAtualISO = () => dataIso(new Date());
+const formatarData = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
+const minutos = (h) => { const [hh, mm] = h.split(":").map(Number); return hh * 60 + mm; };
+const meioDia = (iso) => new Date(`${iso}T12:00:00`);
 
 function somarDias(iso, n) {
-  const d = new Date(`${iso}T12:00:00`);
+  const d = meioDia(iso);
   d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
+  return dataIso(d);
 }
 
-function dataAtualISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
+function paginasVisiveis(atual, total) {
+  const nums = [...new Set([1, total, atual - 1, atual, atual + 1])].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  return nums.flatMap((n, i) => (i > 0 && n - nums[i - 1] > 1 ? [`...${n}`, n] : [n]));
+}
+
+function calcularImc(peso, altura) {
+  const p = parseFloat(String(peso).replace(",", "."));
+  const a = parseFloat(String(altura).replace(",", ".")) / 100;
+  return !p || !a || a < 0.5 || a > 2.5 ? null : (p / (a * a)).toFixed(1).replace(".", ",");
 }
 
 /* Triagens de exemplo (no sistema real vêm da tela do enfermeiro) */
+const tri = (horario, pressao, frequencia, temperatura, saturacao, respiracao, glicemia, queixa, sintomas, inicio, dor, historico, alergias, medicamentos, classificacao, observacoes) => ({
+  horario, registradoPor: "Enf. Camila Reis", pressao, frequencia, temperatura, saturacao, respiracao, glicemia,
+  queixa, sintomas, inicio, dor, historico, alergias, medicamentos, classificacao, observacoes,
+});
+
 const TRIAGENS_DEMO = {
-  "João Pedro Alves": {
-    horario: "08:40",
-    registradoPor: "Enf. Camila Reis",
-    pressao: "150/95",
-    frequencia: "88",
-    temperatura: "36.8",
-    saturacao: "97",
-    respiracao: "18",
-    glicemia: "212",
-    queixa: "Acompanhamento de diabetes",
-    sintomas: "Sede excessiva e cansaço nos últimos dias.",
-    inicio: "Há uma semana",
-    dor: "Sem dor",
-    historico: "Diabetes tipo 2 e hipertensão.",
-    alergias: "Dipirona",
-    medicamentos: "Metformina 850 mg, Losartana 50 mg",
-    classificacao: "Urgente",
-    observacoes: "Glicemia elevada na aferição. Paciente consciente e orientado.",
-  },
-  "Ana Beatriz Lima": {
-    horario: "09:20",
-    registradoPor: "Enf. Camila Reis",
-    pressao: "118/76",
-    frequencia: "82",
-    temperatura: "37.4",
-    saturacao: "98",
-    respiracao: "18",
-    glicemia: "",
-    queixa: "Tosse persistente há 2 semanas",
-    sintomas: "Tosse seca, pior à noite, sem falta de ar.",
-    inicio: "Há duas semanas",
-    dor: "Leve",
-    historico: "Rinite alérgica.",
-    alergias: "Poeira",
-    medicamentos: "Nenhum",
-    classificacao: "Pouco urgente",
-    observacoes: "Sem febre no momento.",
-  },
-  "Carlos Eduardo Sá": {
-    horario: "13:40",
-    registradoPor: "Enf. Camila Reis",
-    pressao: "130/85",
-    frequencia: "76",
-    temperatura: "36.5",
-    saturacao: "99",
-    respiracao: "16",
-    glicemia: "",
-    queixa: "Dor lombar",
-    sintomas: "Dor na região lombar ao se abaixar, sem irradiação.",
-    inicio: "Há cinco dias",
-    dor: "Moderada",
-    historico: "Nega doenças crônicas.",
-    alergias: "Não relatadas",
-    medicamentos: "Nenhum",
-    classificacao: "Pouco urgente",
-    observacoes: "Deambula sem dificuldade.",
-  },
-  "Beatriz Nogueira": {
-    horario: "15:10",
-    registradoPor: "Enf. Camila Reis",
-    pressao: "110/70",
-    frequencia: "72",
-    temperatura: "36.4",
-    saturacao: "99",
-    respiracao: "15",
-    glicemia: "",
-    queixa: "Atestado e avaliação geral",
-    sintomas: "Sem sintomas relatados.",
-    inicio: "Não se aplica",
-    dor: "Sem dor",
-    historico: "Nega doenças crônicas.",
-    alergias: "Não relatadas",
-    medicamentos: "Anticoncepcional oral",
-    classificacao: "Não urgente",
-    observacoes: "Paciente estável.",
-  },
+  "João Pedro Alves": tri("08:40", "150/95", "88", "36.8", "97", "18", "212", "Acompanhamento de diabetes", "Sede excessiva e cansaço nos últimos dias.", "Há uma semana", "Sem dor", "Diabetes tipo 2 e hipertensão.", "Dipirona", "Metformina 850 mg, Losartana 50 mg", "Urgente", "Glicemia elevada na aferição. Paciente consciente e orientado."),
+  "Ana Beatriz Lima": tri("09:20", "118/76", "82", "37.4", "98", "18", "", "Tosse persistente há 2 semanas", "Tosse seca, pior à noite, sem falta de ar.", "Há duas semanas", "Leve", "Rinite alérgica.", "Poeira", "Nenhum", "Pouco urgente", "Sem febre no momento."),
+  "Carlos Eduardo Sá": tri("13:40", "130/85", "76", "36.5", "99", "16", "", "Dor lombar", "Dor na região lombar ao se abaixar, sem irradiação.", "Há cinco dias", "Moderada", "Nega doenças crônicas.", "Não relatadas", "Nenhum", "Pouco urgente", "Deambula sem dificuldade."),
+  "Beatriz Nogueira": tri("15:10", "110/70", "72", "36.4", "99", "15", "", "Atestado e avaliação geral", "Sem sintomas relatados.", "Não se aplica", "Sem dor", "Nega doenças crônicas.", "Não relatadas", "Anticoncepcional oral", "Não urgente", "Paciente estável."),
 };
 
-/* Monta o texto da "história da doença atual" a partir da triagem */
-function historiaDaTriagem(t) {
-  const linhas = [];
-  if (t.sintomas?.trim()) linhas.push(t.sintomas.trim());
-  if (t.inicio?.trim() && t.inicio !== "Não se aplica") linhas.push(`Início: ${t.inicio}.`);
-  if (t.dor?.trim()) linhas.push(`Intensidade da dor: ${t.dor}.`);
-  if (t.historico?.trim()) linhas.push(`Antecedentes: ${t.historico.trim()}`);
-  return linhas.join("\n");
-}
+/* "História da doença atual" montada a partir da triagem */
+const historiaDaTriagem = (t) =>
+  [
+    t.sintomas?.trim(),
+    t.inicio?.trim() && t.inicio !== "Não se aplica" && `Início: ${t.inicio}.`,
+    t.dor?.trim() && `Intensidade da dor: ${t.dor}.`,
+    t.historico?.trim() && `Antecedentes: ${t.historico.trim()}`,
+  ].filter(Boolean).join("\n");
 
 /* Prontuário em branco; se houver triagem, já vem preenchido com ela */
 function prontuarioVazio(motivo = "", triagem = null) {
   const base = {
-    queixa: motivo,
-    historia: "",
-    alergias: "",
-    medicamentos: "",
+    queixa: motivo, historia: "", alergias: "", medicamentos: "",
     vitais: { pa: "", fc: "", temp: "", spo2: "", fr: "", glicemia: "", peso: "", altura: "" },
-    exameFisico: "",
-    hipotese: "",
-    cid: "",
-    conduta: "",
-    exames: "",
-    retorno: "Sem retorno",
-    registradoEm: null,
-    registradoPor: null,
+    exameFisico: "", hipotese: "", cid: "", conduta: "", exames: "", retorno: "Sem retorno",
+    registradoEm: null, registradoPor: null,
   };
-
   if (!triagem) return base;
-
+  const t = triagem;
   return {
     ...base,
-    queixa: triagem.queixa || motivo,
-    historia: historiaDaTriagem(triagem),
-    alergias: triagem.alergias || "",
-    medicamentos: triagem.medicamentos || "",
+    queixa: t.queixa || motivo,
+    historia: historiaDaTriagem(t),
+    alergias: t.alergias || "",
+    medicamentos: t.medicamentos || "",
     vitais: {
       ...base.vitais,
-      pa: triagem.pressao || "",
-      fc: triagem.frequencia || "",
-      temp: String(triagem.temperatura || "").replace(".", ","),
-      spo2: triagem.saturacao || "",
-      fr: triagem.respiracao || "",
-      glicemia: triagem.glicemia || "",
+      pa: t.pressao || "", fc: t.frequencia || "", temp: String(t.temperatura || "").replace(".", ","),
+      spo2: t.saturacao || "", fr: t.respiracao || "", glicemia: t.glicemia || "",
     },
   };
 }
 
-/* Prontuários de exemplo para consultas já concluídas */
+/* Prontuários de exemplo: [historia, alergias, medicamentos, pa, fc, temp, spo2, peso, altura, exameFisico, hipotese, cid, conduta, exames, retorno] */
+const pr = (historia, alergias, medicamentos, pa, fc, temp, spo2, peso, altura, exameFisico, hipotese, cid, conduta, exames, retorno) => ({
+  historia, alergias, medicamentos, vitais: { pa, fc, temp, spo2, fr: "", glicemia: "", peso, altura },
+  exameFisico, hipotese, cid, conduta, exames, retorno,
+});
+
 const PRONTUARIOS_DEMO = {
-  "Patrícia Gomes": {
-    historia: "Paciente hipertensa em uso regular da medicação, sem queixas novas.",
-    alergias: "Nenhuma conhecida",
-    medicamentos: "Losartana 50 mg, 1x ao dia",
-    vitais: { pa: "128/82", fc: "74", temp: "36,5", spo2: "98", fr: "", glicemia: "", peso: "68", altura: "165" },
-    exameFisico: "Bom estado geral. Ausculta cardíaca e pulmonar sem alterações.",
-    hipotese: "Hipertensão arterial sistêmica controlada",
-    cid: "I10",
-    conduta: "Manter medicação. Reforçar dieta com baixo teor de sódio e atividade física.",
-    exames: "",
-    retorno: "90 dias",
-  },
-  "Fernanda Rocha": {
-    historia: "Cefaleia frequente há cerca de 1 mês, piora ao fim do dia, sem sinais de alarme.",
-    alergias: "Dipirona",
-    medicamentos: "Nenhum",
-    vitais: { pa: "118/76", fc: "80", temp: "36,6", spo2: "99", fr: "", glicemia: "", peso: "61", altura: "162" },
-    exameFisico: "Exame neurológico sem alterações. Sem rigidez de nuca.",
-    hipotese: "Cefaleia tensional",
-    cid: "G44.2",
-    conduta: "Orientações de higiene do sono e hidratação. Analgésico se necessário.",
-    exames: "Hemograma completo, glicemia de jejum, TSH",
-    retorno: "30 dias",
-  },
-  "Mariana Costa": {
-    historia: "Retorno para avaliação de exames laboratoriais solicitados anteriormente.",
-    alergias: "Nenhuma conhecida",
-    medicamentos: "Vitamina D 2.000 UI, 1x ao dia",
-    vitais: { pa: "122/78", fc: "70", temp: "36,4", spo2: "98", fr: "", glicemia: "", peso: "72", altura: "160" },
-    exameFisico: "Sem alterações relevantes.",
-    hipotese: "Exames dentro da normalidade",
-    cid: "Z00.0",
-    conduta: "Manter hábitos saudáveis e acompanhamento anual.",
-    exames: "",
-    retorno: "6 meses",
-  },
+  "Patrícia Gomes": pr("Paciente hipertensa em uso regular da medicação, sem queixas novas.", "Nenhuma conhecida", "Losartana 50 mg, 1x ao dia", "128/82", "74", "36,5", "98", "68", "165", "Bom estado geral. Ausculta cardíaca e pulmonar sem alterações.", "Hipertensão arterial sistêmica controlada", "I10", "Manter medicação. Reforçar dieta com baixo teor de sódio e atividade física.", "", "90 dias"),
+  "Fernanda Rocha": pr("Cefaleia frequente há cerca de 1 mês, piora ao fim do dia, sem sinais de alarme.", "Dipirona", "Nenhum", "118/76", "80", "36,6", "99", "61", "162", "Exame neurológico sem alterações. Sem rigidez de nuca.", "Cefaleia tensional", "G44.2", "Orientações de higiene do sono e hidratação. Analgésico se necessário.", "Hemograma completo, glicemia de jejum, TSH", "30 dias"),
+  "Mariana Costa": pr("Retorno para avaliação de exames laboratoriais solicitados anteriormente.", "Nenhuma conhecida", "Vitamina D 2.000 UI, 1x ao dia", "122/78", "70", "36,4", "98", "72", "160", "Sem alterações relevantes.", "Exames dentro da normalidade", "Z00.0", "Manter hábitos saudáveis e acompanhamento anual.", "", "6 meses"),
 };
 
 function gerarConsultas(hoje) {
@@ -296,13 +151,8 @@ function gerarConsultas(hoje) {
   ];
 
   return base.map(([dia, horario, paciente, idade, telefone, motivo, tipo, status, notas], i) => {
-    /* Triagem existe para quem já passou pelo enfermeiro hoje e ainda não concluiu */
-    const demoTriagem = TRIAGENS_DEMO[paciente];
-    const triagem =
-      dia === 0 && demoTriagem && ["Agendada", "Em atendimento"].includes(status)
-        ? { ...demoTriagem, data: hoje }
-        : null;
-
+    const demoTri = TRIAGENS_DEMO[paciente];
+    const triagem = dia === 0 && demoTri && ["Agendada", "Em atendimento"].includes(status) ? { ...demoTri, data: hoje } : null;
     const prontuario = prontuarioVazio(motivo, triagem);
     const demo = PRONTUARIOS_DEMO[paciente];
 
@@ -311,135 +161,73 @@ function gerarConsultas(hoje) {
         historia: demo?.historia || "Atendimento realizado conforme motivo da consulta.",
         conduta: demo?.conduta || notas,
         hipotese: demo?.hipotese || "Conforme avaliação clínica",
-        registradoEm: `${somarDias(hoje, dia).split("-").reverse().join("/")} ${horario}`,
+        registradoEm: `${formatarData(somarDias(hoje, dia))} ${horario}`,
         registradoPor: MEDICO.nome,
       });
     }
 
     return {
-      id: i + 1,
-      paciente,
-      idade,
-      telefone,
-      motivo,
-      tipo,
-      unidadeId: MEDICO.unidadeId,
-      data: somarDias(hoje, dia),
-      horario,
-      status,
-      notas,
-      triagem,
-      origemId: null,
-      retornoId: null,
-      prontuario,
+      id: i + 1, paciente, idade, telefone, motivo, tipo, unidadeId: MEDICO.unidadeId,
+      data: somarDias(hoje, dia), horario, status, notas, triagem,
+      origemId: null, retornoId: null, prontuario,
       historico: ["Consulta agendada", ...(status !== "Agendada" ? [status] : [])],
     };
   });
 }
 
 /* Afastamentos do médico (definidos pela administração) */
-function gerarAfastamentos(hoje) {
-  return [
-    {
-      id: 1,
-      motivo: "Férias",
-      dataInicio: somarDias(hoje, 20),
-      previsaoRetorno: somarDias(hoje, 34),
-    },
-  ];
-}
+const gerarAfastamentos = (hoje) => [
+  { id: 1, motivo: "Férias", dataInicio: somarDias(hoje, 20), previsaoRetorno: somarDias(hoje, 34) },
+];
 
-const POR_PAGINA = 8;
+/* =========================
+   ESTILOS REUTILIZÁVEIS
+========================= */
 
 const inputCls =
   "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-600 disabled:hover:border-slate-200";
-
-/* =========================
-   FUNÇÕES AUXILIARES
-========================= */
-
-function formatarData(iso) {
-  if (!iso) return "";
-  const [a, m, d] = iso.split("-");
-  return `${d}/${m}/${a}`;
-}
-
-function paraIso(ano, mes, dia) {
-  return `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
-}
-
-function paginasVisiveis(atual, total) {
-  const nums = [...new Set([1, total, atual - 1, atual, atual + 1])]
-    .filter((n) => n >= 1 && n <= total)
-    .sort((a, b) => a - b);
-  const saida = [];
-  nums.forEach((n, i) => {
-    if (i > 0 && n - nums[i - 1] > 1) saida.push(`...${n}`);
-    saida.push(n);
-  });
-  return saida;
-}
-
-/* IMC calculado a partir de peso (kg) e altura (cm) */
-function calcularImc(peso, altura) {
-  const p = parseFloat(String(peso).replace(",", "."));
-  const a = parseFloat(String(altura).replace(",", ".")) / 100;
-  if (!p || !a || a < 0.5 || a > 2.5) return null;
-  return (p / (a * a)).toFixed(1).replace(".", ",");
-}
-
-const nomesMeses = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-];
-const nomesSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const botaoPrimario =
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0B1756] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30 disabled:cursor-not-allowed disabled:opacity-40";
+const botaoSecundario =
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-[#0B1756]/30 bg-white px-5 py-3 text-sm font-semibold text-[#0B1756] transition hover:bg-[#EAF3F7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/15 disabled:cursor-not-allowed disabled:opacity-40";
+const botaoMes = "rounded-xl border border-[#0B1756]/25 p-2 text-[#0B1756] transition hover:bg-[#0B1756]/10";
+const corStatus = { Agendada: "azul", "Em atendimento": "amarelo", Concluída: "verde", Faltou: "vermelho" };
 
 /* =========================
    COMPONENTES VISUAIS
 ========================= */
 
-function Badge({ children, tipo = "neutro" }) {
-  const estilos = {
-    neutro: { fundo: "#EAF3F7", texto: "#000000" },
-    azul: { fundo: "#3563A7", texto: "#FFFFFF" },
-    amarelo: { fundo: "#3563A7", texto: "#FFFFFF" },
-    verde: { fundo: "#023E8A", texto: "#FFFFFF" },
-    vermelho: { fundo: "#0B1756", texto: "#FFFFFF" },
-  };
-  const estilo = estilos[tipo] || estilos.neutro;
+const BADGES = {
+  neutro: ["#EAF3F7", "#000000"], azul: ["#3563A7", "#FFFFFF"], amarelo: ["#3563A7", "#FFFFFF"],
+  verde: ["#023E8A", "#FFFFFF"], vermelho: ["#0B1756", "#FFFFFF"],
+};
 
+function Badge({ children, tipo = "neutro" }) {
+  const [fundo, texto] = BADGES[tipo] || BADGES.neutro;
   return (
     <span
       className="inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold"
-      style={{ backgroundColor: estilo.fundo, borderColor: estilo.fundo, color: estilo.texto }}
+      style={{ backgroundColor: fundo, borderColor: fundo, color: texto }}
     >
       {children}
     </span>
   );
 }
 
-/* Classificação de risco da triagem (cores semânticas, para leitura rápida) */
-function RiskBadge({ classificacao }) {
-  const estilos = {
-    "Não urgente": "border-blue-100 bg-blue-50 text-blue-700",
-    "Pouco urgente": "border-emerald-100 bg-emerald-50 text-emerald-700",
-    Urgente: "border-amber-200 bg-amber-50 text-amber-700",
-    "Muito urgente": "border-red-200 bg-red-50 text-red-700",
-  };
+const RISCOS = {
+  "Não urgente": "border-blue-100 bg-blue-50 text-blue-700",
+  "Pouco urgente": "border-emerald-100 bg-emerald-50 text-emerald-700",
+  Urgente: "border-amber-200 bg-amber-50 text-amber-700",
+  "Muito urgente": "border-red-200 bg-red-50 text-red-700",
+};
 
+function RiskBadge({ classificacao }) {
   return (
-    <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${
-        estilos[classificacao] || "border-slate-200 bg-slate-50 text-slate-600"
-      }`}
-    >
+    <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${RISCOS[classificacao] || "border-slate-200 bg-slate-50 text-slate-600"}`}>
       {classificacao}
     </span>
   );
 }
-
-const corStatus = (s) =>
-  s === "Agendada" ? "azul" : s === "Em atendimento" ? "amarelo" : s === "Concluída" ? "verde" : s === "Faltou" ? "vermelho" : "neutro";
 
 function Campo({ label, children, className = "" }) {
   return (
@@ -450,32 +238,40 @@ function Campo({ label, children, className = "" }) {
   );
 }
 
-/* Menu suspenso com posição fixa: nunca é cortado por janelas com rolagem
-   e abre para cima quando falta espaço embaixo. */
-function Dropdown({
-  rotulo,
-  valor,
-  opcoes,
-  onChange,
-  placeholder = "Selecione",
-  desabilitado = false,
-  largura = "w-full",
-  larguraLista = "min-w-[170px]",
-}) {
+/* Caixa de aviso (variante "pontilhada" para estados neutros) */
+function Info({ icone: Icone, tipo = "azul", children }) {
+  const cls = {
+    fechado: "border-[#023E8A]/20 bg-[#EAF3F7]",
+    azul: "border-[#3563A7]/30 bg-[#EAF3F7]",
+    neutro: "border-dashed border-slate-300 bg-slate-50 text-slate-600",
+  }[tipo];
+  return (
+    <div className={`flex items-start gap-3 rounded-xl border p-4 text-sm ${tipo === "neutro" ? "" : "text-[#0B1756]"} ${cls}`}>
+      {Icone && <Icone size={18} className={`mt-0.5 shrink-0 ${tipo === "fechado" ? "text-[#023E8A]" : "text-[#3563A7]"}`} />}
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function Vazio({ titulo, sub }) {
+  return (
+    <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
+      <p className="text-sm font-medium text-slate-600">{titulo}</p>
+      {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
+    </div>
+  );
+}
+
+/* Controle comum de menus flutuantes: posição fixa, fecha ao rolar/redimensionar e
+   abre para cima quando falta espaço embaixo. */
+function usePopup() {
   const [aberto, setAberto] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const ref = useRef(null);
 
-  const lista = opcoes.map((o) => (typeof o === "string" ? { valor: o, texto: o } : o));
-  const atual = lista.find((o) => o.valor === valor);
-  const minLista = Number(larguraLista.match(/\[(\d+)px\]/)?.[1] || 170);
-
   useEffect(() => {
     if (!aberto) return;
-    const fechar = (e) => {
-      if (e.target?.closest?.("[data-popup]")) return;
-      setAberto(false);
-    };
+    const fechar = (e) => !e.target?.closest?.("[data-popup]") && setAberto(false);
     window.addEventListener("scroll", fechar, true);
     window.addEventListener("resize", fechar);
     return () => {
@@ -484,35 +280,49 @@ function Dropdown({
     };
   }, [aberto]);
 
-  function alternar() {
+  function alternar(altura, minLargura, aoAbrir) {
     if (!aberto && ref.current) {
       const r = ref.current.getBoundingClientRect();
-      const altLista = Math.min(240, lista.length * 44 + 12);
-      const larg = Math.max(r.width, minLista);
-      const cabeEmbaixo = window.innerHeight - r.bottom - 12 >= altLista;
-
-      setPos({
-        top: cabeEmbaixo ? r.bottom + 8 : Math.max(12, r.top - altLista - 8),
-        left: Math.max(12, Math.min(r.left, window.innerWidth - larg - 12)),
-        width: larg,
-      });
+      const largura = Math.max(r.width, minLargura);
+      let top = r.bottom + 8;
+      if (top + altura > window.innerHeight - 12) {
+        const acima = r.top - altura - 8;
+        top = acima >= 12 ? acima : Math.max(12, window.innerHeight - altura - 12);
+      }
+      setPos({ top, left: Math.max(12, Math.min(r.left, window.innerWidth - largura - 12)), width: largura });
+      aoAbrir?.();
     }
     setAberto((a) => !a);
   }
 
+  return { aberto, setAberto, pos, ref, alternar };
+}
+
+function Popup({ onClose, role, rotulo, style, className, children }) {
   return (
-    <div
-      ref={ref}
-      className={`relative ${largura}`}
-      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
-    >
+    <>
+      <button type="button" aria-label={`Fechar ${rotulo}`} onClick={onClose} className="fixed inset-0 z-10 cursor-default" />
+      <div data-popup role={role} aria-label={rotulo} style={style} className={`fixed z-20 ${className}`}>
+        {children}
+      </div>
+    </>
+  );
+}
+
+function Dropdown({ rotulo, valor, opcoes, onChange, placeholder = "Selecione", desabilitado = false }) {
+  const { aberto, setAberto, pos, ref, alternar } = usePopup();
+  const lista = opcoes.map((o) => (typeof o === "string" ? { valor: o, texto: o } : o));
+  const atual = lista.find((o) => o.valor === valor);
+
+  return (
+    <div ref={ref} className="relative w-full" onKeyDown={(e) => e.key === "Escape" && setAberto(false)}>
       <button
         type="button"
         aria-label={rotulo}
         aria-haspopup="listbox"
         aria-expanded={aberto}
         disabled={desabilitado}
-        onClick={alternar}
+        onClick={() => alternar(Math.min(240, lista.length * 44 + 12), 170)}
         className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 ${
           desabilitado
             ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-600"
@@ -521,55 +331,34 @@ function Dropdown({
               : "border-[#C8D8EC] hover:border-[#3563A7]"
         }`}
       >
-        <span className={`min-w-0 truncate ${atual ? "" : "text-slate-400"}`}>
-          {atual ? atual.texto : placeholder}
-        </span>
-        <ChevronDown
-          size={16}
-          className={`shrink-0 transition-transform ${aberto ? "rotate-180" : ""}`}
-        />
+        <span className={`min-w-0 truncate ${atual ? "" : "text-slate-400"}`}>{atual ? atual.texto : placeholder}</span>
+        <ChevronDown size={16} className={`shrink-0 transition-transform ${aberto ? "rotate-180" : ""}`} />
       </button>
 
       {aberto && !desabilitado && (
-        <>
-          <button
-            type="button"
-            aria-label="Fechar menu"
-            onClick={() => setAberto(false)}
-            className="fixed inset-0 z-10 cursor-default"
-          />
-          <div
-            data-popup
-            role="listbox"
-            aria-label={rotulo}
-            style={{ top: pos.top, left: pos.left, width: pos.width }}
-            className="fixed z-20 max-h-60 overflow-y-auto rounded-2xl border border-[#D5E2F1] bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
-          >
-            {lista.map((opcao) => {
-              const ativo = opcao.valor === valor;
-              return (
-                <button
-                  key={opcao.valor}
-                  type="button"
-                  role="option"
-                  aria-selected={ativo}
-                  onClick={() => {
-                    onChange(opcao.valor);
-                    setAberto(false);
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
-                    ativo
-                      ? "bg-[#0B1756] font-semibold text-white"
-                      : "text-[#0B1756] hover:bg-[#EAF3F7]"
-                  }`}
-                >
-                  <span>{opcao.texto}</span>
-                  {ativo && <Check size={16} className="shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-        </>
+        <Popup
+          onClose={() => setAberto(false)}
+          role="listbox"
+          rotulo={rotulo}
+          style={{ top: pos.top, left: pos.left, width: pos.width }}
+          className="max-h-60 overflow-y-auto rounded-2xl border border-[#D5E2F1] bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+        >
+          {lista.map((o) => (
+            <button
+              key={o.valor}
+              type="button"
+              role="option"
+              aria-selected={o.valor === valor}
+              onClick={() => { onChange(o.valor); setAberto(false); }}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
+                o.valor === valor ? "bg-[#0B1756] font-semibold text-white" : "text-[#0B1756] hover:bg-[#EAF3F7]"
+              }`}
+            >
+              <span>{o.texto}</span>
+              {o.valor === valor && <Check size={16} className="shrink-0" />}
+            </button>
+          ))}
+        </Popup>
       )}
     </div>
   );
@@ -577,191 +366,99 @@ function Dropdown({
 
 /* Calendário personalizado. `valor` e `onChange` usam AAAA-MM-DD. */
 function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data", limpavel = false }) {
-  const [aberto, setAberto] = useState(false);
+  const { aberto, setAberto, pos, ref, alternar } = usePopup();
   const [visao, setVisao] = useState({ ano: 2026, mes: 0 });
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  const ref = useRef(null);
+  const hojeIso = dataAtualISO();
 
-  const hoje = new Date();
-  const hojeIso = paraIso(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-
-  useEffect(() => {
-    if (!aberto) return;
-    const fechar = (e) => {
-      if (e.target?.closest?.("[data-popup]")) return;
-      setAberto(false);
-    };
-    window.addEventListener("scroll", fechar, true);
-    window.addEventListener("resize", fechar);
-    return () => {
-      window.removeEventListener("scroll", fechar, true);
-      window.removeEventListener("resize", fechar);
-    };
-  }, [aberto]);
-
-  function alternar() {
-    if (!aberto) {
+  function abrir() {
+    alternar(380, 300, () => {
       const base = valor ? new Date(`${valor}T00:00:00`) : new Date();
       setVisao({ ano: base.getFullYear(), mes: base.getMonth() });
-
-      if (ref.current) {
-        const r = ref.current.getBoundingClientRect();
-        const ALT = 380;
-        const LARG = 300;
-        let top = r.bottom + 8;
-
-        if (top + ALT > window.innerHeight - 12) {
-          const acima = r.top - ALT - 8;
-          top = acima >= 12 ? acima : Math.max(12, window.innerHeight - ALT - 12);
-        }
-
-        setPos({ top, left: Math.max(12, Math.min(r.left, window.innerWidth - LARG - 12)) });
-      }
-    }
-    setAberto((a) => !a);
+    });
   }
 
-  function mudarMes(delta) {
+  const mudarMes = (delta) =>
     setVisao(({ ano, mes }) => {
       const d = new Date(ano, mes + delta, 1);
       return { ano: d.getFullYear(), mes: d.getMonth() };
     });
-  }
 
-  function escolher(iso) {
-    onChange(iso);
-    setAberto(false);
-  }
+  const escolher = (iso) => { onChange(iso); setAberto(false); };
 
   const primeiroDia = new Date(visao.ano, visao.mes, 1).getDay();
   const totalDias = new Date(visao.ano, visao.mes + 1, 0).getDate();
-  const celulas = [
-    ...Array(primeiroDia).fill(null),
-    ...Array.from({ length: totalDias }, (_, i) => i + 1),
-  ];
+  const celulas = [...Array(primeiroDia).fill(null), ...Array.from({ length: totalDias }, (_, i) => i + 1)];
+  const setaCls = "flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20";
 
   return (
-    <div
-      ref={ref}
-      className="relative w-full"
-      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
-    >
+    <div ref={ref} className="relative w-full" onKeyDown={(e) => e.key === "Escape" && setAberto(false)}>
       <button
         type="button"
         aria-label={rotulo}
         aria-haspopup="dialog"
         aria-expanded={aberto}
-        onClick={alternar}
+        onClick={abrir}
         className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm text-[#0B1756] transition focus:outline-none focus:ring-4 focus:ring-[#3563A7]/15 ${
-          aberto
-            ? "border-[#0B1756] ring-4 ring-[#3563A7]/15"
-            : "border-[#C8D8EC] hover:border-[#3563A7]"
+          aberto ? "border-[#0B1756] ring-4 ring-[#3563A7]/15" : "border-[#C8D8EC] hover:border-[#3563A7]"
         }`}
       >
-        <span className={`min-w-0 truncate ${valor ? "" : "text-slate-400"}`}>
-          {valor ? formatarData(valor) : placeholder}
-        </span>
+        <span className={`min-w-0 truncate ${valor ? "" : "text-slate-400"}`}>{valor ? formatarData(valor) : placeholder}</span>
         <CalendarDays size={16} className="shrink-0" />
       </button>
 
       {aberto && (
-        <>
-          <button
-            type="button"
-            aria-label="Fechar calendário"
-            onClick={() => setAberto(false)}
-            className="fixed inset-0 z-10 cursor-default"
-          />
-
-          <div
-            data-popup
-            role="dialog"
-            aria-label={rotulo}
-            style={{ top: pos.top, left: pos.left }}
-            className="fixed z-20 w-[300px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[#0B1756]/20 bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.28)]"
-          >
-            <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#0B1756] px-3 py-2.5">
-              <p className="text-sm font-bold text-white">
-                {nomesMeses[visao.mes]} {visao.ano}
-              </p>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  aria-label="Mês anterior"
-                  onClick={() => mudarMes(-1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Próximo mês"
-                  onClick={() => mudarMes(1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-1 grid grid-cols-7 text-center">
-              {nomesSemana.map((d) => (
-                <span key={d} className="py-1 text-xs font-semibold text-[#0B1756]">
-                  {d}
-                </span>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {celulas.map((dia, i) => {
-                if (!dia) return <span key={`vazio-${i}`} className="h-8" />;
-
-                const iso = paraIso(visao.ano, visao.mes, dia);
-                const ativo = iso === valor;
-                const ehHoje = iso === hojeIso;
-
-                return (
-                  <button
-                    key={iso}
-                    type="button"
-                    aria-pressed={ativo}
-                    onClick={() => escolher(iso)}
-                    className={`h-8 rounded-lg text-xs font-medium transition ${
-                      ativo
-                        ? "bg-[#0B1756] text-white shadow-md ring-2 ring-[#0B1756]/20"
-                        : ehHoje
-                          ? "border-2 border-[#0B1756] bg-[#EAF3F7] font-extrabold text-[#0B1756]"
-                          : "text-[#0B1756] hover:bg-[#0B1756] hover:text-white"
-                    }`}
-                  >
-                    {dia}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-3 flex items-center justify-between border-t border-[#0B1756]/15 pt-3 text-xs font-semibold">
-              {limpavel && valor ? (
-                <button
-                  type="button"
-                  onClick={() => escolher("")}
-                  className="rounded-lg px-2 py-1 text-[#0B1756] hover:bg-[#EAF3F7]"
-                >
-                  Limpar
-                </button>
-              ) : (
-                <span />
-              )}
-              <button
-                type="button"
-                onClick={() => escolher(hojeIso)}
-                className="rounded-lg bg-[#0B1756] px-3 py-2 text-white hover:bg-[#023E8A]"
-              >
-                Hoje
-              </button>
+        <Popup
+          onClose={() => setAberto(false)}
+          role="dialog"
+          rotulo={rotulo}
+          style={{ top: pos.top, left: pos.left }}
+          className="w-[300px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[#0B1756]/20 bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.28)]"
+        >
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#0B1756] px-3 py-2.5">
+            <p className="text-sm font-bold text-white">{nomesMeses[visao.mes]} {visao.ano}</p>
+            <div className="flex gap-1">
+              <button type="button" aria-label="Mês anterior" onClick={() => mudarMes(-1)} className={setaCls}><ChevronLeft size={16} /></button>
+              <button type="button" aria-label="Próximo mês" onClick={() => mudarMes(1)} className={setaCls}><ChevronRight size={16} /></button>
             </div>
           </div>
-        </>
+
+          <div className="mb-1 grid grid-cols-7 text-center">
+            {nomesSemana.map((d) => (
+              <span key={d} className="py-1 text-xs font-semibold text-[#0B1756]">{d}</span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {celulas.map((dia, i) => {
+              if (!dia) return <span key={`vazio-${i}`} className="h-8" />;
+              const iso = paraIso(visao.ano, visao.mes, dia);
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  aria-pressed={iso === valor}
+                  onClick={() => escolher(iso)}
+                  className={`h-8 rounded-lg text-xs font-medium transition ${
+                    iso === valor
+                      ? "bg-[#0B1756] text-white shadow-md ring-2 ring-[#0B1756]/20"
+                      : iso === hojeIso
+                        ? "border-2 border-[#0B1756] bg-[#EAF3F7] font-extrabold text-[#0B1756]"
+                        : "text-[#0B1756] hover:bg-[#0B1756] hover:text-white"
+                  }`}
+                >
+                  {dia}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t border-[#0B1756]/15 pt-3 text-xs font-semibold">
+            {limpavel && valor ? (
+              <button type="button" onClick={() => escolher("")} className="rounded-lg px-2 py-1 text-[#0B1756] hover:bg-[#EAF3F7]">Limpar</button>
+            ) : <span />}
+            <button type="button" onClick={() => escolher(hojeIso)} className="rounded-lg bg-[#0B1756] px-3 py-2 text-white hover:bg-[#023E8A]">Hoje</button>
+          </div>
+        </Popup>
       )}
     </div>
   );
@@ -769,41 +466,22 @@ function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data",
 
 function Paginacao({ pagina, totalPaginas, totalItens, onChange }) {
   if (totalPaginas <= 1) return null;
-
-  const inicio = (pagina - 1) * POR_PAGINA + 1;
-  const fim = Math.min(pagina * POR_PAGINA, totalItens);
-  const botao =
-    "flex h-10 min-w-[40px] items-center justify-center rounded-lg border px-3 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[#3563A7]/20";
-  const base =
-    "border-[#D5E0ED] bg-white text-[#3563A7] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40";
+  const forte = (t) => <strong className="font-semibold text-[#0B1756]">{t}</strong>;
+  const botao = "flex h-10 min-w-[40px] items-center justify-center rounded-lg border px-3 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[#3563A7]/20";
+  const normal = "border-[#D5E0ED] bg-white text-[#3563A7] hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
-    <nav
-      aria-label="Paginação"
-      className="mt-2 flex flex-col items-center justify-between gap-3 sm:flex-row"
-    >
+    <nav aria-label="Paginação" className="mt-2 flex flex-col items-center justify-between gap-3 sm:flex-row">
       <p className="text-sm text-slate-600">
-        Mostrando <strong className="font-semibold text-[#0B1756]">{inicio}</strong> a{" "}
-        <strong className="font-semibold text-[#0B1756]">{fim}</strong> de{" "}
-        <strong className="font-semibold text-[#0B1756]">{totalItens}</strong> consultas
+        Mostrando {forte((pagina - 1) * POR_PAGINA + 1)} a {forte(Math.min(pagina * POR_PAGINA, totalItens))} de {forte(totalItens)} consultas
       </p>
-
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Página anterior"
-          disabled={pagina === 1}
-          onClick={() => onChange(pagina - 1)}
-          className={`${botao} ${base}`}
-        >
+        <button type="button" aria-label="Página anterior" disabled={pagina === 1} onClick={() => onChange(pagina - 1)} className={`${botao} ${normal}`}>
           <ChevronLeft size={18} />
         </button>
-
         {paginasVisiveis(pagina, totalPaginas).map((n) =>
           typeof n === "string" ? (
-            <span key={n} className="px-1 text-sm font-semibold text-slate-400">
-              …
-            </span>
+            <span key={n} className="px-1 text-sm font-semibold text-slate-400">…</span>
           ) : (
             <button
               key={n}
@@ -811,33 +489,18 @@ function Paginacao({ pagina, totalPaginas, totalItens, onChange }) {
               aria-label={`Página ${n}`}
               aria-current={n === pagina ? "page" : undefined}
               onClick={() => onChange(n)}
-              className={`${botao} ${
-                n === pagina
-                  ? "border-[#0B1756] bg-[#0B1756] text-white"
-                  : "border-[#D5E0ED] bg-white text-[#0B1756] hover:bg-[#EAF3F7]"
-              }`}
+              className={`${botao} ${n === pagina ? "border-[#0B1756] bg-[#0B1756] text-white" : "border-[#D5E0ED] bg-white text-[#0B1756] hover:bg-[#EAF3F7]"}`}
             >
               {n}
             </button>
           )
         )}
-
-        <button
-          type="button"
-          aria-label="Próxima página"
-          disabled={pagina === totalPaginas}
-          onClick={() => onChange(pagina + 1)}
-          className={`${botao} ${base}`}
-        >
+        <button type="button" aria-label="Próxima página" disabled={pagina === totalPaginas} onClick={() => onChange(pagina + 1)} className={`${botao} ${normal}`}>
           <ChevronRight size={18} />
         </button>
       </div>
     </nav>
   );
-}
-
-function Portal({ children }) {
-  return createPortal(children, document.body);
 }
 
 /* =========================
@@ -860,17 +523,13 @@ function CardSecao({ titulo, subtitulo, acao, children, className = "" }) {
 }
 
 function LinhaConsulta({ c, mostrarData = false, compacto = false, onAbrir }) {
-  const badge = <Badge tipo={corStatus(c.status)}>{c.status}</Badge>;
-  const temProntuario = Boolean(c.prontuario?.registradoEm);
-  const destaqueRisco =
-    c.triagem && ["Urgente", "Muito urgente"].includes(c.triagem.classificacao);
+  const badge = <Badge tipo={corStatus[c.status]}>{c.status}</Badge>;
+  const risco = c.triagem && ["Urgente", "Muito urgente"].includes(c.triagem.classificacao);
 
   return (
     <div className="flex items-center gap-3 py-3">
       <span className="min-w-[56px] shrink-0 rounded-lg bg-[#EAF3F7] px-2 py-1.5 text-center text-xs font-bold leading-tight text-[#0B1756]">
-        {mostrarData && (
-          <span className="block font-semibold text-[#3563A7]">{formatarData(c.data).slice(0, 5)}</span>
-        )}
+        {mostrarData && <span className="block font-semibold text-[#3563A7]">{formatarData(c.data).slice(0, 5)}</span>}
         {c.horario}
       </span>
 
@@ -879,17 +538,12 @@ function LinhaConsulta({ c, mostrarData = false, compacto = false, onAbrir }) {
           <span className="truncate text-base font-semibold text-[#0B1756]">{c.paciente}</span>
           <span className="text-xs text-slate-400">{c.idade} anos</span>
           {compacto && badge}
-          {destaqueRisco && <RiskBadge classificacao={c.triagem.classificacao} />}
-          {temProntuario && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#3563A7]">
-              <FileText size={13} />
-              Prontuário
-            </span>
+          {risco && <RiskBadge classificacao={c.triagem.classificacao} />}
+          {c.prontuario?.registradoEm && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#3563A7]"><FileText size={13} />Prontuário</span>
           )}
         </span>
-        <span className="mt-0.5 block truncate text-sm text-slate-500">
-          {c.motivo} · {c.tipo}
-        </span>
+        <span className="mt-0.5 block truncate text-sm text-slate-500">{c.motivo} · {c.tipo}</span>
       </span>
 
       {!compacto && <span className="hidden shrink-0 sm:block">{badge}</span>}
@@ -907,18 +561,11 @@ function LinhaConsulta({ c, mostrarData = false, compacto = false, onAbrir }) {
 
 /* ---------- Triagem (somente leitura) ---------- */
 
-function ResumoTriagem({ triagem, editavel, onRestaurar }) {
+function ResumoTriagem({ triagem: t, editavel, onRestaurar }) {
   const [aberto, setAberto] = useState(true);
 
-  if (!triagem) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-        Nenhuma triagem de enfermagem registrada para esta consulta.
-      </div>
-    );
-  }
+  if (!t) return <Info tipo="neutro">Nenhuma triagem de enfermagem registrada para esta consulta.</Info>;
 
-  const t = triagem;
   const vitais = [
     ["Pressão arterial", `${t.pressao} mmHg`],
     ["Freq. cardíaca", `${t.frequencia} bpm`],
@@ -928,40 +575,26 @@ function ResumoTriagem({ triagem, editavel, onRestaurar }) {
     ["Glicemia", t.glicemia ? `${t.glicemia} mg/dL` : "Não informada"],
   ];
   const detalhes = [
-    ["Queixa principal", t.queixa],
-    ["Sintomas", t.sintomas],
-    ["Início", t.inicio],
-    ["Intensidade da dor", t.dor],
-    ["Histórico de saúde", t.historico],
-    ["Alergias", t.alergias],
-    ["Medicamentos em uso", t.medicamentos],
-    ["Observações da enfermagem", t.observacoes],
+    ["Queixa principal", t.queixa], ["Sintomas", t.sintomas], ["Início", t.inicio],
+    ["Intensidade da dor", t.dor], ["Histórico de saúde", t.historico], ["Alergias", t.alergias],
+    ["Medicamentos em uso", t.medicamentos], ["Observações da enfermagem", t.observacoes],
   ].filter(([, v]) => v && String(v).trim());
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#3563A7]/30 bg-[#F4F8FC]">
-      <button
-        type="button"
-        onClick={() => setAberto((a) => !a)}
-        aria-expanded={aberto}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-      >
+      <button type="button" onClick={() => setAberto((a) => !a)} aria-expanded={aberto} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
         <span className="flex min-w-0 items-center gap-3">
           <ClipboardList size={18} className="shrink-0 text-[#3563A7]" />
           <span className="min-w-0">
             <span className="block text-sm font-bold text-[#0B1756]">Triagem de enfermagem</span>
             <span className="block truncate text-xs text-slate-500">
-              {formatarData(t.data)} às {t.horario}
-              {t.registradoPor ? ` · ${t.registradoPor}` : ""}
+              {formatarData(t.data)} às {t.horario}{t.registradoPor ? ` · ${t.registradoPor}` : ""}
             </span>
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-3">
           <RiskBadge classificacao={t.classificacao} />
-          <ChevronDown
-            size={16}
-            className={`text-slate-500 transition-transform ${aberto ? "rotate-180" : ""}`}
-          />
+          <ChevronDown size={16} className={`text-slate-500 transition-transform ${aberto ? "rotate-180" : ""}`} />
         </span>
       </button>
 
@@ -978,9 +611,7 @@ function ResumoTriagem({ triagem, editavel, onRestaurar }) {
 
           <div className="space-y-2 text-sm">
             {detalhes.map(([rotulo, valor]) => (
-              <p key={rotulo} className="text-slate-600">
-                <span className="font-semibold text-[#0B1756]">{rotulo}:</span> {valor}
-              </p>
+              <p key={rotulo} className="text-slate-600"><span className="font-semibold text-[#0B1756]">{rotulo}:</span> {valor}</p>
             ))}
           </div>
 
@@ -1002,27 +633,21 @@ function ResumoTriagem({ triagem, editavel, onRestaurar }) {
 
 /* ---------- Prontuário ---------- */
 
-function TituloBloco({ children }) {
-  return (
-    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">{children}</p>
-  );
-}
+const VITAIS = [
+  ["pa", "Pressão arterial", "mmHg", "120/80"], ["fc", "Freq. cardíaca", "bpm", "72"],
+  ["temp", "Temperatura", "°C", "36,5"], ["spo2", "Saturação", "%", "98"],
+  ["fr", "Freq. respiratória", "irpm", "16"], ["glicemia", "Glicemia", "mg/dL", "95"],
+  ["peso", "Peso", "kg", "70"], ["altura", "Altura", "cm", "170"],
+];
 
-function Prontuario({
-  consulta,
-  editavel,
-  onCampo,
-  onVital,
-  onRestaurar,
-  anteriores,
-  previsaoRetorno,
-  retornoAgendado,
-}) {
+const Titulo = ({ children }) => <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3563A7]">{children}</p>;
+
+function Prontuario({ consulta, editavel, onCampo, onVital, onRestaurar, anteriores, previsaoRetorno, retornoAgendado }) {
   const p = consulta.prontuario;
   const imc = calcularImc(p.vitais.peso, p.vitais.altura);
   const fechado = Boolean(p.registradoEm);
 
-  const areaTexto = (campo, label, placeholder, linhas = 3) => (
+  const area = (campo, label, placeholder, linhas = 3) => (
     <Campo label={label}>
       <textarea
         rows={linhas}
@@ -1035,73 +660,56 @@ function Prontuario({
     </Campo>
   );
 
-  const vital = (campo, label, unidade, placeholder) => (
+  const texto = (campo, label, placeholder, extra = {}) => (
     <Campo label={label}>
-      <div className="relative">
-        <input
-          type="text"
-          inputMode="decimal"
-          disabled={!editavel}
-          value={p.vitais[campo] || ""}
-          onChange={(e) => onVital(campo, e.target.value)}
-          placeholder={editavel ? placeholder : "—"}
-          className={`${inputCls} pr-14`}
-        />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-          {unidade}
-        </span>
-      </div>
+      <input
+        type="text"
+        disabled={!editavel}
+        value={p[campo]}
+        onChange={(e) => onCampo(campo, extra.maiuscula ? e.target.value.toUpperCase() : e.target.value)}
+        placeholder={editavel ? placeholder : extra.vazio}
+        maxLength={extra.maxLength}
+        className={inputCls}
+      />
     </Campo>
   );
 
   return (
     <div className="space-y-6">
-      {/* Situação do prontuário */}
       {fechado ? (
-        <div className="flex items-start gap-3 rounded-xl border border-[#023E8A]/20 bg-[#EAF3F7] p-4 text-sm text-[#0B1756]">
-          <Lock size={18} className="mt-0.5 shrink-0 text-[#023E8A]" />
-          <p>
-            <strong>Prontuário fechado.</strong> Registrado por {p.registradoPor} em {p.registradoEm}.
-            Não é possível editar após a conclusão do atendimento.
-          </p>
-        </div>
+        <Info tipo="fechado" icone={Lock}>
+          <strong>Prontuário fechado.</strong> Registrado por {p.registradoPor} em {p.registradoEm}. Não é possível editar após a conclusão do atendimento.
+        </Info>
       ) : consulta.status === "Em atendimento" ? (
-        <div className="rounded-xl border border-[#3563A7]/30 bg-[#EAF3F7] p-4 text-sm text-[#0B1756]">
+        <Info>
           {consulta.triagem
             ? "Os campos já foram preenchidos com os dados da triagem. Revise, complemente ou corrija o que for necessário. "
             : "Preencha o prontuário durante o atendimento. "}
           Queixa principal, hipótese diagnóstica e conduta são obrigatórias para concluir.
-        </div>
+        </Info>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+        <Info tipo="neutro">
           {consulta.status === "Agendada"
             ? "Revise a triagem abaixo. A edição do prontuário é liberada quando o atendimento for iniciado."
             : "Esta consulta não possui prontuário preenchido."}
-        </div>
+        </Info>
       )}
 
-      {/* Triagem feita pelo enfermeiro */}
       {!fechado && <ResumoTriagem triagem={consulta.triagem} editavel={editavel} onRestaurar={onRestaurar} />}
 
-      {/* Atendimentos anteriores do mesmo paciente */}
       {anteriores.length > 0 && (
         <div>
-          <TituloBloco>Atendimentos anteriores deste paciente</TituloBloco>
+          <Titulo>Atendimentos anteriores deste paciente</Titulo>
           <div className="divide-y divide-slate-100 rounded-xl border border-slate-100">
             {anteriores.map((a) => (
               <div key={a.id} className="space-y-1 px-4 py-3 text-sm">
-                <p className="font-semibold text-[#0B1756]">
-                  {formatarData(a.data)} · {a.tipo}
-                </p>
+                <p className="font-semibold text-[#0B1756]">{formatarData(a.data)} · {a.tipo}</p>
                 <p className="text-slate-600">
-                  <span className="font-semibold">Diagnóstico:</span>{" "}
-                  {a.prontuario.hipotese || "Não informado"}
+                  <span className="font-semibold">Diagnóstico:</span> {a.prontuario.hipotese || "Não informado"}
                   {a.prontuario.cid ? ` (${a.prontuario.cid})` : ""}
                 </p>
                 {a.prontuario.conduta && (
-                  <p className="text-slate-600">
-                    <span className="font-semibold">Conduta:</span> {a.prontuario.conduta}
-                  </p>
+                  <p className="text-slate-600"><span className="font-semibold">Conduta:</span> {a.prontuario.conduta}</p>
                 )}
               </div>
             ))}
@@ -1109,134 +717,78 @@ function Prontuario({
         </div>
       )}
 
-      {/* Anamnese */}
       <div className="space-y-4">
-        <TituloBloco>Anamnese</TituloBloco>
-        {areaTexto("queixa", "Queixa principal *", "Motivo que levou o paciente à consulta...", 2)}
-        {areaTexto(
-          "historia",
-          "História da doença atual",
-          "Início, duração, evolução, fatores de piora e melhora...",
-          4
-        )}
+        <Titulo>Anamnese</Titulo>
+        {area("queixa", "Queixa principal *", "Motivo que levou o paciente à consulta...", 2)}
+        {area("historia", "História da doença atual", "Início, duração, evolução, fatores de piora e melhora...", 4)}
         <div className="grid gap-4 sm:grid-cols-2">
-          {areaTexto("alergias", "Alergias", "Ex.: dipirona, penicilina ou nenhuma conhecida", 2)}
-          {areaTexto("medicamentos", "Medicamentos em uso", "Nome, dose e frequência...", 2)}
+          {area("alergias", "Alergias", "Ex.: dipirona, penicilina ou nenhuma conhecida", 2)}
+          {area("medicamentos", "Medicamentos em uso", "Nome, dose e frequência...", 2)}
         </div>
       </div>
 
-      {/* Sinais vitais */}
       <div>
-        <TituloBloco>Sinais vitais</TituloBloco>
+        <Titulo>Sinais vitais</Titulo>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {vital("pa", "Pressão arterial", "mmHg", "120/80")}
-          {vital("fc", "Freq. cardíaca", "bpm", "72")}
-          {vital("temp", "Temperatura", "°C", "36,5")}
-          {vital("spo2", "Saturação", "%", "98")}
-          {vital("fr", "Freq. respiratória", "irpm", "16")}
-          {vital("glicemia", "Glicemia", "mg/dL", "95")}
-          {vital("peso", "Peso", "kg", "70")}
-          {vital("altura", "Altura", "cm", "170")}
+          {VITAIS.map(([campo, label, unidade, placeholder]) => (
+            <Campo key={campo} label={label}>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  disabled={!editavel}
+                  value={p.vitais[campo] || ""}
+                  onChange={(e) => onVital(campo, e.target.value)}
+                  placeholder={editavel ? placeholder : "—"}
+                  className={`${inputCls} pr-14`}
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{unidade}</span>
+              </div>
+            </Campo>
+          ))}
         </div>
-        {imc && (
-          <p className="mt-3 text-sm text-slate-600">
-            <span className="font-semibold text-[#0B1756]">IMC:</span> {imc} kg/m²
-          </p>
-        )}
+        {imc && <p className="mt-3 text-sm text-slate-600"><span className="font-semibold text-[#0B1756]">IMC:</span> {imc} kg/m²</p>}
       </div>
 
-      {/* Exame físico e diagnóstico */}
       <div className="space-y-4">
-        <TituloBloco>Exame físico e diagnóstico</TituloBloco>
-        {areaTexto("exameFisico", "Exame físico", "Achados do exame físico...", 3)}
+        <Titulo>Exame físico e diagnóstico</Titulo>
+        {area("exameFisico", "Exame físico", "Achados do exame físico...", 3)}
         <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-          <Campo label="Hipótese diagnóstica *">
-            <input
-              type="text"
-              disabled={!editavel}
-              value={p.hipotese}
-              onChange={(e) => onCampo("hipotese", e.target.value)}
-              placeholder={editavel ? "Diagnóstico ou suspeita clínica" : "Não informado"}
-              className={inputCls}
-            />
-          </Campo>
-          <Campo label="CID-10">
-            <input
-              type="text"
-              disabled={!editavel}
-              value={p.cid}
-              onChange={(e) => onCampo("cid", e.target.value.toUpperCase())}
-              placeholder={editavel ? "Ex.: J06.9" : "—"}
-              maxLength={8}
-              className={inputCls}
-            />
-          </Campo>
+          {texto("hipotese", "Hipótese diagnóstica *", "Diagnóstico ou suspeita clínica", { vazio: "Não informado" })}
+          {texto("cid", "CID-10", "Ex.: J06.9", { vazio: "—", maxLength: 8, maiuscula: true })}
         </div>
       </div>
 
-      {/* Conduta, exames e retorno */}
       <div className="space-y-4">
-        <TituloBloco>Conduta</TituloBloco>
-        {areaTexto(
-          "conduta",
-          "Conduta, prescrição e orientações *",
-          "Tratamento, medicações prescritas e orientações ao paciente...",
-          4
-        )}
-        {areaTexto("exames", "Exames solicitados", "Ex.: hemograma, raio-X de tórax...", 2)}
+        <Titulo>Conduta</Titulo>
+        {area("conduta", "Conduta, prescrição e orientações *", "Tratamento, medicações prescritas e orientações ao paciente...", 4)}
+        {area("exames", "Exames solicitados", "Ex.: hemograma, raio-X de tórax...", 2)}
         <Campo label="Retorno">
-          <Dropdown
-            rotulo="Retorno"
-            valor={p.retorno}
-            opcoes={opcoesRetorno}
-            onChange={(v) => onCampo("retorno", v)}
-            desabilitado={!editavel}
-          />
+          <Dropdown rotulo="Retorno" valor={p.retorno} opcoes={opcoesRetorno} onChange={(v) => onCampo("retorno", v)} desabilitado={!editavel} />
         </Campo>
 
-        {/* Retorno agendado automaticamente */}
         {retornoAgendado ? (
-          <div className="flex items-start gap-3 rounded-xl border border-[#023E8A]/20 bg-[#EAF3F7] p-4 text-sm text-[#0B1756]">
-            <CalendarDays size={18} className="mt-0.5 shrink-0 text-[#023E8A]" />
-            <p>
-              <strong>Retorno agendado:</strong> {formatarData(retornoAgendado.data)} às{" "}
-              {retornoAgendado.horario} · {retornoAgendado.motivo}
-            </p>
-          </div>
+          <Info tipo="fechado" icone={CalendarDays}>
+            <strong>Retorno agendado:</strong> {formatarData(retornoAgendado.data)} às {retornoAgendado.horario} · {retornoAgendado.motivo}
+          </Info>
         ) : editavel && p.retorno !== "Sem retorno" ? (
           previsaoRetorno ? (
-            <div className="flex items-start gap-3 rounded-xl border border-[#3563A7]/30 bg-[#EAF3F7] p-4 text-sm text-[#0B1756]">
-              <CalendarDays size={18} className="mt-0.5 shrink-0 text-[#3563A7]" />
-              <p>
-                Ao concluir o atendimento, o retorno será agendado automaticamente para{" "}
-                <strong>
-                  {formatarData(previsaoRetorno.data)} (
-                  {new Date(`${previsaoRetorno.data}T12:00:00`).toLocaleDateString("pt-BR", {
-                    weekday: "long",
-                  })}
-                  ) às {previsaoRetorno.horario}
-                </strong>
-                .
-              </p>
-            </div>
+            <Info icone={CalendarDays}>
+              Ao concluir o atendimento, o retorno será agendado automaticamente para{" "}
+              <strong>
+                {formatarData(previsaoRetorno.data)} ({meioDia(previsaoRetorno.data).toLocaleDateString("pt-BR", { weekday: "long" })}) às {previsaoRetorno.horario}
+              </strong>.
+            </Info>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-              Não encontramos vaga para este retorno. O atendimento poderá ser concluído, mas o
-              retorno precisará ser marcado manualmente.
-            </div>
+            <Info tipo="neutro">
+              Não encontramos vaga para este retorno. O atendimento poderá ser concluído, mas o retorno precisará ser marcado manualmente.
+            </Info>
           )
         ) : null}
       </div>
     </div>
   );
 }
-
-const minutos = (h) => {
-  const [hh, mm] = h.split(":").map(Number);
-  return hh * 60 + mm;
-};
-
-const diasSemana = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 /* =========================
    PÁGINA PRINCIPAL
@@ -1247,13 +799,9 @@ export default function MinhasConsultas() {
   const [aba, setAba] = useState("hoje");
   const [consultas, setConsultas] = useState(() => gerarConsultas(dataAtualISO()));
   const afastamentos = useMemo(() => gerarAfastamentos(HOJE), [HOJE]);
+  const [agora] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); });
 
-  const [agora] = useState(() => {
-    const d = new Date();
-    return d.getHours() * 60 + d.getMinutes();
-  });
-
-  const [mesCal, setMesCal] = useState(() => new Date(`${dataAtualISO()}T12:00:00`));
+  const [mesCal, setMesCal] = useState(() => meioDia(dataAtualISO()));
   const [diaSel, setDiaSel] = useState(HOJE);
 
   const [busca, setBusca] = useState("");
@@ -1280,12 +828,8 @@ export default function MinhasConsultas() {
 
   const hoje = ordenadas.filter((c) => c.data === HOJE && c.status !== "Cancelada");
   const restantes = hoje.filter((c) => ["Agendada", "Em atendimento"].includes(c.status));
-  const concluidasHoje = hoje.filter((c) => c.status === "Concluída");
   const limite7 = somarDias(HOJE, 7);
-  const proximos7 = ordenadas.filter(
-    (c) => c.data > HOJE && c.data <= limite7 && c.status === "Agendada"
-  );
-
+  const proximos7 = ordenadas.filter((c) => c.data > HOJE && c.data <= limite7 && c.status === "Agendada");
   const proxima =
     hoje.find((c) => c.status === "Em atendimento") ||
     restantes.find((c) => minutos(c.horario) >= agora) ||
@@ -1293,92 +837,62 @@ export default function MinhasConsultas() {
     null;
 
   const detalhe = consultas.find((c) => c.id === consultaId) || null;
-  const nomeUnidade = UNIDADES.find((u) => u.id === MEDICO.unidadeId)?.nome || "";
 
   /* Prontuários fechados de consultas anteriores do mesmo paciente (mais recentes primeiro) */
   const anteriores = useMemo(() => {
     if (!detalhe) return [];
     return ordenadas
-      .filter(
-        (c) =>
-          c.id !== detalhe.id &&
-          c.paciente === detalhe.paciente &&
-          c.status === "Concluída" &&
-          c.prontuario.registradoEm &&
-          (c.data + c.horario).localeCompare(detalhe.data + detalhe.horario) < 0
+      .filter((c) =>
+        c.id !== detalhe.id && c.paciente === detalhe.paciente && c.status === "Concluída" &&
+        c.prontuario.registradoEm && (c.data + c.horario).localeCompare(detalhe.data + detalhe.horario) < 0
       )
       .reverse();
   }, [ordenadas, detalhe]);
 
-  const situacaoAfast = (a) =>
-    HOJE < a.dataInicio ? "Agendado" : HOJE > a.previsaoRetorno ? "Concluído" : "Em andamento";
+  const estaAfastado = (iso) => afastamentos.some((a) => a.dataInicio <= iso && a.previsaoRetorno >= iso);
+  const situacaoAfast = (a) => (HOJE < a.dataInicio ? "Agendado" : HOJE > a.previsaoRetorno ? "Concluído" : "Em andamento");
 
   /* ---------- Retorno automático ---------- */
 
-  const estaAfastado = (iso) =>
-    afastamentos.some((a) => a.dataInicio <= iso && a.previsaoRetorno >= iso);
-
-  const diaDeAtendimento = (iso) =>
-    MEDICO.dias.includes(nomesSemana[new Date(`${iso}T12:00:00`).getDay()]);
-
-  /* A partir do prazo escolhido (ex.: 30 dias), acha o primeiro dia em que o
-     médico atende, não está afastado e tem horário livre. Prefere o mesmo
-     horário da consulta de origem. */
+  /* A partir do prazo escolhido, acha o primeiro dia em que o médico atende, não está
+     afastado e tem horário livre. Prefere o mesmo horário da consulta de origem. */
   function buscarVagaRetorno(retorno, horarioPreferido, lista) {
     const dias = DIAS_RETORNO[retorno];
     if (!dias) return null;
 
     let d = somarDias(HOJE, dias);
-    for (let i = 0; i < 365; i++) {
-      if (diaDeAtendimento(d) && !estaAfastado(d)) {
-        const ocupados = lista
-          .filter((c) => c.data === d && c.status !== "Cancelada")
-          .map((c) => c.horario);
-        const livres = HORARIOS.filter((h) => !ocupados.includes(h));
-        if (livres.length) {
-          return {
-            data: d,
-            horario: livres.includes(horarioPreferido) ? horarioPreferido : livres[0],
-          };
-        }
-      }
-      d = somarDias(d, 1);
+    for (let i = 0; i < 365; i++, d = somarDias(d, 1)) {
+      if (!MEDICO.dias.includes(nomesSemana[meioDia(d).getDay()]) || estaAfastado(d)) continue;
+      const ocupados = lista.filter((c) => c.data === d && c.status !== "Cancelada").map((c) => c.horario);
+      const livres = HORARIOS.filter((h) => !ocupados.includes(h));
+      if (livres.length) return { data: d, horario: livres.includes(horarioPreferido) ? horarioPreferido : livres[0] };
     }
     return null;
   }
 
-  /* Previsão exibida no prontuário enquanto o médico escolhe o retorno */
   const previsaoRetorno =
-    detalhe && !detalhe.prontuario.registradoEm
-      ? buscarVagaRetorno(detalhe.prontuario.retorno, detalhe.horario, consultas)
-      : null;
-
-  const retornoAgendado = detalhe?.retornoId
-    ? consultas.find((c) => c.id === detalhe.retornoId && c.status !== "Cancelada") || null
-    : null;
+    detalhe && !detalhe.prontuario.registradoEm ? buscarVagaRetorno(detalhe.prontuario.retorno, detalhe.horario, consultas) : null;
+  const retornoAgendado = detalhe?.retornoId ? consultas.find((c) => c.id === detalhe.retornoId && c.status !== "Cancelada") || null : null;
 
   /* ---------- Agenda ---------- */
 
   const diasCalendario = useMemo(() => {
     const ano = mesCal.getFullYear();
     const mes = mesCal.getMonth();
-    const desloc = (new Date(ano, mes, 1).getDay() + 6) % 7;
+    const vazios = (new Date(ano, mes, 1).getDay() + 6) % 7;
     const qtdDias = new Date(ano, mes + 1, 0).getDate();
-    const itens = [];
 
-    for (let i = 0; i < desloc; i++) itens.push({ chave: `vazio-${i}`, vazio: true });
-
-    for (let dia = 1; dia <= qtdDias; dia++) {
-      const data = paraIso(ano, mes, dia);
-      itens.push({
-        chave: data,
-        data,
-        dia,
-        qtd: consultas.filter((c) => c.data === data && c.status !== "Cancelada").length,
-        afastado: afastamentos.some((a) => a.dataInicio <= data && a.previsaoRetorno >= data),
-      });
-    }
-    return itens;
+    return [
+      ...Array.from({ length: vazios }, (_, i) => ({ chave: `vazio-${i}`, vazio: true })),
+      ...Array.from({ length: qtdDias }, (_, i) => {
+        const data = paraIso(ano, mes, i + 1);
+        return {
+          chave: data, data, dia: i + 1,
+          qtd: consultas.filter((c) => c.data === data && c.status !== "Cancelada").length,
+          afastado: afastamentos.some((a) => a.dataInicio <= data && a.previsaoRetorno >= data),
+        };
+      }),
+    ];
   }, [mesCal, consultas, afastamentos]);
 
   const consultasDoDia = ordenadas.filter((c) => c.data === diaSel && c.status !== "Cancelada");
@@ -1393,31 +907,22 @@ export default function MinhasConsultas() {
         (filtroStatus === "Todas" || c.status === filtroStatus) &&
         (!filtroData || c.data === filtroData)
     );
-    const futuras = filtradas.filter((c) => c.data >= HOJE);
-    const passadas = filtradas.filter((c) => c.data < HOJE).reverse();
-    return [...futuras, ...passadas];
+    return [...filtradas.filter((c) => c.data >= HOJE), ...filtradas.filter((c) => c.data < HOJE).reverse()];
   }, [ordenadas, busca, filtroStatus, filtroData, HOJE]);
 
   const totalPaginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
   const paginaAtual = Math.min(pagina, totalPaginas);
   const visiveis = lista.slice((paginaAtual - 1) * POR_PAGINA, paginaAtual * POR_PAGINA);
 
-  useEffect(() => {
-    setPagina(1);
-  }, [busca, filtroStatus, filtroData]);
+  useEffect(() => setPagina(1), [busca, filtroStatus, filtroData]);
 
   useEffect(() => {
     document.body.style.overflow = detalhe ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [detalhe]);
 
-  /* Esc fecha a consulta aberta */
   useEffect(() => {
-    const aoTeclar = (e) => {
-      if (e.key === "Escape") setConsultaId(null);
-    };
+    const aoTeclar = (e) => e.key === "Escape" && setConsultaId(null);
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
   }, []);
@@ -1429,75 +934,38 @@ export default function MinhasConsultas() {
 
   /* ---------- Ações do médico ---------- */
 
+  const atualizar = (id, fn) => setConsultas((atuais) => atuais.map((c) => (c.id === id ? fn(c) : c)));
+
   function mudarStatus(id, status, mensagem) {
-    setConsultas((atuais) =>
-      atuais.map((c) =>
-        c.id === id ? { ...c, status, historico: [...c.historico, status] } : c
-      )
-    );
+    atualizar(id, (c) => ({ ...c, status, historico: [...c.historico, status] }));
     mostrarAviso(mensagem);
   }
 
-  function atualizarNotas(id, notas) {
-    setConsultas((atuais) => atuais.map((c) => (c.id === id ? { ...c, notas } : c)));
-  }
+  const atualizarProntuario = (id, campo, valor) =>
+    atualizar(id, (c) => ({ ...c, prontuario: { ...c.prontuario, [campo]: valor } }));
 
-  function atualizarProntuario(id, campo, valor) {
-    setConsultas((atuais) =>
-      atuais.map((c) =>
-        c.id === id ? { ...c, prontuario: { ...c.prontuario, [campo]: valor } } : c
-      )
-    );
-  }
+  const atualizarVital = (id, campo, valor) =>
+    atualizar(id, (c) => ({ ...c, prontuario: { ...c.prontuario, vitais: { ...c.prontuario.vitais, [campo]: valor } } }));
 
-  function atualizarVital(id, campo, valor) {
-    setConsultas((atuais) =>
-      atuais.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              prontuario: {
-                ...c.prontuario,
-                vitais: { ...c.prontuario.vitais, [campo]: valor },
-              },
-            }
-          : c
-      )
-    );
-  }
-
-  /* Volta a anamnese e os sinais vitais ao que o enfermeiro registrou
+  /* Volta anamnese e sinais vitais ao que o enfermeiro registrou
      (não mexe em exame físico, diagnóstico, conduta, peso e altura) */
   function restaurarDaTriagem(id) {
-    setConsultas((atuais) =>
-      atuais.map((c) => {
-        if (c.id !== id || !c.triagem) return c;
-        const t = prontuarioVazio(c.motivo, c.triagem);
-        return {
-          ...c,
-          prontuario: {
-            ...c.prontuario,
-            queixa: t.queixa,
-            historia: t.historia,
-            alergias: t.alergias,
-            medicamentos: t.medicamentos,
-            vitais: {
-              ...c.prontuario.vitais,
-              pa: t.vitais.pa,
-              fc: t.vitais.fc,
-              temp: t.vitais.temp,
-              spo2: t.vitais.spo2,
-              fr: t.vitais.fr,
-              glicemia: t.vitais.glicemia,
-            },
-          },
-        };
-      })
-    );
+    atualizar(id, (c) => {
+      if (!c.triagem) return c;
+      const { queixa, historia, alergias, medicamentos, vitais: v } = prontuarioVazio(c.motivo, c.triagem);
+      const { pa, fc, temp, spo2, fr, glicemia } = v;
+      return {
+        ...c,
+        prontuario: {
+          ...c.prontuario, queixa, historia, alergias, medicamentos,
+          vitais: { ...c.prontuario.vitais, pa, fc, temp, spo2, fr, glicemia },
+        },
+      };
+    });
     mostrarAviso("Dados da triagem restaurados no prontuário.");
   }
 
-  /* Só conclui se o prontuário tiver os campos obrigatórios; depois, fecha o prontuário */
+  /* Só conclui com os campos obrigatórios; depois, fecha o prontuário */
   function concluirAtendimento(c) {
     const p = c.prontuario;
     const faltando = [
@@ -1512,76 +980,48 @@ export default function MinhasConsultas() {
       return;
     }
 
-    const carimbo = new Date().toLocaleString("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    });
-
-    /* Se o médico escolheu um retorno, a consulta é agendada automaticamente */
+    const carimbo = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
     const vaga = buscarVagaRetorno(p.retorno, c.horario, consultas);
     const novoId = Math.max(0, ...consultas.map((x) => x.id)) + 1;
     const motivoRetorno = p.exames.trim() ? "Retorno com resultado de exames" : "Retorno";
 
     setConsultas((atuais) => {
       const atualizadas = atuais.map((x) =>
-        x.id === c.id
-          ? {
-              ...x,
-              status: "Concluída",
-              retornoId: vaga ? novoId : null,
-              historico: [
-                ...x.historico,
-                "Concluída",
-                ...(vaga
-                  ? [`Retorno agendado para ${formatarData(vaga.data)} às ${vaga.horario}`]
-                  : []),
-              ],
-              prontuario: { ...x.prontuario, registradoEm: carimbo, registradoPor: MEDICO.nome },
-            }
-          : x
+        x.id !== c.id ? x : {
+          ...x,
+          status: "Concluída",
+          retornoId: vaga ? novoId : null,
+          historico: [
+            ...x.historico, "Concluída",
+            ...(vaga ? [`Retorno agendado para ${formatarData(vaga.data)} às ${vaga.horario}`] : []),
+          ],
+          prontuario: { ...x.prontuario, registradoEm: carimbo, registradoPor: MEDICO.nome },
+        }
       );
 
-      if (!vaga) return atualizadas;
-
-      return [
+      return !vaga ? atualizadas : [
         ...atualizadas,
         {
-          id: novoId,
-          paciente: c.paciente,
-          idade: c.idade,
-          telefone: c.telefone,
-          motivo: motivoRetorno,
-          tipo: "Retorno",
-          unidadeId: c.unidadeId,
-          data: vaga.data,
-          horario: vaga.horario,
-          status: "Agendada",
-          notas: "",
-          triagem: null,
-          origemId: c.id,
-          retornoId: null,
+          id: novoId, paciente: c.paciente, idade: c.idade, telefone: c.telefone,
+          motivo: motivoRetorno, tipo: "Retorno", unidadeId: c.unidadeId,
+          data: vaga.data, horario: vaga.horario, status: "Agendada", notas: "",
+          triagem: null, origemId: c.id, retornoId: null,
           prontuario: prontuarioVazio(motivoRetorno),
           historico: ["Consulta agendada automaticamente pelo retorno do prontuário"],
         },
       ];
     });
 
-    if (vaga) {
-      mostrarAviso(
-        `Atendimento concluído. Retorno agendado para ${formatarData(vaga.data)} às ${vaga.horario}.`
-      );
-    } else if (p.retorno !== "Sem retorno") {
-      mostrarAviso("Atendimento concluído, mas não há vaga para o retorno. Marque manualmente.");
-    } else {
-      mostrarAviso("Atendimento concluído e prontuário registrado.");
-    }
+    mostrarAviso(
+      vaga
+        ? `Atendimento concluído. Retorno agendado para ${formatarData(vaga.data)} às ${vaga.horario}.`
+        : p.retorno !== "Sem retorno"
+          ? "Atendimento concluído, mas não há vaga para o retorno. Marque manualmente."
+          : "Atendimento concluído e prontuário registrado."
+    );
   }
 
-  /* `abaInicial` define em qual aba do modal a consulta abre */
-  const abrir = (id, abaInicial = "consulta") => {
-    setAbaModal(abaInicial);
-    setConsultaId(id);
-  };
+  const abrir = (id, abaInicial = "consulta") => { setAbaModal(abaInicial); setConsultaId(id); };
 
   const abas = [
     { id: "hoje", titulo: "Hoje", sub: "Atendimentos do dia" },
@@ -1589,21 +1029,16 @@ export default function MinhasConsultas() {
     { id: "consultas", titulo: "Todas as consultas", sub: "Busca e histórico" },
   ];
 
-  const botaoPrimario =
-    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0B1756] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30 disabled:cursor-not-allowed disabled:opacity-40";
-  const botaoSecundario =
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#0B1756]/30 bg-white px-5 py-3 text-sm font-semibold text-[#0B1756] transition hover:bg-[#EAF3F7] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/15 disabled:cursor-not-allowed disabled:opacity-40";
+  const dataExtenso = meioDia(HOJE).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 
-  const dataExtenso = new Date(`${HOJE}T12:00:00`).toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
-  const abasModal = [
-    { id: "consulta", titulo: "Consulta" },
-    { id: "prontuario", titulo: "Prontuário" },
+  const kpis = [
+    ["Consultas hoje", hoje.length],
+    ["Ainda por atender", restantes.length],
+    ["Concluídas hoje", hoje.filter((c) => c.status === "Concluída").length],
+    ["Próximos 7 dias", proximos7.length],
   ];
+
+  const temFiltro = busca || filtroStatus !== "Todas" || filtroData;
 
   return (
     <div className="min-h-screen bg-[#EEF5F9] font-sans text-[#0B1756]">
@@ -1612,7 +1047,6 @@ export default function MinhasConsultas() {
 
       <main className="relative z-10 mx-auto max-w-[1400px] space-y-7 px-4 py-7 sm:px-6 lg:px-8">
         {/* CABEÇALHO E NAVEGAÇÃO */}
-
         <section className="relative pb-0">
           <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-20 pt-7 shadow-sm sm:px-10 sm:pt-9 sm:pb-22">
             <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
@@ -1620,44 +1054,34 @@ export default function MinhasConsultas() {
 
             <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
               <div className="max-w-3xl">
-                <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">
-                  Minhas consultas
-                </h1>
+                <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">Minhas consultas</h1>
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base lg:text-lg">
-                  Acompanhe seus atendimentos, registre o prontuário de cada consulta e
-                  consulte sua agenda.
+                  Acompanhe seus atendimentos, registre o prontuário de cada consulta e consulte sua agenda.
                 </p>
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-white/80">
                   <Hospital size={16} className="shrink-0" />
-                  {MEDICO.nome} · {MEDICO.especialidade} · {nomeUnidade}
+                  {MEDICO.nome} · {MEDICO.especialidade} · {MEDICO.unidade}
                 </p>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setAba("agenda")}
-                  className="rounded-2xl bg-white px-5 py-3.5 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7]"
-                >
-                  Ver agenda do mês
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setAba("agenda")}
+                className="shrink-0 rounded-2xl bg-white px-5 py-3.5 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7]"
+              >
+                Ver agenda do mês
+              </button>
             </div>
           </div>
 
-          <nav
-            className="relative z-20 -mt-[72px] grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6"
-            aria-label="Seções das consultas"
-          >
+          <nav className="relative z-20 -mt-[72px] grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6" aria-label="Seções das consultas">
             {abas.map((a) => (
               <button
                 key={a.id}
                 type="button"
                 onClick={() => setAba(a.id)}
                 className={`flex min-h-[90px] flex-col justify-center rounded-[24px] border bg-white px-5 py-3 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md ${
-                  aba === a.id
-                    ? "border-[#3563A7] ring-1 ring-[#3563A7]/20"
-                    : "border-[#EAF3F7] hover:border-[#3563A7]/40"
+                  aba === a.id ? "border-[#3563A7] ring-1 ring-[#3563A7]/20" : "border-[#EAF3F7] hover:border-[#3563A7]/40"
                 }`}
               >
                 <span className="text-base font-bold text-[#0B1756]">{a.titulo}</span>
@@ -1668,7 +1092,6 @@ export default function MinhasConsultas() {
         </section>
 
         {/* HOJE */}
-
         {aba === "hoje" && (
           <div className="space-y-6">
             <div>
@@ -1678,20 +1101,13 @@ export default function MinhasConsultas() {
 
             <section className="overflow-hidden rounded-2xl border border-[#1D4C91] bg-gradient-to-r from-[#023E8A] via-[#3563A7] to-[#0B1756] p-5 text-white shadow-lg sm:p-6">
               <div className="grid grid-cols-2 gap-y-5 lg:grid-cols-4 lg:gap-y-0">
-                {[
-                  { titulo: "Consultas hoje", valor: hoje.length },
-                  { titulo: "Ainda por atender", valor: restantes.length },
-                  { titulo: "Concluídas hoje", valor: concluidasHoje.length },
-                  { titulo: "Próximos 7 dias", valor: proximos7.length },
-                ].map((k, i) => (
+                {kpis.map(([titulo, valor], i) => (
                   <div
-                    key={k.titulo}
-                    className={`px-3 sm:px-5 ${i % 2 === 1 ? "border-l border-white/20" : ""} ${
-                      i >= 2 ? "border-t border-white/20 pt-5 lg:border-t-0 lg:pt-0" : ""
-                    } ${i === 2 ? "lg:border-l" : ""}`}
+                    key={titulo}
+                    className={`px-3 sm:px-5 ${i % 2 === 1 ? "border-l border-white/20" : ""} ${i >= 2 ? "border-t border-white/20 pt-5 lg:border-t-0 lg:pt-0" : ""} ${i === 2 ? "lg:border-l" : ""}`}
                   >
-                    <p className="text-4xl font-bold tracking-tight text-white sm:text-5xl">{k.valor}</p>
-                    <p className="mt-2 text-base font-semibold leading-5 text-white sm:text-lg">{k.titulo}</p>
+                    <p className="text-4xl font-bold tracking-tight text-white sm:text-5xl">{valor}</p>
+                    <p className="mt-2 text-base font-semibold leading-5 text-white sm:text-lg">{titulo}</p>
                   </div>
                 ))}
               </div>
@@ -1707,15 +1123,10 @@ export default function MinhasConsultas() {
                 >
                   {hoje.length ? (
                     <div className="divide-y divide-slate-100 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-                      {hoje.map((c) => (
-                        <LinhaConsulta key={c.id} c={c} onAbrir={abrir} />
-                      ))}
+                      {hoje.map((c) => <LinhaConsulta key={c.id} c={c} onAbrir={abrir} />)}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
-                      <p className="text-sm font-medium text-slate-600">Nenhuma consulta para hoje</p>
-                      <p className="mt-1 text-xs text-slate-400">Confira os próximos dias na agenda.</p>
-                    </div>
+                    <Vazio titulo="Nenhuma consulta para hoje" sub="Confira os próximos dias na agenda." />
                   )}
                 </CardSecao>
               </div>
@@ -1725,43 +1136,26 @@ export default function MinhasConsultas() {
                   {proxima ? (
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
-                        <span className="rounded-lg bg-[#EAF3F7] px-3 py-2 text-sm font-bold text-[#0B1756]">
-                          {proxima.horario}
-                        </span>
+                        <span className="rounded-lg bg-[#EAF3F7] px-3 py-2 text-sm font-bold text-[#0B1756]">{proxima.horario}</span>
                         <div className="min-w-0">
                           <p className="text-lg font-bold text-[#0B1756]">{proxima.paciente}</p>
                           <p className="mt-1 text-sm text-slate-500">{proxima.motivo}</p>
                           <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <Badge tipo={corStatus(proxima.status)}>{proxima.status}</Badge>
+                            <Badge tipo={corStatus[proxima.status]}>{proxima.status}</Badge>
                             <Badge>{proxima.tipo}</Badge>
-                            {proxima.triagem && (
-                              <RiskBadge classificacao={proxima.triagem.classificacao} />
-                            )}
+                            {proxima.triagem && <RiskBadge classificacao={proxima.triagem.classificacao} />}
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-2 sm:flex-row">
                         {proxima.status === "Agendada" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              mudarStatus(proxima.id, "Em atendimento", "Atendimento iniciado.")
-                            }
-                            className={botaoPrimario}
-                          >
-                            <Play size={16} />
-                            Iniciar atendimento
+                          <button type="button" onClick={() => mudarStatus(proxima.id, "Em atendimento", "Atendimento iniciado.")} className={botaoPrimario}>
+                            <Play size={16} />Iniciar atendimento
                           </button>
                         )}
-                        {/* Abre direto na aba Prontuário */}
-                        <button
-                          type="button"
-                          onClick={() => abrir(proxima.id, "prontuario")}
-                          className={botaoSecundario}
-                        >
-                          <FileText size={16} />
-                          Abrir prontuário
+                        <button type="button" onClick={() => abrir(proxima.id, "prontuario")} className={botaoSecundario}>
+                          <FileText size={16} />Abrir prontuário
                         </button>
                       </div>
                     </div>
@@ -1773,14 +1167,7 @@ export default function MinhasConsultas() {
                 <CardSecao titulo="Seus dias de atendimento">
                   <div className="flex flex-wrap gap-2">
                     {diasSemana.map((d) => (
-                      <span
-                        key={d}
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          MEDICO.dias.includes(d)
-                            ? "bg-[#023E8A] text-white"
-                            : "bg-[#EAF3F7] text-slate-400"
-                        }`}
-                      >
+                      <span key={d} className={`rounded-full px-3 py-1 text-xs font-semibold ${MEDICO.dias.includes(d) ? "bg-[#023E8A] text-white" : "bg-[#EAF3F7] text-slate-400"}`}>
                         {d}
                       </span>
                     ))}
@@ -1795,13 +1182,9 @@ export default function MinhasConsultas() {
                           <CalendarOff size={18} className="mt-0.5 shrink-0 text-[#3563A7]" />
                           <div className="min-w-0 flex-1">
                             <p className="text-base font-semibold text-[#0B1756]">{a.motivo}</p>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {formatarData(a.dataInicio)} a {formatarData(a.previsaoRetorno)}
-                            </p>
+                            <p className="mt-1 text-sm text-slate-500">{formatarData(a.dataInicio)} a {formatarData(a.previsaoRetorno)}</p>
                           </div>
-                          <Badge tipo={situacaoAfast(a) === "Em andamento" ? "vermelho" : "azul"}>
-                            {situacaoAfast(a)}
-                          </Badge>
+                          <Badge tipo={situacaoAfast(a) === "Em andamento" ? "vermelho" : "azul"}>{situacaoAfast(a)}</Badge>
                         </div>
                       ))}
                     </div>
@@ -1815,54 +1198,36 @@ export default function MinhasConsultas() {
         )}
 
         {/* AGENDA */}
-
         {aba === "agenda" && (
           <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-            <CardSecao
-              titulo="Calendário de consultas"
-              subtitulo="Selecione um dia para ver as consultas programadas."
-            >
+            <CardSecao titulo="Calendário de consultas" subtitulo="Selecione um dia para ver as consultas programadas.">
               <div className="mb-5 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  aria-label="Mês anterior"
-                  onClick={() => setMesCal((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
-                  className="rounded-xl border border-[#0B1756]/25 p-2 text-[#0B1756] transition hover:bg-[#0B1756]/10"
-                >
+                <button type="button" aria-label="Mês anterior" onClick={() => setMesCal((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className={botaoMes}>
                   <ChevronLeft size={18} />
                 </button>
-
                 <h3 className="text-base font-bold capitalize text-[#0B1756]">
                   {mesCal.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
                 </h3>
-
-                <button
-                  type="button"
-                  aria-label="Próximo mês"
-                  onClick={() => setMesCal((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
-                  className="rounded-xl border border-[#0B1756]/25 p-2 text-[#0B1756] transition hover:bg-[#0B1756]/10"
-                >
+                <button type="button" aria-label="Próximo mês" onClick={() => setMesCal((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))} className={botaoMes}>
                   <ChevronRight size={18} />
                 </button>
               </div>
 
               <div className="grid grid-cols-7 gap-1.5">
-                {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((d) => (
-                  <div key={d} className="py-2 text-center text-xs font-semibold text-[#0B1756]">
-                    {d}
-                  </div>
+                {[...diasSemana, "Dom"].map((d) => (
+                  <div key={d} className="py-2 text-center text-xs font-semibold text-[#0B1756]">{d}</div>
                 ))}
 
-                {diasCalendario.map((d) =>
-                  d.vazio ? (
-                    <div key={d.chave} />
-                  ) : (
+                {diasCalendario.map((d) => {
+                  if (d.vazio) return <div key={d.chave} />;
+                  const sel = diaSel === d.data;
+                  return (
                     <button
                       key={d.chave}
                       type="button"
                       onClick={() => setDiaSel(d.data)}
                       className={`flex min-h-[66px] flex-col items-center rounded-xl border p-2 transition sm:min-h-[78px] ${
-                        diaSel === d.data
+                        sel
                           ? "border-[#0B1756] bg-[#0B1756] text-white shadow-sm ring-1 ring-[#0B1756]/20"
                           : d.data === HOJE
                             ? "border-2 border-[#0B1756] bg-[#EAF3F7] hover:bg-[#0B1756]/5"
@@ -1871,79 +1236,41 @@ export default function MinhasConsultas() {
                               : "border-slate-200 bg-white hover:border-[#0B1756] hover:bg-[#0B1756]/5"
                       }`}
                     >
-                      <span
-                        className={`text-sm ${
-                          diaSel === d.data ? "font-bold text-white" : "text-slate-700"
-                        }`}
-                      >
-                        {d.dia}
-                      </span>
-
+                      <span className={`text-sm ${sel ? "font-bold text-white" : "text-slate-700"}`}>{d.dia}</span>
                       {d.qtd > 0 && (
-                        <span
-                          className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                            diaSel === d.data ? "bg-white text-[#0B1756]" : "bg-[#0B1756] text-white"
-                          }`}
-                        >
-                          {d.qtd}
-                        </span>
+                        <span className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${sel ? "bg-white text-[#0B1756]" : "bg-[#0B1756] text-white"}`}>{d.qtd}</span>
                       )}
-
-                      {d.afastado && (
-                        <span
-                          className={`mt-1 hidden text-[9px] sm:block ${
-                            diaSel === d.data ? "text-white/80" : "text-slate-400"
-                          }`}
-                        >
-                          afastado
-                        </span>
-                      )}
+                      {d.afastado && <span className={`mt-1 hidden text-[9px] sm:block ${sel ? "text-white/80" : "text-slate-400"}`}>afastado</span>}
                     </button>
-                  )
-                )}
+                  );
+                })}
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#0B1756]" />
-                  Quantidade de consultas no dia
-                </span>
+                <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[#0B1756]" />Quantidade de consultas no dia</span>
                 <span>Dias de afastamento aparecem em cinza.</span>
               </div>
             </CardSecao>
 
-            <CardSecao
-              titulo="Consultas do dia"
-              subtitulo={formatarData(diaSel)}
-              acao={<Badge tipo="azul">{consultasDoDia.length} consulta(s)</Badge>}
-            >
+            <CardSecao titulo="Consultas do dia" subtitulo={formatarData(diaSel)} acao={<Badge tipo="azul">{consultasDoDia.length} consulta(s)</Badge>}>
               {consultasDoDia.length ? (
                 <div className="divide-y divide-slate-100">
-                  {consultasDoDia.map((c) => (
-                    <LinhaConsulta key={c.id} c={c} compacto onAbrir={abrir} />
-                  ))}
+                  {consultasDoDia.map((c) => <LinhaConsulta key={c.id} c={c} compacto onAbrir={abrir} />)}
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center">
-                  <p className="text-sm font-medium text-slate-600">Nenhuma consulta nesta data</p>
-                  <p className="mt-1 text-xs text-slate-400">Selecione outro dia no calendário.</p>
-                </div>
+                <Vazio titulo="Nenhuma consulta nesta data" sub="Selecione outro dia no calendário." />
               )}
             </CardSecao>
           </div>
         )}
 
         {/* TODAS AS CONSULTAS */}
-
         {aba === "consultas" && (
           <section className="space-y-5">
             <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[1fr_240px_200px]">
                 <div className="relative">
-                  <Search
-                    size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#0B1756]"
-                  />
+                  <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#0B1756]" />
                   <input
                     type="search"
                     value={busca}
@@ -1957,30 +1284,17 @@ export default function MinhasConsultas() {
                 <Dropdown
                   rotulo="Filtrar por situação"
                   valor={filtroStatus}
-                  opcoes={[
-                    { valor: "Todas", texto: "Todas as situações" },
-                    ...statusLista.map((s) => ({ valor: s, texto: s })),
-                  ]}
+                  opcoes={[{ valor: "Todas", texto: "Todas as situações" }, ...statusLista]}
                   onChange={setFiltroStatus}
                 />
 
-                <DatePicker
-                  rotulo="Filtrar por data"
-                  valor={filtroData}
-                  onChange={setFiltroData}
-                  placeholder="Filtrar por data"
-                  limpavel
-                />
+                <DatePicker rotulo="Filtrar por data" valor={filtroData} onChange={setFiltroData} placeholder="Filtrar por data" limpavel />
               </div>
 
-              {(busca || filtroStatus !== "Todas" || filtroData) && (
+              {temFiltro && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setBusca("");
-                    setFiltroStatus("Todas");
-                    setFiltroData("");
-                  }}
+                  onClick={() => { setBusca(""); setFiltroStatus("Todas"); setFiltroData(""); }}
                   className="mt-4 text-sm font-semibold text-[#023E8A] hover:underline"
                 >
                   Limpar filtros
@@ -1995,20 +1309,10 @@ export default function MinhasConsultas() {
               </div>
             ) : (
               <div ref={listaRef} className="scroll-mt-6 space-y-4">
-                <div className="rounded-2xl border border-slate-100 bg-white px-5 shadow-sm">
-                  <div className="divide-y divide-slate-100">
-                    {visiveis.map((c) => (
-                      <LinhaConsulta key={c.id} c={c} mostrarData onAbrir={abrir} />
-                    ))}
-                  </div>
+                <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-white px-5 shadow-sm">
+                  {visiveis.map((c) => <LinhaConsulta key={c.id} c={c} mostrarData onAbrir={abrir} />)}
                 </div>
-
-                <Paginacao
-                  pagina={paginaAtual}
-                  totalPaginas={totalPaginas}
-                  totalItens={lista.length}
-                  onChange={mudarPagina}
-                />
+                <Paginacao pagina={paginaAtual} totalPaginas={totalPaginas} totalItens={lista.length} onChange={mudarPagina} />
               </div>
             )}
           </section>
@@ -2016,180 +1320,131 @@ export default function MinhasConsultas() {
       </main>
 
       {/* MODAL: DETALHES DA CONSULTA + PRONTUÁRIO */}
-
-      {detalhe && (
-        <Portal>
+      {detalhe && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/40 p-4 backdrop-blur-sm" onClick={() => setConsultaId(null)}>
           <div
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1756]/40 p-4 backdrop-blur-sm"
-            onClick={() => setConsultaId(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-consulta"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
           >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="titulo-consulta"
-              onClick={(e) => e.stopPropagation()}
-              className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
-            >
-              <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-                <div>
-                  <h3 id="titulo-consulta" className="text-2xl font-bold text-[#0B1756]">
-                    {detalhe.paciente}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {detalhe.idade} anos · {detalhe.tipo} · {formatarData(detalhe.data)} às{" "}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 id="titulo-consulta" className="text-2xl font-bold text-[#0B1756]">{detalhe.paciente}</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {detalhe.idade} anos · {detalhe.tipo} · {formatarData(detalhe.data)} às {detalhe.horario}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge tipo={corStatus[detalhe.status]}>{detalhe.status}</Badge>
+                <button type="button" aria-label="Fechar" onClick={() => setConsultaId(null)} className="rounded-lg p-2 text-slate-500 transition hover:bg-[#EAF3F7] hover:text-[#0B1756]">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div role="tablist" aria-label="Seções da consulta" className="flex gap-2">
+              {[["consulta", "Consulta"], ["prontuario", "Prontuário"]].map(([id, titulo]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={abaModal === id}
+                  onClick={() => setAbaModal(id)}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                    abaModal === id ? "bg-[#0B1756] text-white" : "bg-[#EAF3F7] text-[#0B1756] hover:bg-[#DCE8F8]"
+                  }`}
+                >
+                  {id === "prontuario" && <FileText size={16} />}
+                  {titulo}
+                </button>
+              ))}
+            </div>
+
+            {abaModal === "consulta" ? (
+              <>
+                <div className="space-y-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                  <p className="flex items-center gap-2">
+                    <CalendarDays size={16} className="shrink-0 text-[#3563A7]" />
+                    {formatarData(detalhe.data)}
+                    <Clock size={16} className="ml-2 shrink-0 text-[#3563A7]" />
                     {detalhe.horario}
                   </p>
+                  <p className="flex items-start gap-2"><Hospital size={16} className="mt-0.5 shrink-0 text-[#3563A7]" />{MEDICO.unidade}</p>
+                  <p className="flex items-center gap-2"><Phone size={16} className="shrink-0 text-[#3563A7]" />{detalhe.telefone || "Não informado"}</p>
+                  <p><strong>Motivo:</strong> {detalhe.motivo}</p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge tipo={corStatus(detalhe.status)}>{detalhe.status}</Badge>
-                  <button
-                    type="button"
-                    aria-label="Fechar"
-                    onClick={() => setConsultaId(null)}
-                    className="rounded-lg p-2 text-slate-500 transition hover:bg-[#EAF3F7] hover:text-[#0B1756]"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
+                <Campo label="Anotações rápidas">
+                  <textarea
+                    rows={3}
+                    value={detalhe.notas}
+                    onChange={(e) => atualizar(detalhe.id, (c) => ({ ...c, notas: e.target.value }))}
+                    placeholder="Lembretes e observações (o registro clínico oficial fica no prontuário)..."
+                    className={inputCls}
+                  />
+                </Campo>
 
-              {/* Abas do modal */}
-              <div role="tablist" aria-label="Seções da consulta" className="flex gap-2">
-                {abasModal.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={abaModal === a.id}
-                    onClick={() => setAbaModal(a.id)}
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                      abaModal === a.id
-                        ? "bg-[#0B1756] text-white"
-                        : "bg-[#EAF3F7] text-[#0B1756] hover:bg-[#DCE8F8]"
-                    }`}
-                  >
-                    {a.id === "prontuario" && <FileText size={16} />}
-                    {a.titulo}
-                  </button>
-                ))}
-              </div>
-
-              {abaModal === "consulta" && (
-                <>
-                  <div className="space-y-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                    <p className="flex items-center gap-2">
-                      <CalendarDays size={16} className="shrink-0 text-[#3563A7]" />
-                      {formatarData(detalhe.data)}
-                      <Clock size={16} className="ml-2 shrink-0 text-[#3563A7]" />
-                      {detalhe.horario}
-                    </p>
-                    <p className="flex items-start gap-2">
-                      <Hospital size={16} className="mt-0.5 shrink-0 text-[#3563A7]" />
-                      {nomeUnidade}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Phone size={16} className="shrink-0 text-[#3563A7]" />
-                      {detalhe.telefone || "Não informado"}
-                    </p>
-                    <p>
-                      <strong>Motivo:</strong> {detalhe.motivo}
-                    </p>
-                  </div>
-
-                  <Campo label="Anotações rápidas">
-                    <textarea
-                      rows={3}
-                      value={detalhe.notas}
-                      onChange={(e) => atualizarNotas(detalhe.id, e.target.value)}
-                      placeholder="Lembretes e observações (o registro clínico oficial fica no prontuário)..."
-                      className={inputCls}
-                    />
-                  </Campo>
-
-                  <div className="border-t border-slate-100 pt-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Histórico
-                    </p>
-                    <ol className="space-y-2 border-l-2 border-[#DCE8F8] pl-4 text-xs text-slate-500">
-                      {detalhe.historico.map((h, i) => (
-                        <li key={i}>{h}</li>
-                      ))}
-                    </ol>
-                  </div>
-                </>
-              )}
-
-              {abaModal === "prontuario" && (
-                <Prontuario
-                  consulta={detalhe}
-                  editavel={detalhe.status === "Em atendimento"}
-                  onCampo={(campo, valor) => atualizarProntuario(detalhe.id, campo, valor)}
-                  onVital={(campo, valor) => atualizarVital(detalhe.id, campo, valor)}
-                  onRestaurar={() => restaurarDaTriagem(detalhe.id)}
-                  anteriores={anteriores}
-                  previsaoRetorno={previsaoRetorno}
-                  retornoAgendado={retornoAgendado}
-                />
-              )}
-
-              {/* Ações (sempre visíveis, em qualquer aba) */}
-
-              {detalhe.status === "Agendada" && (
-                <div className="space-y-2 border-t border-slate-100 pt-4">
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <button
-                      type="button"
-                      disabled={detalhe.data > HOJE}
-                      onClick={() => {
-                        mudarStatus(detalhe.id, "Em atendimento", "Atendimento iniciado.");
-                        setAbaModal("prontuario");
-                      }}
-                      className={`${botaoPrimario} flex-1`}
-                    >
-                      <Play size={16} />
-                      Iniciar atendimento
-                    </button>
-                    <button
-                      type="button"
-                      disabled={detalhe.data > HOJE}
-                      onClick={() => mudarStatus(detalhe.id, "Faltou", "Falta registrada.")}
-                      className={`${botaoSecundario} flex-1`}
-                    >
-                      <UserX size={16} />
-                      Registrar falta
-                    </button>
-                  </div>
-                  {detalhe.data > HOJE && (
-                    <p className="text-xs text-slate-500">
-                      As ações ficam disponíveis a partir do dia da consulta.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {detalhe.status === "Em atendimento" && (
                 <div className="border-t border-slate-100 pt-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Histórico</p>
+                  <ol className="space-y-2 border-l-2 border-[#DCE8F8] pl-4 text-xs text-slate-500">
+                    {detalhe.historico.map((h, i) => <li key={i}>{h}</li>)}
+                  </ol>
+                </div>
+              </>
+            ) : (
+              <Prontuario
+                consulta={detalhe}
+                editavel={detalhe.status === "Em atendimento"}
+                onCampo={(campo, valor) => atualizarProntuario(detalhe.id, campo, valor)}
+                onVital={(campo, valor) => atualizarVital(detalhe.id, campo, valor)}
+                onRestaurar={() => restaurarDaTriagem(detalhe.id)}
+                anteriores={anteriores}
+                previsaoRetorno={previsaoRetorno}
+                retornoAgendado={retornoAgendado}
+              />
+            )}
+
+            {/* Ações (sempre visíveis, em qualquer aba) */}
+            {detalhe.status === "Agendada" && (
+              <div className="space-y-2 border-t border-slate-100 pt-4">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <button
                     type="button"
-                    onClick={() => concluirAtendimento(detalhe)}
-                    className={`${botaoPrimario} w-full`}
+                    disabled={detalhe.data > HOJE}
+                    onClick={() => { mudarStatus(detalhe.id, "Em atendimento", "Atendimento iniciado."); setAbaModal("prontuario"); }}
+                    className={`${botaoPrimario} flex-1`}
                   >
-                    <Check size={16} />
-                    Concluir atendimento e fechar prontuário
+                    <Play size={16} />Iniciar atendimento
+                  </button>
+                  <button
+                    type="button"
+                    disabled={detalhe.data > HOJE}
+                    onClick={() => mudarStatus(detalhe.id, "Faltou", "Falta registrada.")}
+                    className={`${botaoSecundario} flex-1`}
+                  >
+                    <UserX size={16} />Registrar falta
                   </button>
                 </div>
-              )}
-            </div>
+                {detalhe.data > HOJE && <p className="text-xs text-slate-500">As ações ficam disponíveis a partir do dia da consulta.</p>}
+              </div>
+            )}
+
+            {detalhe.status === "Em atendimento" && (
+              <div className="border-t border-slate-100 pt-4">
+                <button type="button" onClick={() => concluirAtendimento(detalhe)} className={`${botaoPrimario} w-full`}>
+                  <Check size={16} />Concluir atendimento e fechar prontuário
+                </button>
+              </div>
+            )}
           </div>
-        </Portal>
+        </div>,
+        document.body
       )}
 
       {aviso && (
-        <div
-          role="status"
-          className="fixed bottom-5 left-1/2 z-[1100] -translate-x-1/2 rounded-xl bg-[#17418E] px-5 py-3 text-sm font-semibold text-white shadow-lg"
-        >
+        <div role="status" className="fixed bottom-5 left-1/2 z-[1100] -translate-x-1/2 rounded-xl bg-[#17418E] px-5 py-3 text-sm font-semibold text-white shadow-lg">
           {aviso}
         </div>
       )}
