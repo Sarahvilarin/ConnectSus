@@ -42,32 +42,78 @@ export default function LoginProfissionalPage() {
 
     setErro("");
 
+    const registro = dados.registro.trim();
+
+    if (!/^\d{1,20}$/.test(registro)) {
+      setErro("Informe um CRM ou Coren válido, somente com números.");
+      return;
+    }
+
     if (!dados.uf) {
       setErro("Selecione a UF do seu registro.");
+      return;
+    }
+
+    if (!dados.senha) {
+      setErro("Informe sua senha.");
       return;
     }
 
     setCarregando(true);
 
     try {
-      const resposta = await api("/auth/profissional/login", {
-        method: "POST",
-        body: JSON.stringify(dados),
-      });
+      let resposta;
+
+      // A rota existente é /auth/medico/login.
+      // O controller atende médicos quando recebe crm/uf_crm
+      // e enfermeiros quando recebe coren/uf_coren.
+      try {
+        resposta = await api("/auth/medico/login", {
+          method: "POST",
+          body: JSON.stringify({
+            crm: registro,
+            uf_crm: dados.uf,
+            senha: dados.senha,
+          }),
+        });
+      } catch (erroMedico) {
+        // Se não houver médico com esse registro (ou a senha não conferir),
+        // tenta a mesma rota com os campos de enfermeiro.
+        if (erroMedico.message !== "Credenciais inválidas.") {
+          throw erroMedico;
+        }
+
+        resposta = await api("/auth/medico/login", {
+          method: "POST",
+          body: JSON.stringify({
+            coren: registro,
+            uf_coren: dados.uf,
+            senha: dados.senha,
+          }),
+        });
+      }
+
+      if (!resposta?.token || !resposta?.profissional || !resposta?.tipo) {
+        throw new Error("O servidor não retornou os dados completos do profissional.");
+      }
+
+      if (resposta.tipo !== "medico" && resposta.tipo !== "enfermeiro") {
+        throw new Error("Tipo de profissional não identificado.");
+      }
 
       localStorage.setItem("unesus_token", resposta.token);
-
       localStorage.setItem(
         "unesus_profissional",
         JSON.stringify(resposta.profissional)
       );
 
+      localStorage.removeItem("unesus_admin");
+      localStorage.removeItem("unesus_paciente");
+
       if (resposta.tipo === "medico") {
         router.push("/medico/dashboard");
-      } else if (resposta.tipo === "enfermeiro") {
-        router.push("/enfermeiro/dashboard");
       } else {
-        throw new Error("Tipo de profissional não identificado.");
+        router.push("/enfermeiro/dashboard");
       }
     } catch (error) {
       setErro(error.message || "Não foi possível realizar o login.");
@@ -78,11 +124,11 @@ export default function LoginProfissionalPage() {
 
   return (
     <AuthShell
-        titulo="Cuidar de quem cuida também é prioridade."
-        descricao="Acesse sua área profissional e gerencie seus atendimentos, pacientes e serviços da rede pública de saúde em um único lugar."
-        imagem="/foto_medica.svg"
-        imagemAlt="Profissional de saúde em atendimento"
-      >
+      titulo="Cuidar de quem cuida também é prioridade."
+      descricao="Acesse sua área profissional e gerencie seus atendimentos, pacientes e serviços da rede pública de saúde em um único lugar."
+      imagem="/foto_medica.svg"
+      imagemAlt="Profissional de saúde em atendimento"
+    >
       <div className="w-full max-w-[530px] font-sans">
         <div
           className="
@@ -125,11 +171,12 @@ export default function LoginProfissionalPage() {
                 <input
                   id="registro"
                   type="text"
+                  inputMode="numeric"
                   value={dados.registro}
                   onChange={(event) =>
                     setDados({
                       ...dados,
-                      registro: event.target.value,
+                      registro: event.target.value.replace(/\D/g, ""),
                     })
                   }
                   placeholder="Digite seu CRM ou Coren"
