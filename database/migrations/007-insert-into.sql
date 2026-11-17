@@ -98,7 +98,7 @@ INSERT INTO enfermeiros (
     '1992-03-12',
     'lucas.martins@unesus.com',
     '11987654321',
-    '123456',
+    '654321',
     'SP',
     '$2b$10$Le.kA7/W5UYN7aH.P5oHROa9xVsIo6QgHLIh/C4DmSu1qeIl1wESW',
     1

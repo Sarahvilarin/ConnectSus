@@ -82,17 +82,18 @@ export async function loginAdmin(req, res, next) {
 
 // LOGIN DO MÉDICO
 
+
 export async function loginMedico(req, res, next) {
   try {
-    const { crm, coren, uf_crm, uf_coren, senha } = req.body ?? {};
+    const { registro, uf, senha } = req.body ?? {};
 
     if (
+      typeof registro !== "string" ||
+      !/^\d{1,20}$/.test(registro) ||
+      typeof uf !== "string" ||
+      !/^[A-Z]{2}$/.test(uf) ||
       typeof senha !== "string" ||
-      !senha ||
-      typeof (crm ?? coren) !== "string" ||
-      !/^\d{1,20}$/.test(crm ?? coren) ||
-      typeof (uf_crm ?? uf_coren) !== "string" ||
-      !/^[A-Z]{2}$/.test(uf_crm ?? uf_coren)
+      !senha
     ) {
       return res.status(400).json({
         mensagem: "Informe CRM ou COREN, UF e senha válidos."
@@ -103,31 +104,29 @@ export async function loginMedico(req, res, next) {
       throw new Error("JWT_SECRET não configurada.");
     }
 
-    const identificador = crm ?? coren;
-    const uf = uf_crm ?? uf_coren;
-    const ehMedico = typeof crm === "string";
-
     let profissional;
     let tipo;
 
-    if (ehMedico) {
-      const [medicos] = await pool.query(
-        `SELECT id, nome_completo, crm, uf_crm, senha_hash
-         FROM medicos
-         WHERE crm = ? AND uf_crm = ? AND ativo = TRUE
-         LIMIT 1`,
-        [identificador, uf]
-      );
+    // Primeiro procura um médico.
+    const [medicos] = await pool.query(
+      `SELECT id, nome_completo, crm, uf_crm, senha_hash
+       FROM medicos
+       WHERE crm = ? AND uf_crm = ? AND ativo = TRUE
+       LIMIT 1`,
+      [registro, uf]
+    );
 
+    if (medicos.length > 0) {
       profissional = medicos[0];
       tipo = "medico";
     } else {
+      // Se não encontrar médico, procura um enfermeiro.
       const [enfermeiros] = await pool.query(
         `SELECT id, nome_completo, coren, uf_coren, senha_hash
          FROM enfermeiros
          WHERE coren = ? AND uf_coren = ? AND ativo = TRUE
          LIMIT 1`,
-        [identificador, uf]
+        [registro, uf]
       );
 
       profissional = enfermeiros[0];
@@ -165,24 +164,26 @@ export async function loginMedico(req, res, next) {
       mensagem: "Login realizado com sucesso!",
       token,
       tipo,
-      profissional: ehMedico
+      profissional: tipo === "medico"
         ? {
-            id: profissional.id,
-            nome_completo: profissional.nome_completo,
-            crm: profissional.crm,
-            uf_crm: profissional.uf_crm
-          }
+          id: profissional.id,
+          nome_completo: profissional.nome_completo,
+          crm: profissional.crm,
+          uf_crm: profissional.uf_crm
+        }
         : {
-            id: profissional.id,
-            nome_completo: profissional.nome_completo,
-            coren: profissional.coren,
-            uf_coren: profissional.uf_coren
-          }
+          id: profissional.id,
+          nome_completo: profissional.nome_completo,
+          coren: profissional.coren,
+          uf_coren: profissional.uf_coren
+        }
     });
+
   } catch (error) {
     next(error);
   }
 }
+
 
 
 // LOGIN DO PACIENTE

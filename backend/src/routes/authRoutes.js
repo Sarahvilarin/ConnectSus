@@ -11,16 +11,15 @@ import {
 } from "../controllers/authController.js";
 
 import {
-  loginLimiter,
   recuperacaoAdminLimiter
 } from "../middlewares/loginLimiter.js";
 
 const router = Router();
 
-// Logins
-router.post("/admin/login", loginLimiter, loginAdmin);
-router.post("/medico/login", loginLimiter, loginMedico);
-router.post("/paciente/login", loginLimiter, loginPaciente);
+// Logins sem limite de tentativas
+router.post("/admin/login", loginAdmin);
+router.post("/medico/login", loginMedico);
+router.post("/paciente/login", loginPaciente);
 
 // Recuperação de senha exclusiva do administrador
 router.post(
