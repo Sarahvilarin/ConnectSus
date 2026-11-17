@@ -169,38 +169,39 @@ export default function RelatoriosPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#EEF5F9] font-sans text-[#0B1756]">
       {/* Banner principal */}
-      <div className="mx-auto w-full max-w-[1440px] px-5 pt-7 sm:px-6 lg:px-[30px]">
-        <section className="relative">
-          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 py-7 shadow-sm sm:px-10 sm:py-9">
-            <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
-            <div className="pointer-events-none absolute right-[25%] top-20 h-72 w-72 rounded-full border-[45px] border-white/[0.05]" />
+<div className="mx-auto w-full max-w-[1600px] px-6 pt-7 2xl:px-10">
+  <section className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-11 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
 
-            <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
-              <div className="max-w-3xl">
-                <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">
-                  Relatórios
-                </h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base lg:text-lg">
-                  Dados e estatísticas dos atendimentos.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
+
+    <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+
+    <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
+
+    <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+      <div className="max-w-3xl">
+
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
+          <Activity size={14} />
+          ADMINISTRAÇÃO · REDE MUNICIPAL
+        </div>
+
+        <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+          Relatórios
+        </h1>
+
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
+          Dados e estatísticas dos atendimentos.
+        </p>
+
       </div>
+    </div>
+  </section>
+</div>
 
       {/* Conteúdo dos relatórios */}
-      <div className="mx-auto w-full max-w-[1440px] px-5 py-5 sm:px-6 lg:px-[30px]">
-        <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#3563A7] to-[#023E8A] px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30"
-          >
-            <Download size={18} />
-            Exportar relatório
-          </button>
-        </div>
+      <div className="mx-auto w-full max-w-[1600px] px-6 py-5 2xl:px-10">
+        
 
         {/* Indicadores */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
