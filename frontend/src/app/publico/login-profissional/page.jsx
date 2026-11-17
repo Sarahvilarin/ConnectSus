@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,6 +6,8 @@ import { useRouter } from "next/navigation";
 
 import {
   ArrowRight,
+  Check,
+  ChevronDown,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -16,15 +17,23 @@ import {
 import AuthShell from "../../components/auth/AuthShell";
 import { api } from "../../../lib/api";
 
+const UFS = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+  "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+  "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+];
+
 export default function LoginProfissionalPage() {
   const router = useRouter();
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [ufAberta, setUfAberta] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
   const [dados, setDados] = useState({
     registro: "",
+    uf: "",
     senha: "",
   });
 
@@ -32,6 +41,12 @@ export default function LoginProfissionalPage() {
     event.preventDefault();
 
     setErro("");
+
+    if (!dados.uf) {
+      setErro("Selecione a UF do seu registro.");
+      return;
+    }
+
     setCarregando(true);
 
     try {
@@ -63,9 +78,11 @@ export default function LoginProfissionalPage() {
 
   return (
     <AuthShell
-      titulo="Cuidar de quem cuida também é prioridade."
-      descricao="Acesse sua área profissional e gerencie seus atendimentos, pacientes e serviços da rede pública de saúde em um único lugar."
-    >
+        titulo="Cuidar de quem cuida também é prioridade."
+        descricao="Acesse sua área profissional e gerencie seus atendimentos, pacientes e serviços da rede pública de saúde em um único lugar."
+        imagem="/foto_medica.svg"
+        imagemAlt="Profissional de saúde em atendimento"
+      >
       <div className="w-full max-w-[530px] font-sans">
         <div
           className="
@@ -82,42 +99,133 @@ export default function LoginProfissionalPage() {
         </h2>
 
         <p className="mt-3 text-sm font-normal leading-6 text-slate-500">
-          Entre com seu CRM ou Coren e senha para acessar sua conta profissional.
+          Entre com seu CRM ou Coren, UF e senha para acessar sua conta
+          profissional.
         </p>
 
         <form onSubmit={enviarLogin}>
-          <div className="mt-9">
-            <label
-              htmlFor="registro"
-              className="mb-2 block text-xs font-semibold text-[#0B1756]"
-            >
-              CRM ou Coren
-            </label>
+          <div className="mt-9 grid grid-cols-[1fr_120px] gap-3">
+            <div>
+              <label
+                htmlFor="registro"
+                className="mb-2 block text-xs font-semibold text-[#0B1756]"
+              >
+                CRM ou Coren
+              </label>
 
-            <div className="relative">
-              <UserRound
-                size={18}
-                className="
-                  absolute left-4 top-1/2 -translate-y-1/2
-                  text-slate-400
-                "
-              />
+              <div className="relative">
+                <UserRound
+                  size={18}
+                  className="
+                    absolute left-4 top-1/2 -translate-y-1/2
+                    text-slate-400
+                  "
+                />
 
-              <input
-                id="registro"
-                type="text"
-                value={dados.registro}
-                onChange={(event) =>
-                  setDados({
-                    ...dados,
-                    registro: event.target.value,
-                  })
+                <input
+                  id="registro"
+                  type="text"
+                  value={dados.registro}
+                  onChange={(event) =>
+                    setDados({
+                      ...dados,
+                      registro: event.target.value,
+                    })
+                  }
+                  placeholder="Digite seu CRM ou Coren"
+                  required
+                  autoComplete="username"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                id="rotulo-uf"
+                className="mb-2 block text-xs font-semibold text-[#0B1756]"
+              >
+                UF
+              </label>
+
+              <div
+                className="relative"
+                onKeyDown={(event) =>
+                  event.key === "Escape" && setUfAberta(false)
                 }
-                placeholder="Digite seu CRM ou Coren"
-                required
-                autoComplete="username"
-                className={inputClass}
-              />
+              >
+                <button
+                  type="button"
+                  aria-labelledby="rotulo-uf"
+                  aria-haspopup="listbox"
+                  aria-expanded={ufAberta}
+                  onClick={() => setUfAberta(!ufAberta)}
+                  className={`flex h-12 w-full items-center justify-between gap-2 rounded-xl border px-4 text-sm font-normal outline-none transition ${
+                    ufAberta
+                      ? "border-[#023E8A] bg-white ring-4 ring-[#023E8A]/15"
+                      : "border-slate-200 bg-[#F8FAFD] hover:border-[#3563A7]"
+                  } ${dados.uf ? "text-[#0B1756]" : "text-slate-400"}`}
+                >
+                  <span>{dados.uf || "UF"}</span>
+
+                  <ChevronDown
+                    size={18}
+                    className={`shrink-0 text-slate-400 transition-transform ${
+                      ufAberta ? "rotate-180 text-[#023E8A]" : ""
+                    }`}
+                  />
+                </button>
+
+                {ufAberta && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Fechar lista de UF"
+                      onClick={() => setUfAberta(false)}
+                      className="fixed inset-0 z-10 cursor-default"
+                    />
+
+                    <div
+                      role="listbox"
+                      aria-labelledby="rotulo-uf"
+                      className="
+                        absolute left-0 top-full z-20 mt-2 max-h-60 w-full
+                        min-w-[120px] overflow-y-auto rounded-2xl border
+                        border-[#D5E2F1] bg-white p-1.5
+                        shadow-[0_12px_30px_rgba(11,23,86,0.16)]
+                      "
+                    >
+                      {UFS.map((uf) => {
+                        const ativo = uf === dados.uf;
+
+                        return (
+                          <button
+                            key={uf}
+                            type="button"
+                            role="option"
+                            aria-selected={ativo}
+                            onClick={() => {
+                              setDados({ ...dados, uf });
+                              setUfAberta(false);
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
+                              ativo
+                                ? "bg-[#023E8A] font-semibold text-white"
+                                : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"
+                            }`}
+                          >
+                            <span>{uf}</span>
+
+                            {ativo && (
+                              <Check size={16} className="shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

@@ -6,16 +6,26 @@ import Link from "next/link";
 
 import {
   ArrowRight,
+  Check,
+  ChevronDown,
   Clock3,
-  HeartPulse,
-  HelpCircle,
   Mail,
   MapPin,
-  MessageCircle,
   Phone,
   Send,
   ShieldCheck,
 } from "lucide-react";
+
+const ASSUNTOS = [
+  { valor: "conta", texto: "Problema com minha conta" },
+  { valor: "fila", texto: "Dúvida sobre fila online" },
+  { valor: "consulta", texto: "Dúvida sobre consultas" },
+  { valor: "exame", texto: "Dúvida sobre exames" },
+  { valor: "unidade", texto: "Informações sobre unidades" },
+  { valor: "acessibilidade", texto: "Acessibilidade" },
+  { valor: "sugestao", texto: "Sugestão" },
+  { valor: "outro", texto: "Outro assunto" },
+];
 
 export default function ContatoPage() {
   const [formulario, setFormulario] = useState({
@@ -38,8 +48,22 @@ export default function ContatoPage() {
     setAviso("");
   }
 
+  function escolherAssunto(valor) {
+    setFormulario((anterior) => ({
+      ...anterior,
+      assunto: valor,
+    }));
+
+    setAviso("");
+  }
+
   function enviarFormulario(event) {
     event.preventDefault();
+
+    if (!formulario.assunto) {
+      setAviso("Selecione como podemos ajudar antes de enviar.");
+      return;
+    }
 
     // A página ainda não está conectada ao backend.
     setAviso(
@@ -48,36 +72,36 @@ export default function ContatoPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7]">
+    <main className="relative min-h-screen overflow-hidden bg-[#EEF5F9] font-sans text-[#0B1756]">
       {/* Decorações */}
-      <div className="pointer-events-none absolute -right-48 -top-48 h-[500px] w-[500px] rounded-full bg-[#B8D6FC]/30" />
+      <div className="pointer-events-none absolute -right-48 -top-48 h-[500px] w-[500px] rounded-full bg-white/60" />
 
-      <div className="pointer-events-none absolute -bottom-44 -left-32 h-[400px] w-[400px] rounded-full border-[55px] border-white/40" />
+      <div className="pointer-events-none absolute -bottom-44 -left-32 h-[400px] w-[400px] rounded-full border-[55px] border-white/60" />
 
       <div className="relative z-10 mx-auto max-w-[1300px] px-4 py-8 sm:px-6 lg:px-8">
         {/* Cabeçalho */}
         <section className="mb-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <h1 className="mt-3 text-3xl font-bold text-[#0B1756] sm:text-4xl">
+            <h1 className="text-4xl font-bold leading-tight tracking-tight text-[#0B1756] lg:text-[42px]">
               Estamos aqui para ajudar.
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+            <p className="mt-3 max-w-2xl text-base font-normal leading-7 text-slate-600">
               Tire dúvidas, envie sugestões ou fale com nossa equipe sobre o
               uso da plataforma.
             </p>
           </div>
 
-          <div className="flex w-fit items-center gap-3 rounded-2xl border border-white bg-white/80 px-4 py-3 shadow-sm">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">
+          <div className="flex w-fit items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#3563A7]">
               <Clock3 size={19} />
             </div>
 
             <div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs font-normal text-slate-500">
                 Horário de atendimento
               </p>
-              <p className="text-sm font-semibold text-[#0B1756]">
+              <p className="text-base font-semibold text-[#0B1756]">
                 Segunda a sexta, das 8h às 17h
               </p>
             </div>
@@ -85,7 +109,7 @@ export default function ContatoPage() {
         </section>
 
         {/* Bloco principal */}
-        <section className="grid overflow-hidden rounded-[28px] border border-white bg-white shadow-[0_20px_60px_rgba(2,62,138,0.10)] lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="grid overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm lg:grid-cols-[0.9fr_1.1fr]">
           {/* Imagem */}
           <div className="relative hidden min-h-[650px] overflow-hidden lg:block">
             <Image
@@ -96,39 +120,31 @@ export default function ContatoPage() {
               className="object-cover"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-t from-[#06194e]/95 via-[#023E8A]/35 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B1756]/95 via-[#023E8A]/35 to-transparent" />
 
             <div className="absolute bottom-0 left-0 right-0 p-8 xl:p-10">
-              <div className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
-                <HeartPulse size={15} />
-                Saúde mais perto de você
-              </div>
-
-              <h2 className="mt-4 max-w-md text-3xl font-bold leading-tight text-white xl:text-4xl">
+              <h2 className="max-w-md text-2xl font-bold leading-tight text-white">
                 Informação também faz parte do cuidado.
               </h2>
 
-              <p className="mt-3 max-w-md text-sm leading-6 text-blue-100">
+              <p className="mt-3 max-w-md text-sm font-normal leading-6 text-[#EAF3F7]">
                 Nossa equipe está disponível para orientar sobre acesso,
                 funcionalidades e serviços do UneSUS.
               </p>
 
-              <div className="mt-6 grid gap-3">
+              <div className="mt-5 space-y-2.5 border-t border-white/20 pt-4">
                 <ContatoImagem
-                  icon={<Phone size={17} />}
-                  titulo="Telefone"
+                  icon={<Phone size={16} />}
                   valor="(11) 0000-0000"
                 />
 
                 <ContatoImagem
-                  icon={<Mail size={17} />}
-                  titulo="E-mail"
+                  icon={<Mail size={16} />}
                   valor="contato@unesus.com.br"
                 />
 
                 <ContatoImagem
-                  icon={<MapPin size={17} />}
-                  titulo="Atendimento"
+                  icon={<MapPin size={16} />}
                   valor="São Caetano do Sul - SP"
                 />
               </div>
@@ -138,16 +154,11 @@ export default function ContatoPage() {
           {/* Formulário */}
           <div className="flex min-h-[650px] items-center px-5 py-7 sm:px-8 lg:px-10 xl:px-12">
             <div className="w-full">
-              <div className="mb-4 flex w-fit items-center gap-2 rounded-full bg-[#EAF3F7] px-3 py-1.5 text-xs font-semibold text-[#023E8A]">
-                <Send size={14} />
-                Entre em contato
-              </div>
-
-              <h2 className="text-3xl font-bold text-[#0B1756]">
+              <h2 className="text-2xl font-bold leading-tight text-[#0B1756]">
                 Envie uma mensagem
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
+              <p className="mt-2 text-sm font-normal leading-6 text-slate-600">
                 Preencha os campos abaixo. Informe o máximo de detalhes
                 possível para facilitar o atendimento.
               </p>
@@ -175,30 +186,19 @@ export default function ContatoPage() {
                 {/* Assunto */}
                 <div className="mt-4">
                   <label
-                    htmlFor="assunto"
-                    className="mb-1.5 block text-sm font-semibold text-[#0B1756]"
+                    id="rotulo-assunto"
+                    className="mb-1.5 block text-xs font-semibold text-[#0B1756]"
                   >
                     Como podemos ajudar?
                   </label>
 
-                  <select
-                    id="assunto"
-                    name="assunto"
-                    value={formulario.assunto}
-                    onChange={alterarCampo}
-                    required
-                    className="h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-[#F8FAFD] px-4 text-sm text-[#0B1756] outline-none transition focus:border-[#3563A7] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10"
-                  >
-                    <option value="">Selecione uma opção</option>
-                    <option value="conta">Problema com minha conta</option>
-                    <option value="fila">Dúvida sobre fila online</option>
-                    <option value="consulta">Dúvida sobre consultas</option>
-                    <option value="exame">Dúvida sobre exames</option>
-                    <option value="unidade">Informações sobre unidades</option>
-                    <option value="acessibilidade">Acessibilidade</option>
-                    <option value="sugestao">Sugestão</option>
-                    <option value="outro">Outro assunto</option>
-                  </select>
+                  <Selecao
+                    rotuloId="rotulo-assunto"
+                    valor={formulario.assunto}
+                    opcoes={ASSUNTOS}
+                    onChange={escolherAssunto}
+                    placeholder="Selecione uma opção"
+                  />
                 </div>
 
                 {/* Mensagem */}
@@ -206,12 +206,12 @@ export default function ContatoPage() {
                   <div className="mb-1.5 flex items-center justify-between">
                     <label
                       htmlFor="mensagem"
-                      className="text-sm font-semibold text-[#0B1756]"
+                      className="text-xs font-semibold text-[#0B1756]"
                     >
                       Mensagem
                     </label>
 
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs font-normal text-slate-500">
                       {formulario.mensagem.length}/500
                     </span>
                   </div>
@@ -225,18 +225,18 @@ export default function ContatoPage() {
                     required
                     maxLength={500}
                     rows={5}
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-[#F8FAFD] px-4 py-3 text-sm leading-6 text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#3563A7] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10"
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-[#EEF5F9] px-4 py-3 text-sm font-normal leading-6 text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#3563A7] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10"
                   />
                 </div>
 
                 {/* Segurança */}
-                <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#DCEAF8] bg-[#F8FBFE] p-3.5">
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-slate-200 bg-[#EAF3F7] p-3.5">
                   <ShieldCheck
                     size={18}
                     className="mt-0.5 shrink-0 text-[#023E8A]"
                   />
 
-                  <p className="text-xs leading-5 text-slate-500">
+                  <p className="text-xs font-normal leading-5 text-slate-600">
                     Não envie senhas, informações bancárias ou outros dados
                     confidenciais nesta mensagem.
                   </p>
@@ -246,7 +246,7 @@ export default function ContatoPage() {
                 {aviso && (
                   <p
                     role="status"
-                    className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-800"
+                    className="mt-4 rounded-xl border border-[#3563A7]/30 bg-[#EAF3F7] p-3 text-sm font-normal leading-5 text-[#0B1756]"
                   >
                     {aviso}
                   </p>
@@ -269,60 +269,48 @@ export default function ContatoPage() {
         <section className="mt-6 grid gap-4 md:grid-cols-3">
           <Link
             href="/publico/acessibilidade"
-            className="group flex items-center gap-4 rounded-2xl border border-white bg-white/90 p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">
-              <HelpCircle size={22} />
-            </div>
-
             <div>
-              <h3 className="font-semibold text-[#0B1756]">
+              <h3 className="text-lg font-bold leading-snug text-[#0B1756]">
                 Acessibilidade e Ajuda
               </h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-sm font-normal leading-6 text-slate-600">
                 Encontre respostas e recursos de acessibilidade.
               </p>
             </div>
 
             <ArrowRight
               size={17}
-              className="ml-auto shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-[#023E8A]"
+              className="ml-auto shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-[#023E8A]"
             />
           </Link>
 
           <Link
             href="/publico/unidades"
-            className="group flex items-center gap-4 rounded-2xl border border-white bg-white/90 p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">
-              <MapPin size={22} />
-            </div>
-
             <div>
-              <h3 className="font-semibold text-[#0B1756]">
+              <h3 className="text-lg font-bold leading-snug text-[#0B1756]">
                 Unidades de saúde
               </h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-sm font-normal leading-6 text-slate-600">
                 Consulte unidades, serviços e informações.
               </p>
             </div>
 
             <ArrowRight
               size={17}
-              className="ml-auto shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-[#023E8A]"
+              className="ml-auto shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-[#023E8A]"
             />
           </Link>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-[#DCEAF8] bg-[#F7FBFF] p-5 shadow-sm">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#023E8A] text-white">
-              <HeartPulse size={22} />
-            </div>
-
+          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-[#EAF3F7] p-5 shadow-sm">
             <div>
-              <h3 className="font-semibold text-[#0B1756]">
+              <h3 className="text-lg font-bold leading-snug text-[#0B1756]">
                 Precisa de atendimento?
               </h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-sm font-normal leading-6 text-slate-600">
                 Em situações de saúde, procure a unidade adequada para o seu
                 atendimento.
               </p>
@@ -347,7 +335,7 @@ function Campo({
     <div>
       <label
         htmlFor={name}
-        className="mb-1.5 block text-sm font-semibold text-[#0B1756]"
+        className="mb-1.5 block text-xs font-semibold text-[#0B1756]"
       >
         {label}
       </label>
@@ -360,24 +348,100 @@ function Campo({
         onChange={onChange}
         placeholder={placeholder}
         required
-        className="h-12 w-full rounded-xl border border-slate-200 bg-[#F8FAFD] px-4 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#3563A7] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10"
+        className="h-12 w-full rounded-xl border border-slate-200 bg-[#EEF5F9] px-4 text-sm font-normal text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#3563A7] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10"
       />
     </div>
   );
 }
 
-/* Contatos sobre a imagem */
-function ContatoImagem({ icon, titulo, valor }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
-        {icon}
-      </div>
+/* Lista de seleção personalizada */
+function Selecao({ rotuloId, valor, opcoes, onChange, placeholder }) {
+  const [aberta, setAberta] = useState(false);
 
-      <div>
-        <p className="text-xs text-blue-100">{titulo}</p>
-        <p className="mt-0.5 text-sm font-semibold text-white">{valor}</p>
-      </div>
+  const atual = opcoes.find((opcao) => opcao.valor === valor);
+
+  return (
+    <div
+      className="relative"
+      onKeyDown={(event) => event.key === "Escape" && setAberta(false)}
+    >
+      <button
+        type="button"
+        aria-labelledby={rotuloId}
+        aria-haspopup="listbox"
+        aria-expanded={aberta}
+        onClick={() => setAberta(!aberta)}
+        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-normal outline-none transition ${
+          aberta
+            ? "border-[#023E8A] bg-white ring-4 ring-[#023E8A]/15"
+            : "border-slate-200 bg-[#EEF5F9] hover:border-[#3563A7]"
+        } ${atual ? "text-[#0B1756]" : "text-slate-400"}`}
+      >
+        <span className="min-w-0 truncate">
+          {atual ? atual.texto : placeholder}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-slate-400 transition-transform ${
+            aberta ? "rotate-180 text-[#023E8A]" : ""
+          }`}
+        />
+      </button>
+
+      {aberta && (
+        <>
+          <button
+            type="button"
+            aria-label="Fechar lista"
+            onClick={() => setAberta(false)}
+            className="fixed inset-0 z-10 cursor-default"
+          />
+
+          <div
+            role="listbox"
+            aria-labelledby={rotuloId}
+            className="absolute left-0 top-full z-20 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+          >
+            {opcoes.map((opcao) => {
+              const ativo = opcao.valor === valor;
+
+              return (
+                <button
+                  key={opcao.valor}
+                  type="button"
+                  role="option"
+                  aria-selected={ativo}
+                  onClick={() => {
+                    onChange(opcao.valor);
+                    setAberta(false);
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
+                    ativo
+                      ? "bg-[#023E8A] font-semibold text-white"
+                      : "font-normal text-[#0B1756] hover:bg-[#EAF3F7]"
+                  }`}
+                >
+                  <span>{opcao.texto}</span>
+
+                  {ativo && <Check size={16} className="shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* Contatos sobre a imagem (versão compacta) */
+function ContatoImagem({ icon, valor }) {
+  return (
+    <div className="flex items-center gap-2.5 text-white">
+      <span className="shrink-0 text-[#EAF3F7]">{icon}</span>
+
+      <p className="text-sm font-semibold">{valor}</p>
     </div>
   );
 }
