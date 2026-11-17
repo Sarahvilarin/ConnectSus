@@ -121,29 +121,90 @@ export async function entrarNaFila({
     }
 }
 
+
 export async function listarFilaPorUnidadeSetor(unidadeId, setorId) {
     const [filas] = await pool.query(
-        `SELECT f.id, f.paciente_id,
+        `SELECT
+            f.id,
+            f.paciente_id,
             p.nome_completo AS paciente,
-            f.unidade_id, f.setor_id, f.consulta_id,
-            f.status, f.prioridade, f.posicao,
-f.entrada_em, f.chamada_em, f.inicio_atendimento_em,
-f.checkin_realizado, f.checkin_em
-     FROM filas f
-     INNER JOIN pacientes p ON p.id = f.paciente_id
-     WHERE f.unidade_id = ?
-       AND f.setor_id = ?
-       AND f.status IN ('aguardando', 'chamado', 'em_atendimento')
-     ORDER BY
-       FIELD(f.status, 'em_atendimento', 'chamado', 'aguardando'),
-       FIELD(f.prioridade, 'urgente', 'preferencial', 'normal'),
-       f.entrada_em ASC,
-       f.id ASC`,
+            p.cpf AS paciente_cpf,
+            p.data_nascimento AS paciente_data_nascimento,
+            p.telefone AS paciente_telefone,
+
+            f.unidade_id,
+            f.setor_id,
+            f.consulta_id,
+            f.medico_id,
+            m.nome_completo AS medico_responsavel,
+
+            f.status,
+            f.prioridade,
+            f.posicao,
+            f.entrada_em,
+            f.chamada_em,
+            f.inicio_atendimento_em,
+            f.fim_atendimento_em,
+            f.checkin_realizado,
+            f.checkin_em,
+
+            t.id AS triagem_id,
+            t.queixa_principal,
+            t.sintomas,
+            t.inicio_sintomas,
+            t.intensidade_dor,
+            t.pressao_arterial,
+            t.temperatura,
+            t.frequencia_cardiaca,
+            t.frequencia_respiratoria,
+            t.saturacao_oxigenio,
+            t.glicemia,
+            t.peso,
+            t.altura,
+            t.classificacao_risco,
+            t.observacoes AS observacoes_triagem,
+            t.criado_em AS triagem_criada_em
+
+        FROM filas f
+
+        INNER JOIN pacientes p
+            ON p.id = f.paciente_id
+
+        LEFT JOIN medicos m
+            ON m.id = f.medico_id
+
+        LEFT JOIN triagens t
+            ON t.fila_id = f.id
+
+        WHERE f.unidade_id = ?
+          AND f.setor_id = ?
+          AND f.status IN (
+              'aguardando',
+              'chamado',
+              'em_atendimento'
+          )
+
+        ORDER BY
+            FIELD(
+                f.status,
+                'em_atendimento',
+                'chamado',
+                'aguardando'
+            ),
+            FIELD(
+                f.prioridade,
+                'urgente',
+                'preferencial',
+                'normal'
+            ),
+            f.entrada_em ASC,
+            f.id ASC`,
         [unidadeId, setorId]
     );
 
     return filas;
 }
+
 
 
 export async function recalcularPosicoes(conexao, unidadeId, setorId) {
@@ -184,10 +245,12 @@ export async function recalcularPosicoes(conexao, unidadeId, setorId) {
 }
 
 
+
 export async function atualizarStatusFila({
     filaId,
     unidadeId,
     setorId,
+    medicoId,
     novoStatus
 }) {
     const conexao = await pool.getConnection();
@@ -196,12 +259,12 @@ export async function atualizarStatusFila({
         await conexao.beginTransaction();
 
         const [filas] = await conexao.query(
-            `SELECT id, status
-       FROM filas
-       WHERE id = ?
-         AND unidade_id = ?
-         AND setor_id = ?
-       FOR UPDATE`,
+            `SELECT id, status, medico_id
+             FROM filas
+             WHERE id = ?
+               AND unidade_id = ?
+               AND setor_id = ?
+             FOR UPDATE`,
             [filaId, unidadeId, setorId]
         );
 
@@ -211,7 +274,9 @@ export async function atualizarStatusFila({
             throw erro;
         }
 
-        const statusAtual = filas[0].status;
+        const fila = filas[0];
+        const statusAtual = fila.status;
+        const medicoResponsavel = fila.medico_id;
 
         const transicoes = {
             aguardando: ["chamado", "desistente", "cancelado"],
@@ -230,43 +295,100 @@ export async function atualizarStatusFila({
             throw erro;
         }
 
-        const agora = new Date();
+        // O médico que iniciou o atendimento fica responsável por ele.
+        if (
+            statusAtual === "em_atendimento" &&
+            Number(medicoResponsavel) !== Number(medicoId)
+        ) {
+            const erro = new Error(
+                "Este paciente já está em atendimento por outro médico."
+            );
+            erro.status = 403;
+            throw erro;
+        }
 
+        // Impede que outro médico assuma uma entrada já atribuída.
+        if (
+            novoStatus === "em_atendimento" &&
+            medicoResponsavel !== null &&
+            Number(medicoResponsavel) !== Number(medicoId)
+        ) {
+            const erro = new Error(
+                "Este paciente já foi atribuído a outro médico."
+            );
+            erro.status = 409;
+            throw erro;
+        }
 
         await conexao.query(
             `UPDATE filas
-   SET status = ?,
-       posicao = CASE
-         WHEN ? IN ('concluido', 'desistente', 'cancelado') THEN NULL
-         ELSE posicao
-       END,
-       chamada_em = CASE
-         WHEN ? = 'chamado' THEN NOW()
-         ELSE chamada_em
-       END,
-       inicio_atendimento_em = CASE
-         WHEN ? = 'em_atendimento' THEN NOW()
-         ELSE inicio_atendimento_em
-       END,
-       fim_atendimento_em = CASE
-         WHEN ? IN ('concluido', 'desistente', 'cancelado') THEN NOW()
-         ELSE fim_atendimento_em
-       END
-   WHERE id = ?`,
-            [novoStatus, novoStatus, novoStatus, novoStatus, novoStatus, filaId]
+             SET
+                status = ?,
+
+                medico_id = CASE
+                    WHEN ? = 'em_atendimento' THEN ?
+                    ELSE medico_id
+                END,
+
+                posicao = CASE
+                    WHEN ? IN (
+                        'concluido',
+                        'desistente',
+                        'cancelado'
+                    ) THEN NULL
+                    ELSE posicao
+                END,
+
+                chamada_em = CASE
+                    WHEN ? = 'chamado' THEN NOW()
+                    ELSE chamada_em
+                END,
+
+                inicio_atendimento_em = CASE
+                    WHEN ? = 'em_atendimento' THEN NOW()
+                    ELSE inicio_atendimento_em
+                END,
+
+                fim_atendimento_em = CASE
+                    WHEN ? IN (
+                        'concluido',
+                        'desistente',
+                        'cancelado'
+                    ) THEN NOW()
+                    ELSE fim_atendimento_em
+                END
+
+             WHERE id = ?`,
+            [
+                novoStatus,
+                novoStatus,
+                medicoId,
+                novoStatus,
+                novoStatus,
+                novoStatus,
+                novoStatus,
+                filaId
+            ]
         );
 
-        // Recalcula as posições das entradas que continuam ativas.
-        await recalcularPosicoes(conexao, unidadeId, setorId);
-
+        await recalcularPosicoes(
+            conexao,
+            unidadeId,
+            setorId
+        );
 
         await conexao.commit();
 
         return {
             id: Number(filaId),
             status_anterior: statusAtual,
-            status: novoStatus
+            status: novoStatus,
+            medico_id:
+                novoStatus === "em_atendimento"
+                    ? Number(medicoId)
+                    : medicoResponsavel
         };
+
     } catch (error) {
         await conexao.rollback();
         throw error;
@@ -274,6 +396,7 @@ export async function atualizarStatusFila({
         conexao.release();
     }
 }
+
 
 export async function listarFilasDoPaciente(pacienteId) {
     const [filas] = await pool.query(

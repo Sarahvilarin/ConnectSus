@@ -166,6 +166,7 @@ export async function listarFilaDoMedico(req, res, next) {
 }
 
 // Médico atualiza o status da entrada na fila
+
 export async function atualizarStatusDaFila(req, res, next) {
     try {
         const { id } = req.params;
@@ -178,21 +179,30 @@ export async function atualizarStatusDaFila(req, res, next) {
             unidade_id < 1 ||
             !Number.isSafeInteger(setor_id) ||
             setor_id < 1 ||
-            !["chamado", "em_atendimento", "concluido", "desistente", "cancelado"].includes(status)
+            ![
+                "chamado",
+                "em_atendimento",
+                "concluido",
+                "desistente",
+                "cancelado"
+            ].includes(status)
         ) {
             return res.status(400).json({
                 mensagem: "Informe status, unidade e setor válidos."
             });
         }
 
+        const medicoId = req.medico.id;
+
+        // Verifica o vínculo do médico com a unidade e o setor.
         const [vinculos] = await pool.query(
             `SELECT 1
-       FROM medico_unidade_setores
-       WHERE medico_id = ?
-         AND unidade_id = ?
-         AND setor_id = ?
-       LIMIT 1`,
-            [req.medico.id, unidade_id, setor_id]
+             FROM medico_unidade_setores
+             WHERE medico_id = ?
+               AND unidade_id = ?
+               AND setor_id = ?
+             LIMIT 1`,
+            [medicoId, unidade_id, setor_id]
         );
 
         if (vinculos.length === 0) {
@@ -205,6 +215,7 @@ export async function atualizarStatusDaFila(req, res, next) {
             filaId: Number(id),
             unidadeId: unidade_id,
             setorId: setor_id,
+            medicoId,
             novoStatus: status
         });
 
@@ -212,10 +223,12 @@ export async function atualizarStatusDaFila(req, res, next) {
             mensagem: "Status da fila atualizado com sucesso.",
             fila: resultado
         });
+
     } catch (error) {
         return erroResposta(res, error);
     }
 }
+
 
 // Administrador consulta filas de qualquer unidade e setor
 export async function listarFilasAdmin(req, res, next) {

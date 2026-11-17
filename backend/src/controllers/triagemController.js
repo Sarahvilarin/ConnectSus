@@ -2,109 +2,11 @@
 import { pool } from "../config/database.js";
 
 // REGISTRAR TRIAGEM
+
 export async function criarTriagem(req, res, next) {
-  const {
-    paciente_id,
-    queixa_principal,
-    sintomas,
-    inicio_sintomas,
-    intensidade_dor,
-    pressao_arterial,
-    temperatura,
-    frequencia_cardiaca,
-    frequencia_respiratoria,
-    saturacao_oxigenio,
-    glicemia,
-    peso,
-    altura,
-    classificacao_risco,
-    observacoes
-  } = req.body ?? {};
-
-  const camposNumericos = [
-    ["intensidade_dor", intensidade_dor, 0, 10],
-    ["temperatura", temperatura, 25, 45],
-    ["frequencia_cardiaca", frequencia_cardiaca, 1, 300],
-    ["frequencia_respiratoria", frequencia_respiratoria, 1, 100],
-    ["saturacao_oxigenio", saturacao_oxigenio, 0, 100],
-    ["glicemia", glicemia, 0, 1000],
-    ["peso", peso, 0.1, 500],
-    ["altura", altura, 0.1, 3]
-  ];
-
-  if (!Number.isSafeInteger(Number(paciente_id)) || Number(paciente_id) <= 0) {
-    return res.status(400).json({
-      mensagem: "ID do paciente inválido."
-    });
-  }
-
-  if (
-    typeof queixa_principal !== "string" ||
-    !queixa_principal.trim() ||
-    queixa_principal.trim().length > 2000
-  ) {
-    return res.status(400).json({
-      mensagem: "Informe uma queixa principal válida."
-    });
-  }
-
-  if (
-    typeof classificacao_risco !== "string" ||
-    !["vermelho", "laranja", "amarelo", "verde", "azul"].includes(
-      classificacao_risco.toLowerCase()
-    )
-  ) {
-    return res.status(400).json({
-      mensagem: "Classificação de risco inválida."
-    });
-  }
-
-  for (const [campo, valor, minimo, maximo] of camposNumericos) {
-    if (
-      valor !== undefined &&
-      valor !== null &&
-      valor !== "" &&
-      (
-        !Number.isFinite(Number(valor)) ||
-        Number(valor) < minimo ||
-        Number(valor) > maximo
-      )
-    ) {
-      return res.status(400).json({
-        mensagem: `Valor inválido para o campo ${campo}.`
-      });
-    }
-  }
-
-  if (
-    sintomas != null && (typeof sintomas !== "string" || sintomas.length > 5000) ||
-    observacoes != null && (typeof observacoes !== "string" || observacoes.length > 5000) ||
-    inicio_sintomas != null && (typeof inicio_sintomas !== "string" || inicio_sintomas.length > 100) ||
-    pressao_arterial != null && (typeof pressao_arterial !== "string" || pressao_arterial.length > 20)
-  ) {
-    return res.status(400).json({
-      mensagem: "Um ou mais campos de texto possuem formato inválido."
-    });
-  }
-
-  try {
-    const [pacientes] = await pool.query(
-      `SELECT id FROM pacientes
-       WHERE id = ? AND ativo = TRUE
-       LIMIT 1`,
-      [paciente_id]
-    );
-
-    if (pacientes.length === 0) {
-      return res.status(404).json({
-        mensagem: "Paciente não encontrado ou inativo."
-      });
-    }
-
-    const [resultado] = await pool.query(
-      `INSERT INTO triagens (
+    const {
         paciente_id,
-        enfermeiro_id,
+        fila_id = null,
         queixa_principal,
         sintomas,
         inicio_sintomas,
@@ -119,40 +21,230 @@ export async function criarTriagem(req, res, next) {
         altura,
         classificacao_risco,
         observacoes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        paciente_id,
-        req.enfermeiro.id,
-        queixa_principal.trim(),
-        sintomas?.trim() || null,
-        inicio_sintomas?.trim() || null,
-        intensidade_dor ?? null,
-        pressao_arterial?.trim() || null,
-        temperatura ?? null,
-        frequencia_cardiaca ?? null,
-        frequencia_respiratoria ?? null,
-        saturacao_oxigenio ?? null,
-        glicemia ?? null,
-        peso ?? null,
-        altura ?? null,
-        classificacao_risco.toLowerCase(),
-        observacoes?.trim() || null
-      ]
-    );
+    } = req.body ?? {};
 
-    return res.status(201).json({
-      mensagem: "Triagem registrada com sucesso!",
-      triagem: {
-        id: resultado.insertId,
-        paciente_id: Number(paciente_id),
-        enfermeiro_id: req.enfermeiro.id,
-        classificacao_risco: classificacao_risco.toLowerCase()
-      }
-    });
-  } catch (error) {
-    return next(error);
-  }
+    const camposNumericos = [
+        ["intensidade_dor", intensidade_dor, 0, 10],
+        ["temperatura", temperatura, 25, 45],
+        ["frequencia_cardiaca", frequencia_cardiaca, 1, 300],
+        ["frequencia_respiratoria", frequencia_respiratoria, 1, 100],
+        ["saturacao_oxigenio", saturacao_oxigenio, 0, 100],
+        ["glicemia", glicemia, 0, 1000],
+        ["peso", peso, 0.1, 500],
+        ["altura", altura, 0.1, 3]
+    ];
+
+    if (
+        !Number.isSafeInteger(Number(paciente_id)) ||
+        Number(paciente_id) <= 0
+    ) {
+        return res.status(400).json({
+            mensagem: "ID do paciente inválido."
+        });
+    }
+
+    if (
+        fila_id !== null &&
+        (
+            !Number.isSafeInteger(Number(fila_id)) ||
+            Number(fila_id) <= 0
+        )
+    ) {
+        return res.status(400).json({
+            mensagem: "ID da fila inválido."
+        });
+    }
+
+    if (
+        typeof queixa_principal !== "string" ||
+        !queixa_principal.trim() ||
+        queixa_principal.trim().length > 2000
+    ) {
+        return res.status(400).json({
+            mensagem: "Informe uma queixa principal válida."
+        });
+    }
+
+    if (
+        typeof classificacao_risco !== "string" ||
+        !["vermelho", "laranja", "amarelo", "verde", "azul"].includes(
+            classificacao_risco.toLowerCase()
+        )
+    ) {
+        return res.status(400).json({
+            mensagem: "Classificação de risco inválida."
+        });
+    }
+
+    for (const [campo, valor, minimo, maximo] of camposNumericos) {
+        if (
+            valor !== undefined &&
+            valor !== null &&
+            valor !== "" &&
+            (
+                !Number.isFinite(Number(valor)) ||
+                Number(valor) < minimo ||
+                Number(valor) > maximo
+            )
+        ) {
+            return res.status(400).json({
+                mensagem: `Valor inválido para o campo ${campo}.`
+            });
+        }
+    }
+
+    if (
+        (sintomas != null &&
+            (typeof sintomas !== "string" || sintomas.length > 5000)) ||
+        (observacoes != null &&
+            (typeof observacoes !== "string" || observacoes.length > 5000)) ||
+        (inicio_sintomas != null &&
+            (typeof inicio_sintomas !== "string" || inicio_sintomas.length > 100)) ||
+        (pressao_arterial != null &&
+            (typeof pressao_arterial !== "string" || pressao_arterial.length > 20))
+    ) {
+        return res.status(400).json({
+            mensagem: "Um ou mais campos de texto possuem formato inválido."
+        });
+    }
+
+    const conexao = await pool.getConnection();
+
+    try {
+        await conexao.beginTransaction();
+
+        const [pacientes] = await conexao.query(
+            `SELECT id
+             FROM pacientes
+             WHERE id = ?
+               AND ativo = TRUE
+             LIMIT 1
+             FOR UPDATE`,
+            [paciente_id]
+        );
+
+        if (pacientes.length === 0) {
+            await conexao.rollback();
+
+            return res.status(404).json({
+                mensagem: "Paciente não encontrado ou inativo."
+            });
+        }
+
+        // Quando informada, a fila precisa pertencer ao paciente.
+        if (fila_id !== null) {
+            const [filas] = await conexao.query(
+                `SELECT id, paciente_id, status
+                 FROM filas
+                 WHERE id = ?
+                 LIMIT 1
+                 FOR UPDATE`,
+                [fila_id]
+            );
+
+            if (filas.length === 0) {
+                await conexao.rollback();
+
+                return res.status(404).json({
+                    mensagem: "Entrada da fila não encontrada."
+                });
+            }
+
+            if (Number(filas[0].paciente_id) !== Number(paciente_id)) {
+                await conexao.rollback();
+
+                return res.status(400).json({
+                    mensagem: "A entrada da fila pertence a outro paciente."
+                });
+            }
+
+            if (!["aguardando", "chamado"].includes(filas[0].status)) {
+                await conexao.rollback();
+
+                return res.status(409).json({
+                    mensagem: "Não é possível registrar uma triagem para esta entrada da fila."
+                });
+            }
+
+            const [triagensExistentes] = await conexao.query(
+                `SELECT id
+                 FROM triagens
+                 WHERE fila_id = ?
+                 LIMIT 1`,
+                [fila_id]
+            );
+
+            if (triagensExistentes.length > 0) {
+                await conexao.rollback();
+
+                return res.status(409).json({
+                    mensagem: "Esta entrada da fila já possui uma triagem registrada."
+                });
+            }
+        }
+
+        const [resultado] = await conexao.query(
+            `INSERT INTO triagens (
+                paciente_id,
+                fila_id,
+                enfermeiro_id,
+                queixa_principal,
+                sintomas,
+                inicio_sintomas,
+                intensidade_dor,
+                pressao_arterial,
+                temperatura,
+                frequencia_cardiaca,
+                frequencia_respiratoria,
+                saturacao_oxigenio,
+                glicemia,
+                peso,
+                altura,
+                classificacao_risco,
+                observacoes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                paciente_id,
+                fila_id,
+                req.enfermeiro.id,
+                queixa_principal.trim(),
+                sintomas?.trim() || null,
+                inicio_sintomas?.trim() || null,
+                intensidade_dor ?? null,
+                pressao_arterial?.trim() || null,
+                temperatura ?? null,
+                frequencia_cardiaca ?? null,
+                frequencia_respiratoria ?? null,
+                saturacao_oxigenio ?? null,
+                glicemia ?? null,
+                peso ?? null,
+                altura ?? null,
+                classificacao_risco.toLowerCase(),
+                observacoes?.trim() || null
+            ]
+        );
+
+        await conexao.commit();
+
+        return res.status(201).json({
+            mensagem: "Triagem registrada com sucesso!",
+            triagem: {
+                id: resultado.insertId,
+                paciente_id: Number(paciente_id),
+                fila_id: fila_id !== null ? Number(fila_id) : null,
+                enfermeiro_id: req.enfermeiro.id,
+                classificacao_risco: classificacao_risco.toLowerCase()
+            }
+        });
+
+    } catch (error) {
+        await conexao.rollback();
+        return next(error);
+    } finally {
+        conexao.release();
+    }
 }
+
 
 // LISTAR TRIAGENS
 export async function listarTriagens(req, res, next) {
