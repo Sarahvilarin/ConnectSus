@@ -1,10 +1,6 @@
 
 import { pool } from "../config/database.js";
 
-// ======================================================
-// FUNÇÕES AUXILIARES
-// ======================================================
-
 function validarDataHoraConsulta(valor) {
   if (
     typeof valor !== "string" ||
@@ -26,6 +22,7 @@ function validarDataHoraConsulta(valor) {
     h >= 8 &&
     h <= 16 &&
     (min === 0 || min === 30) &&
+    !(h === 16 && min > 30) &&
     dataValidada.getUTCDay() >= 1 &&
     dataValidada.getUTCDay() <= 5
   );
@@ -34,10 +31,6 @@ function validarDataHoraConsulta(valor) {
 function formatarDataHoraMySQL(valor) {
   return `${valor.replace("T", " ")}:00`;
 }
-
-// ======================================================
-// DISPONIBILIDADE DE HORÁRIOS PARA O PACIENTE
-// ======================================================
 
 export async function listarDisponibilidadeConsultas(req, res, next) {
   try {
@@ -80,17 +73,11 @@ export async function listarDisponibilidadeConsultas(req, res, next) {
     const diaSemana = dataValidada.getUTCDay();
 
     if (diaSemana === 0 || diaSemana === 6) {
-      return res.status(200).json({
-        data,
-        horarios: []
-      });
+      return res.status(200).json({ data, horarios: [] });
     }
 
     const [unidades] = await pool.query(
-      `SELECT id
-       FROM unidades
-       WHERE id = ?
-         AND ativo = TRUE`,
+      `SELECT id FROM unidades WHERE id = ? AND ativo = TRUE`,
       [unidadeId]
     );
 
@@ -101,9 +88,7 @@ export async function listarDisponibilidadeConsultas(req, res, next) {
     }
 
     const [especialidades] = await pool.query(
-      `SELECT id
-       FROM especialidades
-       WHERE id = ?`,
+      `SELECT id FROM especialidades WHERE id = ?`,
       [especialidadeId]
     );
 
@@ -180,11 +165,6 @@ export async function listarDisponibilidadeConsultas(req, res, next) {
   }
 }
 
-// ======================================================
-// SOLICITAR CONSULTA
-// O MÉDICO É SELECIONADO AUTOMATICAMENTE PELO BACKEND
-// ======================================================
-
 export async function solicitarConsulta(req, res, next) {
   const pacienteId = req.paciente.id;
 
@@ -243,12 +223,10 @@ export async function solicitarConsulta(req, res, next) {
       await conexao.rollback();
 
       return res.status(400).json({
-        mensagem:
-          "Não é possível solicitar uma consulta em um horário passado."
+        mensagem: "Não é possível solicitar uma consulta em um horário passado."
       });
     }
 
-    // Verifica se o paciente já possui consulta no horário.
     const [consultasPaciente] = await conexao.query(
       `SELECT id
        FROM consultas
@@ -268,8 +246,6 @@ export async function solicitarConsulta(req, res, next) {
       });
     }
 
-    // Busca médicos vinculados à unidade, setor e especialidade.
-    // O paciente não precisa escolher o profissional.
     const [medicos] = await conexao.query(
       `SELECT DISTINCT
          m.id AS medico_id,
@@ -309,7 +285,6 @@ export async function solicitarConsulta(req, res, next) {
       });
     }
 
-    // Seleciona automaticamente o primeiro médico disponível.
     const medicoSelecionado = medicos[0];
 
     const [resultado] = await conexao.query(
@@ -363,9 +338,6 @@ export async function solicitarConsulta(req, res, next) {
   }
 }
 
-// ======================================================
-// LISTAR CONSULTAS DO PACIENTE
-// ======================================================
 
 export async function listarMinhasConsultas(req, res, next) {
   try {
@@ -409,9 +381,6 @@ export async function listarMinhasConsultas(req, res, next) {
   }
 }
 
-// ======================================================
-// CANCELAR CONSULTA DO PACIENTE
-// ======================================================
 
 export async function cancelarMinhaConsulta(req, res, next) {
   try {
@@ -463,9 +432,6 @@ export async function cancelarMinhaConsulta(req, res, next) {
   }
 }
 
-// ======================================================
-// CONFIRMAR CONSULTA PELO MÉDICO
-// ======================================================
 
 export async function confirmarConsulta(req, res, next) {
   try {
@@ -510,8 +476,7 @@ export async function confirmarConsulta(req, res, next) {
 
       if (consultas[0].medico_id !== medicoId) {
         return res.status(403).json({
-          mensagem:
-            "Você não tem permissão para confirmar esta consulta."
+          mensagem: "Você não tem permissão para confirmar esta consulta."
         });
       }
 
@@ -532,9 +497,6 @@ export async function confirmarConsulta(req, res, next) {
   }
 }
 
-// ======================================================
-// LISTAR CONSULTAS DO MÉDICO
-// ======================================================
 
 export async function listarConsultasDoMedico(req, res, next) {
   try {
@@ -579,9 +541,6 @@ export async function listarConsultasDoMedico(req, res, next) {
   }
 }
 
-// ======================================================
-// CONCLUIR CONSULTA PELO MÉDICO
-// ======================================================
 
 export async function concluirConsulta(req, res, next) {
   try {
@@ -600,7 +559,7 @@ export async function concluirConsulta(req, res, next) {
        SET status = 'concluida'
        WHERE id = ?
          AND medico_id = ?
-         AND status = 'confirmada'`,
+         AND status = 'em_atendimento'`,
       [id, medicoId]
     );
 
@@ -620,8 +579,7 @@ export async function concluirConsulta(req, res, next) {
 
       if (consultas[0].medico_id !== medicoId) {
         return res.status(403).json({
-          mensagem:
-            "Você não tem permissão para concluir esta consulta."
+          mensagem: "Você não tem permissão para concluir esta consulta."
         });
       }
 
@@ -642,10 +600,8 @@ export async function concluirConsulta(req, res, next) {
   }
 }
 
-// ======================================================
-// BUSCAR TRIAGEM VINCULADA À CONSULTA
-// ======================================================
 
+// BUSCAR TRIAGEM VINCULADA À CONSULTA
 export async function buscarTriagemDaConsulta(req, res, next) {
   try {
     const { id } = req.params;
@@ -658,27 +614,27 @@ export async function buscarTriagemDaConsulta(req, res, next) {
 
     const [triagens] = await pool.query(
       `SELECT
-         t.id,
-         t.paciente_id,
-         t.consulta_id,
-         t.enfermeiro_id,
-         p.nome_completo AS paciente,
-         e.nome_completo AS enfermeiro,
-         t.queixa_principal,
-         t.sintomas,
-         t.inicio_sintomas,
-         t.intensidade_dor,
-         t.pressao_arterial,
-         t.temperatura,
-         t.frequencia_cardiaca,
-         t.frequencia_respiratoria,
-         t.saturacao_oxigenio,
-         t.glicemia,
-         t.peso,
-         t.altura,
-         t.classificacao_risco,
-         t.observacoes,
-         t.criado_em
+        t.id,
+        t.paciente_id,
+        t.consulta_id,
+        t.enfermeiro_id,
+        p.nome_completo AS paciente,
+        e.nome_completo AS enfermeiro,
+        t.queixa_principal,
+        t.sintomas,
+        t.inicio_sintomas,
+        t.intensidade_dor,
+        t.pressao_arterial,
+        t.temperatura,
+        t.frequencia_cardiaca,
+        t.frequencia_respiratoria,
+        t.saturacao_oxigenio,
+        t.glicemia,
+        t.peso,
+        t.altura,
+        t.classificacao_risco,
+        t.observacoes,
+        t.criado_em
        FROM consultas c
        INNER JOIN triagens t
          ON t.paciente_id = c.paciente_id
@@ -702,3 +658,132 @@ export async function buscarTriagemDaConsulta(req, res, next) {
     return next(error);
   }
 }
+
+// INICIAR ATENDIMENTO: somente consulta confirmada do médico autenticado
+export async function iniciarConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+    if (!/^[1-9]\d*$/.test(id)) return res.status(400).json({ mensagem: "ID da consulta inválido." });
+    const [result] = await pool.query(
+      `UPDATE consultas SET status = 'em_atendimento'
+       WHERE id = ? AND medico_id = ? AND status = 'confirmada'`,
+      [id, req.medico.id]
+    );
+    if (!result.affectedRows) {
+      const [rows] = await pool.query("SELECT medico_id, status FROM consultas WHERE id = ?", [id]);
+      if (!rows.length) return res.status(404).json({ mensagem: "Consulta não encontrada." });
+      if (Number(rows[0].medico_id) !== Number(req.medico.id)) return res.status(403).json({ mensagem: "Você não tem acesso a esta consulta." });
+      return res.status(409).json({ mensagem: `Não é possível iniciar uma consulta com status \"${rows[0].status}\".` });
+    }
+    return res.status(200).json({ mensagem: "Atendimento iniciado.", status: "em_atendimento" });
+  } catch (error) { return next(error); }
+}
+
+// REGISTRAR FALTA: somente consulta confirmada e pertencente ao médico
+export async function registrarFaltaConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+    if (!/^[1-9]\d*$/.test(id)) return res.status(400).json({ mensagem: "ID da consulta inválido." });
+    const [result] = await pool.query(
+      `UPDATE consultas SET status = 'falta'
+       WHERE id = ? AND medico_id = ? AND status = 'confirmada'`,
+      [id, req.medico.id]
+    );
+    if (!result.affectedRows) {
+      const [rows] = await pool.query("SELECT medico_id, status FROM consultas WHERE id = ?", [id]);
+      if (!rows.length) return res.status(404).json({ mensagem: "Consulta não encontrada." });
+      if (Number(rows[0].medico_id) !== Number(req.medico.id)) return res.status(403).json({ mensagem: "Você não tem acesso a esta consulta." });
+      return res.status(409).json({ mensagem: `Não é possível registrar falta para uma consulta com status \"${rows[0].status}\".` });
+    }
+    return res.status(200).json({ mensagem: "Falta registrada.", status: "falta" });
+  } catch (error) { return next(error); }
+}
+
+// BUSCAR PRONTUÁRIO DA CONSULTA
+export async function buscarProntuarioConsulta(req, res, next) {
+  try {
+    const { id } = req.params;
+    if (!/^[1-9]\d*$/.test(id)) return res.status(400).json({ mensagem: "ID da consulta inválido." });
+    const [rows] = await pool.query(
+      `SELECT pr.*, m.nome_completo AS registrado_por
+       FROM consultas c
+       LEFT JOIN prontuarios pr ON pr.consulta_id = c.id
+       LEFT JOIN medicos m ON m.id = pr.medico_id
+       WHERE c.id = ? AND c.medico_id = ?`, [id, req.medico.id]
+    );
+    if (!rows.length) return res.status(404).json({ mensagem: "Consulta não encontrada." });
+    return res.status(200).json({ prontuario: rows[0].id ? rows[0] : null });
+  } catch (error) { return next(error); }
+}
+
+// SALVAR RASCUNHO OU PRONTUÁRIO. O registro é imutável após concluir a consulta.
+export async function salvarProntuarioConsulta(req, res, next) {
+  const conexao = await pool.getConnection();
+  try {
+    const { id } = req.params;
+    if (!/^[1-9]\d*$/.test(id)) return res.status(400).json({ mensagem: "ID da consulta inválido." });
+    const campos = ["queixa", "historia", "alergias", "medicamentos", "pressao_arterial", "frequencia_cardiaca", "temperatura", "saturacao_oxigenio", "frequencia_respiratoria", "glicemia", "peso", "altura", "exame_fisico", "hipotese_diagnostica", "cid", "conduta", "exames_solicitados", "retorno_prazo"];
+    const body = req.body ?? {};
+    const texto = ["queixa", "historia", "alergias", "medicamentos", "exame_fisico", "hipotese_diagnostica", "cid", "conduta", "exames_solicitados", "retorno_prazo"];
+    for (const campo of texto) {
+      if (body[campo] !== undefined && body[campo] !== null && typeof body[campo] !== "string") return res.status(400).json({ mensagem: `Campo ${campo} inválido.` });
+      if (typeof body[campo] === "string" && body[campo].length > (campo === "conduta" || campo === "historia" ? 20000 : 5000)) return res.status(400).json({ mensagem: `Campo ${campo} excede o limite permitido.` });
+    }
+    const numericos = ["frequencia_cardiaca", "frequencia_respiratoria", "temperatura", "saturacao_oxigenio", "glicemia", "peso", "altura"];
+    for (const campo of numericos) {
+      if (body[campo] !== undefined && body[campo] !== null && body[campo] !== "" && (!Number.isFinite(Number(String(body[campo]).replace(",", "."))) || Number(String(body[campo]).replace(",", ".")) < 0)) return res.status(400).json({ mensagem: `Valor inválido em ${campo}.` });
+    }
+    const retornoPermitido = ["Sem retorno", "15 dias", "30 dias", "60 dias", "90 dias", "6 meses"];
+    if (body.retorno_prazo && !retornoPermitido.includes(body.retorno_prazo)) return res.status(400).json({ mensagem: "Prazo de retorno inválido." });
+
+    await conexao.beginTransaction();
+    const [consultas] = await conexao.query(
+      "SELECT id, paciente_id, status FROM consultas WHERE id = ? AND medico_id = ? FOR UPDATE", [id, req.medico.id]
+    );
+    if (!consultas.length) { await conexao.rollback(); return res.status(404).json({ mensagem: "Consulta não encontrada." }); }
+    if (consultas[0].status !== "em_atendimento") { await conexao.rollback(); return res.status(409).json({ mensagem: "O prontuário só pode ser editado durante um atendimento em andamento." }); }
+
+    const valores = [
+      body.queixa?.trim() || null, body.historia?.trim() || null, body.alergias?.trim() || null, body.medicamentos?.trim() || null,
+      body.pressao_arterial || null, body.frequencia_cardiaca || null, body.temperatura || null, body.saturacao_oxigenio || null,
+      body.frequencia_respiratoria || null, body.glicemia || null, body.peso || null, body.altura || null,
+      body.exame_fisico?.trim() || null, body.hipotese_diagnostica?.trim() || null, body.cid?.trim() || null,
+      body.conduta?.trim() || null, body.exames_solicitados?.trim() || null, body.retorno_prazo || "Sem retorno"
+    ].map(v => typeof v === "string" && /^\d+[,.]?\d*$/.test(v) ? v.replace(",", ".") : v);
+    await conexao.query(
+      `INSERT INTO prontuarios
+       (consulta_id, paciente_id, medico_id, queixa, historia, alergias, medicamentos, pressao_arterial,
+        frequencia_cardiaca, temperatura, saturacao_oxigenio, frequencia_respiratoria, glicemia, peso, altura,
+        exame_fisico, hipotese_diagnostica, cid, conduta, exames_solicitados, retorno_prazo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+        queixa=VALUES(queixa), historia=VALUES(historia), alergias=VALUES(alergias), medicamentos=VALUES(medicamentos),
+        pressao_arterial=VALUES(pressao_arterial), frequencia_cardiaca=VALUES(frequencia_cardiaca), temperatura=VALUES(temperatura),
+        saturacao_oxigenio=VALUES(saturacao_oxigenio), frequencia_respiratoria=VALUES(frequencia_respiratoria), glicemia=VALUES(glicemia),
+        peso=VALUES(peso), altura=VALUES(altura), exame_fisico=VALUES(exame_fisico), hipotese_diagnostica=VALUES(hipotese_diagnostica),
+        cid=VALUES(cid), conduta=VALUES(conduta), exames_solicitados=VALUES(exames_solicitados), retorno_prazo=VALUES(retorno_prazo),
+        medico_id=VALUES(medico_id)`,
+      [id, consultas[0].paciente_id, req.medico.id, ...valores]
+    );
+    await conexao.commit();
+    return res.status(200).json({ mensagem: "Prontuário salvo com sucesso." });
+  } catch (error) { await conexao.rollback(); return next(error); }
+  finally { conexao.release(); }
+}
+
+// HISTÓRICO CLÍNICO DO PACIENTE, limitado às consultas do mesmo médico autenticado
+export async function listarHistoricoProntuariosPaciente(req, res, next) {
+  try {
+    const { pacienteId } = req.params;
+    if (!/^[1-9]\d*$/.test(pacienteId)) return res.status(400).json({ mensagem: "ID do paciente inválido." });
+    const [rows] = await pool.query(
+      `SELECT c.id AS consulta_id, c.data_hora, c.status, pr.queixa, pr.hipotese_diagnostica,
+              pr.cid, pr.conduta, pr.exames_solicitados
+       FROM consultas c INNER JOIN prontuarios pr ON pr.consulta_id = c.id
+       WHERE c.paciente_id = ? AND c.medico_id = ? AND c.status = 'concluida'
+       ORDER BY c.data_hora DESC`, [pacienteId, req.medico.id]
+    );
+    return res.status(200).json({ total: rows.length, historico: rows });
+  } catch (error) { return next(error); }
+}
+

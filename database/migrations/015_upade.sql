@@ -1,0 +1,13 @@
+UPDATE especialidades
+SET nome = CONVERT(
+    UNHEX('436CC3AD6E696361204DC3A964696361')
+    USING utf8mb4
+)
+WHERE id = 1;
+
+UPDATE especialidades
+SET nome = CONVERT(
+    UNHEX('4F627374657472C3AD636961')
+    USING utf8mb4
+)
+WHERE id = 4;

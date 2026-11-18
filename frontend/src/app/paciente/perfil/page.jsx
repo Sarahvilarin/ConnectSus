@@ -1,13 +1,26 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import { UserRound, Pencil, Eye, EyeOff } from "lucide-react";
 
 export default function PerfilPage() {
-  const [nome, setNome] = useState("Giovana de Andrade Martini");
-  const [telefone, setTelefone] = useState("(11) 98765-4321");
-  const [email, setEmail] = useState("giovana.martini@email.com");
+
+
+  const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [email, setEmail] = useState("");
+
+  const [nomeEditado, setNomeEditado] = useState("");
+  const [telefoneEditado, setTelefoneEditado] = useState("");
+
+  const [novoEmail, setNovoEmail] = useState("");
+
+  const [carregandoPerfil, setCarregandoPerfil] = useState(true);
+  const [salvandoDados, setSalvandoDados] = useState(false);
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
+  const [salvandoEmail, setSalvandoEmail] = useState(false);
   const [foto, setFoto] = useState("");
   const [modal, setModal] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -21,18 +34,39 @@ export default function PerfilPage() {
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [novoEmail, setNovoEmail] = useState(email);
-  const [nomeEditado, setNomeEditado] = useState(nome);
-  const [telefoneEditado, setTelefoneEditado] = useState(telefone);
 
   const inputFoto = useRef(null);
+
+  useEffect(() => {
+    async function carregarPerfil() {
+      try {
+        const resposta = await api("/pacientes/me");
+
+        const paciente = resposta.paciente;
+
+        setNome(paciente.nome_completo || "");
+        setTelefone(paciente.telefone || "");
+        setEmail(paciente.email || "");
+
+        setNomeEditado(paciente.nome_completo || "");
+        setTelefoneEditado(paciente.telefone || "");
+        setNovoEmail(paciente.email || "");
+      } catch (error) {
+        mostrarMensagem(error.message || "Não foi possível carregar seu perfil.");
+      } finally {
+        setCarregandoPerfil(false);
+      }
+    }
+
+    carregarPerfil();
+  }, []);
 
   function mostrarMensagem(texto) {
     setMensagem(texto);
     setTimeout(() => setMensagem(""), 3500);
   }
 
-  function salvarDados(e) {
+  async function salvarDados(e) {
     e.preventDefault();
 
     if (!nomeEditado.trim()) {
@@ -40,9 +74,31 @@ export default function PerfilPage() {
       return;
     }
 
-    setNome(nomeEditado.trim());
-    setTelefone(telefoneEditado);
-    mostrarMensagem("Seus dados foram atualizados com sucesso!");
+    setSalvandoDados(true);
+
+    try {
+      const resposta = await api("/pacientes/me", {
+        method: "PUT",
+        body: JSON.stringify({
+          nome_completo: nomeEditado.trim(),
+          telefone: telefoneEditado.trim(),
+        }),
+      });
+
+      const paciente = resposta.paciente;
+
+      setNome(paciente.nome_completo);
+      setTelefone(paciente.telefone || "");
+
+      setNomeEditado(paciente.nome_completo);
+      setTelefoneEditado(paciente.telefone || "");
+
+      mostrarMensagem(resposta.mensagem || "Dados atualizados com sucesso!");
+    } catch (error) {
+      mostrarMensagem(error.message || "Erro ao atualizar seus dados.");
+    } finally {
+      setSalvandoDados(false);
+    }
   }
 
   function selecionarFoto(e) {
@@ -81,7 +137,7 @@ export default function PerfilPage() {
     setModal("senha");
   }
 
-  function alterarSenha(e) {
+  async function alterarSenha(e) {
     e.preventDefault();
 
     if (!senhaAtual || !novaSenha || !confirmarSenha) {
@@ -89,8 +145,13 @@ export default function PerfilPage() {
       return;
     }
 
-    if (novaSenha.length < 8) {
-      mostrarMensagem("A nova senha deve ter pelo menos 8 caracteres.");
+    if (novaSenha.length < 12) {
+      mostrarMensagem("A nova senha deve ter pelo menos 12 caracteres.");
+      return;
+    }
+
+    if (novaSenha.length > 72) {
+      mostrarMensagem("A nova senha deve ter no máximo 72 caracteres.");
       return;
     }
 
@@ -99,35 +160,75 @@ export default function PerfilPage() {
       return;
     }
 
-    mostrarMensagem("Demonstração: senha validada com sucesso!");
+    setSalvandoSenha(true);
 
-    setSenhaAtual("");
-    setNovaSenha("");
-    setConfirmarSenha("");
+    try {
+      const resposta = await api("/pacientes/me/senha", {
+        method: "PATCH",
+        body: JSON.stringify({
+          senha_atual: senhaAtual,
+          nova_senha: novaSenha,
+        }),
+      });
 
-    setSenhasVisiveis({
-      "senha-atual": false,
-      "nova-senha": false,
-      "confirmar-senha": false,
-    });
+      mostrarMensagem(resposta.mensagem || "Senha alterada com sucesso!");
 
-    setModal("");
+      setSenhaAtual("");
+      setNovaSenha("");
+      setConfirmarSenha("");
+
+      setSenhasVisiveis({
+        "senha-atual": false,
+        "nova-senha": false,
+        "confirmar-senha": false,
+      });
+
+      setModal("");
+    } catch (error) {
+      mostrarMensagem(error.message || "Não foi possível alterar a senha.");
+    } finally {
+      setSalvandoSenha(false);
+    }
   }
 
-  function alterarEmail(e) {
+  async function alterarEmail(e) {
     e.preventDefault();
 
-    if (
-      !novoEmail.trim() ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)
-    ) {
+    const emailLimpo = novoEmail.trim().toLowerCase();
+
+    if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
       mostrarMensagem("Informe um endereço de e-mail válido.");
       return;
     }
 
-    setEmail(novoEmail.trim());
-    setModal("");
-    mostrarMensagem("E-mail atualizado na demonstração!");
+    if (emailLimpo === email.toLowerCase()) {
+      mostrarMensagem("O novo e-mail deve ser diferente do atual.");
+      return;
+    }
+
+    setSalvandoEmail(true);
+
+    try {
+      const resposta = await api("/pacientes/me", {
+        method: "PUT",
+        body: JSON.stringify({
+          email: emailLimpo,
+        }),
+      });
+
+      const paciente = resposta.paciente;
+
+      setEmail(paciente.email);
+      setNovoEmail(paciente.email);
+
+      setModal("");
+
+      mostrarMensagem(resposta.mensagem || "E-mail atualizado com sucesso!");
+    } catch (error) {
+      mostrarMensagem(error.message || "Não foi possível alterar o e-mail.");
+    } finally {
+      setSalvandoEmail(false);
+    }
   }
 
   return (
@@ -291,8 +392,9 @@ export default function PerfilPage() {
                 <button
                   type="submit"
                   className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#023E8A] px-6 py-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(53,99,167,0.20)] transition hover:-translate-y-0.5 hover:bg-[#3563A7] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#3563A7]/20 sm:max-w-[260px]"
+                  disabled={salvandoDados || carregandoPerfil}
                 >
-                  Salvar alterações
+                  {salvandoDados ? "Salvando..." : "Salvar alterações"}
                 </button>
               </div>
             </form>
@@ -329,8 +431,9 @@ export default function PerfilPage() {
                   type="button"
                   onClick={abrirModalSenha}
                   className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#023E8A] bg-white/60 px-5 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#023E8A] hover:text-white"
+                  disabled={salvandoSenha}
                 >
-                  Alterar senha
+                  Alterar Senha
                 </button>
               </div>
 
@@ -354,6 +457,7 @@ export default function PerfilPage() {
                     setModal("email");
                   }}
                   className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#023E8A] bg-white/60 px-5 py-3 text-sm font-semibold text-[#023E8A] transition hover:bg-[#023E8A] hover:text-white"
+                  disabled={salvandoEmail}
                 >
                   Alterar e-mail
                 </button>

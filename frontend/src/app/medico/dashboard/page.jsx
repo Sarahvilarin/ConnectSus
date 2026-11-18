@@ -1,6 +1,9 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+
 const Icon = ({ name, className = "h-6 w-6" }) => {
   const icons = {
     calendar: (
@@ -70,67 +73,91 @@ const Icon = ({ name, className = "h-6 w-6" }) => {
   );
 };
 
-const indicadores = [
-  {
-    titulo: "Consultas de hoje",
-    valor: "12",
-    icon: "calendar",
+const STATUS_CONFIG = {
+  concluida: {
+    label: "Concluída",
+    cor: "bg-emerald-50 text-emerald-700",
+    marcador: "bg-emerald-500",
+    borda: "border-l-emerald-500",
   },
-  {
-    titulo: "Aguardando",
-    valor: "04",
-    icon: "clock",
-  },
-  {
-    titulo: "Em atendimento",
-    valor: "02",
-    icon: "activity",
-  },
-  {
-    titulo: "Concluídos",
-    valor: "08",
-    icon: "check",
-  },
-];
-
-const pacientes = [
-  {
-    numero: "01",
-    nome: "Maria Silva",
-    iniciais: "MS",
-    horario: "08:30",
-    tipo: "Consulta médica",
-    status: "Aguardando",
-    cor: "bg-amber-50 text-amber-700",
-  },
-  {
-    numero: "02",
-    nome: "João Pereira",
-    iniciais: "JP",
-    horario: "08:45",
-    tipo: "Retorno",
-    status: "Aguardando",
-    cor: "bg-amber-50 text-amber-700",
-  },
-  {
-    numero: "03",
-    nome: "Ana Costa",
-    iniciais: "AC",
-    horario: "09:00",
-    tipo: "Consulta médica",
-    status: "Em atendimento",
+  em_atendimento: {
+    label: "Em atendimento",
     cor: "bg-blue-50 text-blue-700",
+    marcador: "bg-[#023E8A]",
+    borda: "border-l-[#023E8A]",
   },
-  {
-    numero: "04",
-    nome: "Carlos Lima",
-    iniciais: "CL",
-    horario: "09:15",
-    tipo: "Avaliação clínica",
-    status: "Aguardando",
+  aguardando: {
+    label: "Aguardando",
     cor: "bg-amber-50 text-amber-700",
+    marcador: "bg-amber-500",
+    borda: "border-l-amber-500",
   },
-];
+  agendada: {
+    label: "Agendada",
+    cor: "bg-[#EAF3F7] text-[#3563A7]",
+    marcador: "bg-[#B8D6FC]",
+    borda: "border-l-[#B8D6FC]",
+  },
+};
+
+function normalizarStatus(status) {
+  const valor = String(status || "").toLowerCase().trim().replace(/[\s-]+/g, "_");
+  if (["concluida", "concluido", "finalizada", "finalizado"].includes(valor)) return "concluida";
+  if (["em_atendimento", "atendendo"].includes(valor)) return "em_atendimento";
+  if (["aguardando", "pendente", "confirmada", "confirmado"].includes(valor)) return "aguardando";
+  return "agendada";
+}
+
+function obterDataLocal(valor) {
+  if (!valor) return null;
+
+  // Datas retornadas pelo MySQL: YYYY-MM-DD HH:mm:ss
+  if (typeof valor === "string") {
+    const match = valor.match(
+      /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2}))?$/
+    );
+
+    if (match) {
+      const [, ano, mes, dia, hora = "00", minuto = "00", segundo = "00"] = match;
+
+      // Criar a data no horário local, sem conversão UTC
+      return new Date(
+        Number(ano),
+        Number(mes) - 1,
+        Number(dia),
+        Number(hora),
+        Number(minuto),
+        Number(segundo)
+      );
+    }
+  }
+
+  // Fallback para outros formatos
+  const data = new Date(valor);
+
+  if (Number.isNaN(data.getTime())) return null;
+
+  return data;
+}
+
+function formatarDataHoje() {
+  return new Date().toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
+}
+
+function formatarHorario(valor) {
+  const data = obterDataLocal(valor);
+  return data ? data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+}
+
+
+function mesmoDia(valor, hoje) {
+  const data = obterDataLocal(valor);
+  return !!data && data.getFullYear() === hoje.getFullYear() && data.getMonth() === hoje.getMonth() && data.getDate() === hoje.getDate();
+}
 
 const atalhos = [
   {
@@ -199,6 +226,60 @@ function CartaoIndicador({ indicador, index }) {
 
 
 export default function DashboardMedico() {
+  const [consultas, setConsultas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarConsultas() {
+      try {
+        const resposta = await api("/consultas/medico/me");
+        if (ativo) setConsultas(Array.isArray(resposta.consultas) ? resposta.consultas : []);
+      } catch (error) {
+        if (ativo) setErro(error.message || "Não foi possível carregar as consultas.");
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+
+    carregarConsultas();
+    return () => { ativo = false; };
+  }, []);
+
+  const hoje = new Date();
+  const consultasHoje = consultas
+    .filter((consulta) => mesmoDia(consulta.data_hora || consulta.data, hoje))
+    .filter((consulta) => !["cancelada", "cancelado", "falta", "faltou"].includes(String(consulta.status || "").toLowerCase()))
+    .sort((a, b) => new Date(a.data_hora || a.data) - new Date(b.data_hora || b.data));
+
+  const concluidas = consultasHoje.filter((consulta) => normalizarStatus(consulta.status) === "concluida").length;
+  const emAtendimento = consultasHoje.filter((consulta) => normalizarStatus(consulta.status) === "em_atendimento").length;
+  const aguardando = consultasHoje.filter((consulta) => normalizarStatus(consulta.status) === "aguardando").length;
+  const indicadores = [
+    { titulo: "Consultas de hoje", valor: carregando ? "—" : String(consultasHoje.length).padStart(2, "0"), icon: "calendar" },
+    { titulo: "Aguardando", valor: carregando ? "—" : String(aguardando).padStart(2, "0"), icon: "clock" },
+    { titulo: "Em atendimento", valor: carregando ? "—" : String(emAtendimento).padStart(2, "0"), icon: "activity" },
+    { titulo: "Concluídos", valor: carregando ? "—" : String(concluidas).padStart(2, "0"), icon: "check" },
+  ];
+
+  const proximasConsultas = consultasHoje.filter((consulta) => normalizarStatus(consulta.status) !== "concluida").slice(0, 3);
+  const percentualConcluido = consultasHoje.length ? Math.round((concluidas / consultasHoje.length) * 100) : 0;
+  const consultasParaTimeline = consultasHoje.map((consulta) => {
+    const config = STATUS_CONFIG[normalizarStatus(consulta.status)];
+    return {
+      id: consulta.id,
+      horario: formatarHorario(consulta.data_hora || consulta.data),
+      nome: consulta.paciente || consulta.nome_paciente || "Paciente",
+      tipo: consulta.especialidade || consulta.tipo || "Consulta médica",
+      status: config.label,
+      cor: config.cor,
+      marcador: config.marcador,
+      borda: config.borda,
+    };
+  });
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7] text-[#0B1756]">
       {/* CÍRCULOS DECORATIVOS DO FUNDO */}
@@ -258,438 +339,383 @@ export default function DashboardMedico() {
           </div>
 
           {/* IMAGEM ADMINISTRATIVA */}
-     
-<div className="relative min-h-[400px] w-full lg:min-h-[520px] lg:w-[150%] lg:-ml-[50%] lg:translate-x-2 lg:-translate-y-20">
-  <img
-    src="/img-dashboard-medico.jpg"
-    alt="Profissional de saúde, painel de fila de atendimento e QR Code"
-    className="absolute inset-0 h-full w-full object-cover object-right"
-    style={{
-      maskImage:
-        "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
-      WebkitMaskImage:
-        "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
-    }}
-  />
-</div>
+
+          <div className="relative min-h-[400px] w-full lg:min-h-[520px] lg:w-[150%] lg:-ml-[50%] lg:translate-x-2 lg:-translate-y-20">
+            <img
+              src="/img-dashboard-medico.jpg"
+              alt="Profissional de saúde, painel de fila de atendimento e QR Code"
+              className="absolute inset-0 h-full w-full object-cover object-right"
+              style={{
+                maskImage:
+                  "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+                WebkitMaskImage:
+                  "linear-gradient(to right, transparent 0%, black 30%, black 94%, transparent 100%)",
+              }}
+            />
+          </div>
         </section>
 
-        
-
-{/* INDICADORES PRINCIPAIS */}
-<section className="mt-6">
-  <div className="mb-7">
-    <h2 className="text-xl font-extrabold text-[#0B1756] sm:text-3xl">
-      Indicadores de atendimento
-    </h2>
-
-    <p className="mt-3 max-w-2xl text-base leading-7 text-[#536783]">
-      Os números essenciais para acompanhar o dia.
-    </p>
-  </div>
-
-  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-    {indicadores.map((indicador, index) => (
-      <CartaoIndicador
-        key={indicador.titulo}
-        indicador={indicador}
-        index={index}
-      />
-    ))}
-  </div>
-</section>
 
 
-   {/* AGENDA DO DIA */}
+        {/* INDICADORES PRINCIPAIS */}
+        <section className="mt-6">
+          <div className="mb-7">
+            <h2 className="text-xl font-extrabold text-[#0B1756] sm:text-3xl">
+              Indicadores de atendimento
+            </h2>
 
-<section className="mt-16 sm:mt-20">
-  {/* CABEÇALHO */}
-  <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-
-      <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl">
-        Agenda do dia
-      </h2>
-
-      <p className="mt-2 text-base leading-7 text-[#536783]">
-        Organize os horários e acompanhe sua programação de consultas.
-      </p>
-    </div>
-
-    <div className="flex w-fit items-center gap-3 rounded-2xl border border-[#3563A7]/15 bg-white/80 px-4 py-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D9EBFF] text-[#023E8A]">
-        <Icon name="check" className="h-6 w-6" />
-      </div>
-
-      <div>
-        <p className="text-xs font-medium text-[#536783]">
-          Programação
-        </p>
-        <p className="text-sm font-extrabold text-[#0B1756]">
-          Sábado, 31 de outubro
-        </p>
-      </div>
-    </div>
-  </div>
-
-  
-{/* CONTEÚDO DA AGENDA */}
-<div className="mt-8 grid items-stretch gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-
-  {/* RESUMO LATERAL */}
-  <aside className="flex flex-col gap-4 lg:h-full">
-
-    {/* CONSULTAS PROGRAMADAS */}
-    <div className="flex flex-1 flex-col justify-center rounded-[24px] bg-[#023E8A] p-6 text-white shadow-lg shadow-[#023E8A]/10">
-      <p className="text-sm font-medium text-white/75">
-        Consultas programadas
-      </p>
-
-      <div className="mt-3 flex items-end gap-2">
-        <span className="text-5xl font-extrabold tracking-tight">
-          12
-        </span>
-        <span className="mb-1 text-sm text-white/75">
-          hoje
-        </span>
-      </div>
-
-      <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/20">
-        <div className="h-full w-2/3 rounded-full bg-white" />
-      </div>
-
-      <p className="mt-3 text-xs text-white/75">
-        8 de 12 consultas concluídas
-      </p>
-    </div>
-
-    {/* SITUAÇÃO DOS ATENDIMENTOS */}
-    <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
-      <p className="text-sm font-bold text-[#0B1756]">
-        Situação dos atendimentos
-      </p>
-
-      <div className="mt-5 space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            <span className="text-sm text-[#536783]">
-              Concluídas
-            </span>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-[#536783]">
+              Os números essenciais para acompanhar o dia.
+            </p>
           </div>
-          <span className="font-bold text-[#0B1756]">08</span>
-        </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#023E8A]" />
-            <span className="text-sm text-[#536783]">
-              Em atendimento
-            </span>
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {indicadores.map((indicador, index) => (
+              <CartaoIndicador
+                key={indicador.titulo}
+                indicador={indicador}
+                index={index}
+              />
+            ))}
           </div>
-          <span className="font-bold text-[#0B1756]">02</span>
-        </div>
+        </section>
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-            <span className="text-sm text-[#536783]">
-              Aguardando
-            </span>
-          </div>
-          <span className="font-bold text-[#0B1756]">02</span>
-        </div>
-      </div>
-    </div>
 
-    {/* PRÓXIMOS ATENDIMENTOS */}
-    <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-bold text-[#0B1756]">
-          Próximos atendimentos
-        </p>
+        {/* AGENDA DO DIA */}
 
-        <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-bold text-[#3563A7]">
-          Hoje
-        </span>
-      </div>
+        <section className="mt-16 sm:mt-20">
+          {/* CABEÇALHO */}
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
 
-      <div className="mt-5 space-y-4">
-        {[
-          {
-            horario: "09:30",
-            nome: "Carlos Lima",
-            tipo: "Avaliação clínica",
-          },
-          {
-            horario: "10:00",
-            nome: "Beatriz Souza",
-            tipo: "Consulta médica",
-          },
-        ].map((item) => (
-          <div
-            key={item.horario}
-            className="flex items-center gap-3"
-          >
-            <div className="rounded-xl bg-[#EAF3F7] px-3 py-2">
-              <span className="text-sm font-extrabold text-[#023E8A]">
-                {item.horario}
-              </span>
-            </div>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl">
+                Agenda do dia
+              </h2>
 
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-[#0B1756]">
-                {item.nome}
-              </p>
-              <p className="mt-0.5 text-xs text-[#536783]">
-                {item.tipo}
+              <p className="mt-2 text-base leading-7 text-[#536783]">
+                Organize os horários e acompanhe sua programação de consultas.
               </p>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
 
-  </aside>
+            <div className="flex w-fit items-center gap-3 rounded-2xl border border-[#3563A7]/15 bg-white/80 px-4 py-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D9EBFF] text-[#023E8A]">
+                <Icon name="check" className="h-6 w-6" />
+              </div>
 
-  {/* LINHA DO TEMPO */}
-  <div className="h-full min-w-0 rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5 shadow-sm sm:p-7">
-
-    <div className="flex flex-col gap-2 border-b border-[#3563A7]/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h3 className="text-lg font-extrabold text-[#0B1756]">
-          Horários programados
-        </h3>
-        <p className="mt-1 text-sm text-[#536783]">
-          Acompanhe a sequência das consultas.
-        </p>
-      </div>
-
-      <span className="w-fit rounded-full bg-[#EAF3F7] px-3 py-1.5 text-xs font-bold text-[#3563A7]">
-        08:00 — 10:00
-      </span>
-    </div>
-
-    <div className="mt-5">
-      {[
-        {
-          horario: "08:00",
-          nome: "Maria Silva",
-          tipo: "Consulta de rotina",
-          status: "Concluída",
-          cor: "bg-emerald-50 text-emerald-700",
-          marcador: "bg-emerald-500",
-          borda: "border-l-emerald-500",
-        },
-        {
-          horario: "08:30",
-          nome: "João Pereira",
-          tipo: "Consulta de retorno",
-          status: "Concluída",
-          cor: "bg-emerald-50 text-emerald-700",
-          marcador: "bg-emerald-500",
-          borda: "border-l-emerald-500",
-        },
-        {
-          horario: "09:00",
-          nome: "Ana Costa",
-          tipo: "Consulta médica",
-          status: "Em atendimento",
-          cor: "bg-blue-50 text-blue-700",
-          marcador: "bg-[#023E8A]",
-          borda: "border-l-[#023E8A]",
-        },
-        {
-          horario: "09:30",
-          nome: "Carlos Lima",
-          tipo: "Avaliação clínica",
-          status: "Aguardando",
-          cor: "bg-amber-50 text-amber-700",
-          marcador: "bg-amber-500",
-          borda: "border-l-amber-500",
-        },
-        {
-          horario: "10:00",
-          nome: "Beatriz Souza",
-          tipo: "Consulta médica",
-          status: "Agendada",
-          cor: "bg-[#EAF3F7] text-[#3563A7]",
-          marcador: "bg-[#B8D6FC]",
-          borda: "border-l-[#B8D6FC]",
-        },
-      ].map((consulta, index) => (
-        <div
-          key={consulta.horario}
-          className="grid grid-cols-[60px_minmax(0,1fr)] gap-3 sm:grid-cols-[72px_minmax(0,1fr)] sm:gap-5"
-        >
-          {/* HORÁRIO E MARCADOR */}
-          <div className="relative flex flex-col items-center">
-            <span className="pt-4 text-sm font-extrabold text-[#023E8A] sm:text-base">
-              {consulta.horario}
-            </span>
-
-            <span
-              className={`relative z-10 mt-3 h-3 w-3 rounded-full ${consulta.marcador} ring-4 ring-white`}
-            />
-
-            {index !== 4 && (
-              <span className="absolute bottom-0 top-[62px] w-px bg-[#D9E7F5]" />
-            )}
+              <div>
+                <p className="text-xs font-medium text-[#536783]">
+                  Programação
+                </p>
+                <p className="text-sm font-extrabold text-[#0B1756] capitalize">
+                  {formatarDataHoje()}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* BLOCO DA CONSULTA */}
-          <div
-            className={`mb-4 min-w-0 rounded-xl border border-[#3563A7]/10 border-l-4 ${consulta.borda} bg-white px-4 py-4 transition hover:shadow-sm sm:px-5`}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="truncate font-bold text-[#0B1756]">
-                  {consulta.nome}
+
+          {/* CONTEÚDO DA AGENDA */}
+          <div className="mt-8 grid items-stretch gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+
+            {/* RESUMO LATERAL */}
+            <aside className="flex flex-col gap-4 lg:h-full">
+
+              {/* CONSULTAS PROGRAMADAS */}
+              <div className="flex flex-1 flex-col justify-center rounded-[24px] bg-[#023E8A] p-6 text-white shadow-lg shadow-[#023E8A]/10">
+                <p className="text-sm font-medium text-white/75">
+                  Consultas programadas
                 </p>
 
-                <p className="mt-1 text-sm text-[#536783]">
-                  {consulta.tipo}
+                <div className="mt-3 flex items-end gap-2">
+                  <span className="text-5xl font-extrabold tracking-tight">
+                    {carregando ? "—" : consultasHoje.length}
+                  </span>
+                  <span className="mb-1 text-sm text-white/75">
+                    hoje
+                  </span>
+                </div>
+
+                <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/20">
+                  <div className="h-full rounded-full bg-white" style={{ width: `${percentualConcluido}%` }} />
+                </div>
+
+                <p className="mt-3 text-xs text-white/75">
+                  {carregando ? "Carregando agenda..." : `${concluidas} de ${consultasHoje.length} consultas concluídas`}
                 </p>
               </div>
 
-              <span
-                className={`w-fit shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold ${consulta.cor}`}
-              >
-                {consulta.status}
-              </span>
+              {/* SITUAÇÃO DOS ATENDIMENTOS */}
+              <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
+                <p className="text-sm font-bold text-[#0B1756]">
+                  Situação dos atendimentos
+                </p>
+
+                <div className="mt-5 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      <span className="text-sm text-[#536783]">
+                        Concluídas
+                      </span>
+                    </div>
+                    <span className="font-bold text-[#0B1756]">{carregando ? "—" : String(concluidas).padStart(2, "0")}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#023E8A]" />
+                      <span className="text-sm text-[#536783]">
+                        Em atendimento
+                      </span>
+                    </div>
+                    <span className="font-bold text-[#0B1756]">{carregando ? "—" : String(emAtendimento).padStart(2, "0")}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                      <span className="text-sm text-[#536783]">
+                        Aguardando
+                      </span>
+                    </div>
+                    <span className="font-bold text-[#0B1756]">{carregando ? "—" : String(aguardando).padStart(2, "0")}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* PRÓXIMOS ATENDIMENTOS */}
+              <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-[#0B1756]">
+                    Próximos atendimentos
+                  </p>
+
+                  <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-bold text-[#3563A7]">
+                    Hoje
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  {proximasConsultas.map((item) => (
+                    <div
+                      key={item.id || `${item.data_hora || item.data}-${item.paciente_id}`}
+                      className="flex items-center gap-3"
+                    >
+                      <div className="rounded-xl bg-[#EAF3F7] px-3 py-2">
+                        <span className="text-sm font-extrabold text-[#023E8A]">
+                          {formatarHorario(item.data_hora || item.data)}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#0B1756]">
+                          {item.paciente || item.nome_paciente || "Paciente"}
+                        </p>
+                        <p className="mt-0.5 text-xs text-[#536783]">
+                          {item.especialidade || item.tipo || "Consulta médica"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </aside>
+
+            {/* LINHA DO TEMPO */}
+            <div className="h-full min-w-0 rounded-[24px] border border-[#3563A7]/15 bg-white/85 p-5 shadow-sm sm:p-7">
+
+              <div className="flex flex-col gap-2 border-b border-[#3563A7]/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#0B1756]">
+                    Horários programados
+                  </h3>
+                  <p className="mt-1 text-sm text-[#536783]">
+                    Acompanhe a sequência das consultas.
+                  </p>
+                </div>
+
+                <span className="w-fit rounded-full bg-[#EAF3F7] px-3 py-1.5 text-xs font-bold text-[#3563A7]">
+                  {consultasHoje.length ? `${formatarHorario(consultasHoje[0].data_hora || consultasHoje[0].data)} — ${formatarHorario(consultasHoje[consultasHoje.length - 1].data_hora || consultasHoje[consultasHoje.length - 1].data)}` : "Sem consultas hoje"}
+                </span>
+              </div>
+
+              <div className="mt-5">
+                {erro && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{erro}</div>}
+                {!carregando && !erro && consultasHoje.length === 0 && <div className="rounded-xl border border-dashed border-[#3563A7]/20 bg-[#EAF3F7]/50 p-8 text-center text-sm text-[#536783]">Não há consultas programadas para hoje.</div>}
+                {consultasParaTimeline.map((consulta, index) => (
+                  <div
+                    key={consulta.id || `${consulta.horario}-${index}`}
+                    className="grid grid-cols-[60px_minmax(0,1fr)] gap-3 sm:grid-cols-[72px_minmax(0,1fr)] sm:gap-5"
+                  >
+                    {/* HORÁRIO E MARCADOR */}
+                    <div className="relative flex flex-col items-center">
+                      <span className="pt-4 text-sm font-extrabold text-[#023E8A] sm:text-base">
+                        {consulta.horario}
+                      </span>
+
+                      <span
+                        className={`relative z-10 mt-3 h-3 w-3 rounded-full ${consulta.marcador} ring-4 ring-white`}
+                      />
+
+                      {index !== consultasHoje.length - 1 && (
+                        <span className="absolute bottom-0 top-[62px] w-px bg-[#D9E7F5]" />
+                      )}
+                    </div>
+
+                    {/* BLOCO DA CONSULTA */}
+                    <div
+                      className={`mb-4 min-w-0 rounded-xl border border-[#3563A7]/10 border-l-4 ${consulta.borda} bg-white px-4 py-4 transition hover:shadow-sm sm:px-5`}
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-[#0B1756]">
+                            {consulta.nome}
+                          </p>
+
+                          <p className="mt-1 text-sm text-[#536783]">
+                            {consulta.tipo}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`w-fit shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold ${consulta.cor}`}
+                        >
+                          {consulta.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+
           </div>
-        </div>
-      ))}
-    </div>
-  </div>
-
-</div>
 
 
-  {/* COMUNICADOS DA UNIDADE */}
-<section
-  id="fila"
-  className="relative mt-8 overflow-hidden rounded-3xl bg-[#0B1756] px-6 py-9 text-white sm:px-9 sm:py-11 lg:px-10"
->
-  {/* ELEMENTOS DECORATIVOS */}
-  <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full border-[35px] border-white/[0.04]" />
+          {/* COMUNICADOS DA UNIDADE */}
+          <section
+            id="fila"
+            className="relative mt-8 overflow-hidden rounded-3xl bg-[#0B1756] px-6 py-9 text-white sm:px-9 sm:py-11 lg:px-10"
+          >
+            {/* ELEMENTOS DECORATIVOS */}
+            <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full border-[35px] border-white/[0.04]" />
 
-  <div className="pointer-events-none absolute -bottom-24 left-[38%] h-56 w-56 rounded-full bg-[#3563A7]/20" />
+            <div className="pointer-events-none absolute -bottom-24 left-[38%] h-56 w-56 rounded-full bg-[#3563A7]/20" />
 
-  <div className="pointer-events-none absolute right-[22%] top-1/2 h-36 w-36 -translate-y-1/2 rounded-full border border-white/[0.06]" />
+            <div className="pointer-events-none absolute right-[22%] top-1/2 h-36 w-36 -translate-y-1/2 rounded-full border border-white/[0.06]" />
 
-  <div className="relative z-10">
-    {/* CABEÇALHO */}
-    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-      <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold tracking-wide text-[#B8D6FC]">
-          <span className="h-2 w-2 rounded-full bg-[#7DB7FF]" />
-          INFORMAÇÕES DA UNIDADE
-        </div>
+            <div className="relative z-10">
+              {/* CABEÇALHO */}
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold tracking-wide text-[#B8D6FC]">
+                    <span className="h-2 w-2 rounded-full bg-[#7DB7FF]" />
+                    INFORMAÇÕES DA UNIDADE
+                  </div>
 
-        <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Comunicados
-          <br />
-          <span className="text-[#8CBFFF]">importantes.</span>
-        </h2>
+                  <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                    Comunicados
+                    <br />
+                    <span className="text-[#8CBFFF]">importantes.</span>
+                  </h2>
 
-        <p className="mt-4 max-w-xl text-sm leading-7 text-white/65 sm:text-base">
-          Fique por dentro das orientações, atualizações e novidades
-          que ajudam você a cuidar melhor dos seus pacientes.
-        </p>
-      </div>
+                  <p className="mt-4 max-w-xl text-sm leading-7 text-white/65 sm:text-base">
+                    Fique por dentro das orientações, atualizações e novidades
+                    que ajudam você a cuidar melhor dos seus pacientes.
+                  </p>
+                </div>
 
-    </div>
+              </div>
 
-    {/* COMUNICADO EM DESTAQUE */}
-    <div className="mt-9 rounded-2xl border border-white/10 bg-white/[0.07] p-5 sm:p-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        
+              {/* COMUNICADO EM DESTAQUE */}
+              <div className="mt-9 rounded-2xl border border-white/10 bg-white/[0.07] p-5 sm:p-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
 
-        <div className="flex-1">
 
-          <h3 className="mt-3 text-lg font-bold sm:text-xl">
-            Orientações para a equipe de atendimento
-          </h3>
+                  <div className="flex-1">
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">
-            Consulte as orientações e atualizações divulgadas pela
-            coordenação para acompanhar as informações importantes
-            da unidade.
-          </p>
-        </div>
-      </div>
-    </div>
+                    <h3 className="mt-3 text-lg font-bold sm:text-xl">
+                      Orientações para a equipe de atendimento
+                    </h3>
 
-    {/* OUTROS COMUNICADOS */}
-<div className="mt-6">
-  <h3 className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-white/45">
-    Outros avisos
-  </h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">
+                      Consulte as orientações e atualizações divulgadas pela
+                      coordenação para acompanhar as informações importantes
+                      da unidade.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-  <div className="divide-y divide-white/10">
-    <article className="flex items-center gap-3 py-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
-        <Icon name="calendar" className="h-4 w-4" />
-      </div>
+              {/* OUTROS COMUNICADOS */}
+              <div className="mt-6">
+                <h3 className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-white/45">
+                  Outros avisos
+                </h3>
 
-      <div className="min-w-0 flex-1">
-        <h4 className="text-sm font-semibold text-white">
-          Organização dos atendimentos
-        </h4>
-        <p className="mt-0.5 text-xs leading-5 text-white/55">
-          Orientações sobre a programação dos atendimentos.
-        </p>
-      </div>
+                <div className="divide-y divide-white/10">
+                  <article className="flex items-center gap-3 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
+                      <Icon name="calendar" className="h-4 w-4" />
+                    </div>
 
-      <span className="hidden text-[11px] text-white/40 sm:block">
-        Unidade
-      </span>
-    </article>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-white">
+                        Organização dos atendimentos
+                      </h4>
+                      <p className="mt-0.5 text-xs leading-5 text-white/55">
+                        Orientações sobre a programação dos atendimentos.
+                      </p>
+                    </div>
 
-    <article className="flex items-center gap-3 py-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
-        <Icon name="file" className="h-4 w-4" />
-      </div>
+                    <span className="hidden text-[11px] text-white/40 sm:block">
+                      Unidade
+                    </span>
+                  </article>
 
-      <div className="min-w-0 flex-1">
-        <h4 className="text-sm font-semibold text-white">
-          Protocolos e orientações
-        </h4>
-        <p className="mt-0.5 text-xs leading-5 text-white/55">
-          Informações e procedimentos atualizados.
-        </p>
-      </div>
+                  <article className="flex items-center gap-3 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
+                      <Icon name="file" className="h-4 w-4" />
+                    </div>
 
-      <span className="hidden text-[11px] text-white/40 sm:block">
-        Orientação
-      </span>
-    </article>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-white">
+                        Protocolos e orientações
+                      </h4>
+                      <p className="mt-0.5 text-xs leading-5 text-white/55">
+                        Informações e procedimentos atualizados.
+                      </p>
+                    </div>
 
-    <article className="flex items-center gap-3 py-3 last:pb-0">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
-        <Icon name="activity" className="h-4 w-4" />
-      </div>
+                    <span className="hidden text-[11px] text-white/40 sm:block">
+                      Orientação
+                    </span>
+                  </article>
 
-      <div className="min-w-0 flex-1">
-        <h4 className="text-sm font-semibold text-white">
-          Campanhas de saúde
-        </h4>
-        <p className="mt-0.5 text-xs leading-5 text-white/55">
-          Campanhas de prevenção e ações da unidade.
-        </p>
-      </div>
+                  <article className="flex items-center gap-3 py-3 last:pb-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3563A7]/25 text-[#8CBFFF]">
+                      <Icon name="activity" className="h-4 w-4" />
+                    </div>
 
-      <span className="hidden text-[11px] text-white/40 sm:block">
-        Saúde
-      </span>
-    </article>
-  </div>
-</div>
-  </div>
-</section>
-</section>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-white">
+                        Campanhas de saúde
+                      </h4>
+                      <p className="mt-0.5 text-xs leading-5 text-white/55">
+                        Campanhas de prevenção e ações da unidade.
+                      </p>
+                    </div>
+
+                    <span className="hidden text-[11px] text-white/40 sm:block">
+                      Saúde
+                    </span>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
       </div>
     </main>
   );

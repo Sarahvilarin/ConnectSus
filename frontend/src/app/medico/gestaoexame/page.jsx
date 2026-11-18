@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 
 import {
   AlertTriangle,
@@ -22,13 +23,6 @@ import {
   X,
 } from "lucide-react";
 
-// Dados fictícios utilizados somente para demonstração.
-const PACIENTES = [
-  { id: 1, nome: "Mariana Silva Costa", cpf: "123.456.789-00", idade: 28 },
-  { id: 2, nome: "João Pedro Alves", cpf: "987.654.321-00", idade: 44 },
-  { id: 3, nome: "Carlos Eduardo Lima", cpf: "111.222.333-44", idade: 61 },
-];
-
 // Catálogo de exames disponíveis no fluxo emergencial.
 const EXAMES = [
   { id: 1, nome: "Hemograma completo", categoria: "Laboratorial", descricao: "Avaliação geral das células sanguíneas.", tipo: "lab" },
@@ -38,13 +32,6 @@ const EXAMES = [
   { id: 5, nome: "Ultrassom", categoria: "Imagem", descricao: "Avaliação de órgãos e tecidos por ultrassonografia.", tipo: "imagem" },
   { id: 6, nome: "Eletrocardiograma", categoria: "Cardiologia", descricao: "Avaliação da atividade elétrica do coração.", tipo: "coracao" },
   { id: 7, nome: "PCR", categoria: "Laboratorial", descricao: "Investigação de processos inflamatórios.", tipo: "lab" },
-];
-
-// Unidades e exames compatíveis — substituir pelos dados da API.
-const UNIDADES = [
-  { id: 1, nome: "Hospital Municipal de Emergências Albert Sabin", bairro: "Santa Paula", horario: "Atendimento 24 horas", distancia: "1,2 km", exames: [1, 2, 3, 4, 6, 7] },
-  { id: 2, nome: "Hospital Municipal Maria Braido", bairro: "Santa Paula", horario: "Conforme atendimento", distancia: "2,4 km", exames: [1, 2, 4, 5, 6] },
-  { id: 3, nome: "Atende Fácil Saúde Pedro Kassab", bairro: "Centro", horario: "Segunda a sexta, das 7h às 17h", distancia: "3,1 km", exames: [1, 2, 3, 5, 7] },
 ];
 
 // Estilo compartilhado dos cartões das etapas.
@@ -59,11 +46,29 @@ export default function GestaoExamePage() {
   const [erro, setErro] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [sucesso, setSucesso] = useState(false);
-  // Filtra somente as unidades que realizam o exame selecionado.
-  const unidadesDisponiveis = useMemo(
-    () => exame ? UNIDADES.filter((item) => item.exames.includes(exame.id)) : [],
-    [exame]
-  );
+  const [unidades, setUnidades] = useState([]);
+  const [carregandoPaciente, setCarregandoPaciente] = useState(false);
+  const [carregandoUnidades, setCarregandoUnidades] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [mensagemSucesso, setMensagemSucesso] = useState("");
+  const unidadesDisponiveis = useMemo(() => unidades, [unidades]);
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregarUnidades() {
+      try {
+        const resposta = await api("/unidades");
+        const lista = Array.isArray(resposta) ? resposta : resposta.unidades || [];
+        if (ativo) setUnidades(lista.filter((item) => item.ativo !== 0));
+      } catch (error) {
+        if (ativo) setErro(error.message || "Não foi possível carregar as unidades.");
+      } finally {
+        if (ativo) setCarregandoUnidades(false);
+      }
+    }
+    carregarUnidades();
+    return () => { ativo = false; };
+  }, []);
   // Mantém o CPF no formato 000.000.000-00.
   function formatarCPF(valor) {
     return valor
@@ -73,20 +78,41 @@ export default function GestaoExamePage() {
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   }
-  // Localiza o paciente pelo CPF informado.
-  function buscarPaciente(event) {
+  // Localiza o paciente pelo CPF cadastrado no sistema.
+  async function buscarPaciente(event) {
     event.preventDefault();
-    const encontrado = PACIENTES.find((item) => item.cpf === cpf);
-    if (!encontrado) {
-      setErro("Nenhum paciente encontrado com este CPF.");
-      setPaciente(null);
+    const cpfNumerico = cpf.replace(/\D/g, "");
+    if (cpfNumerico.length !== 11) {
+      setErro("Informe um CPF com 11 números.");
       return;
     }
+    setCarregandoPaciente(true);
     setErro("");
-    setPaciente(encontrado);
-    setExame(null);
-    setUnidade(null);
-    setConfirmado(false);
+    try {
+      const resposta = await api(`/exames/medico/paciente?cpf=${cpfNumerico}`);
+      const dados = resposta.paciente || resposta;
+      const nascimento = dados.data_nascimento ? new Date(`${dados.data_nascimento}T00:00:00`) : null;
+      let idade = null;
+      if (nascimento && !Number.isNaN(nascimento.getTime())) {
+        const hoje = new Date();
+        idade = hoje.getFullYear() - nascimento.getFullYear();
+        if (hoje < new Date(hoje.getFullYear(), nascimento.getMonth(), nascimento.getDate())) idade--;
+      }
+      setPaciente({
+        id: dados.id,
+        nome: dados.nome_completo,
+        cpf: dados.cpf,
+        idade,
+      });
+      setExame(null);
+      setUnidade(null);
+      setConfirmado(false);
+    } catch (error) {
+      setPaciente(null);
+      setErro(error.message || "Nenhum paciente encontrado com este CPF.");
+    } finally {
+      setCarregandoPaciente(false);
+    }
   }
   // Reinicia o fluxo para uma nova solicitação.
   function limpar() {
@@ -99,23 +125,28 @@ export default function GestaoExamePage() {
     setConfirmado(false);
     setSucesso(false);
   }
-  // Nesta versão, a solicitação é apenas demonstrativa.
-  function solicitar() {
-    if (!paciente || !exame || !unidade || !confirmado) return;
-    const solicitacao = {
-      pacienteId: paciente.id,
-      paciente: paciente.nome,
-      cpf: paciente.cpf,
-      exameId: exame.id,
-      exame: exame.nome,
-      unidadeId: unidade.id,
-      unidade: unidade.nome,
-      observacoes,
-      prioridade: "Emergencial",
-      status: "Solicitado",
-    };
-    console.log("SOLICITAÇÃO DE DEMONSTRAÇÃO:", solicitacao);
-    setSucesso(true);
+  // Registra a solicitação vinculada ao médico autenticado.
+  async function solicitar() {
+    if (!paciente || !exame || !unidade || !confirmado || enviando) return;
+    setEnviando(true);
+    setErro("");
+    try {
+      const resposta = await api("/exames/medico", {
+        method: "POST",
+        body: JSON.stringify({
+          paciente_id: paciente.id,
+          unidade_id: Number(unidade.id),
+          tipo_exame: exame.nome,
+          observacoes: observacoes.trim() || null,
+        }),
+      });
+      setMensagemSucesso(resposta.mensagem || "Exame solicitado com sucesso.");
+      setSucesso(true);
+    } catch (error) {
+      setErro(error.message || "Não foi possível solicitar o exame.");
+    } finally {
+      setEnviando(false);
+    }
   }
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
@@ -183,21 +214,19 @@ export default function GestaoExamePage() {
                     className={`h-14 w-full rounded-2xl border bg-[#F7FAFD] pl-12 pr-4 text-sm text-[#0B1756] outline-none transition focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10 ${erro ? "border-red-300" : "border-slate-200 focus:border-[#3563A7]"}`}
                   />
                 </div>
-                <button type="submit" className="flex h-14 min-w-[190px] items-center justify-center gap-2 rounded-2xl bg-[#194391] px-6 text-sm font-semibold text-white transition hover:bg-[#0B1756]">
-                  <Search size={17} /> Buscar paciente
+                <button type="submit" disabled={carregandoPaciente} className="flex h-14 min-w-[190px] items-center justify-center gap-2 rounded-2xl bg-[#194391] px-6 text-sm font-semibold text-white transition hover:bg-[#0B1756] disabled:opacity-60">
+                  <Search size={17} /> {carregandoPaciente ? "Buscando..." : "Buscar paciente"}
                 </button>
               </form>
               {erro && <p className="mt-3 flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600"><X size={16} />{erro}</p>}
-              <p className="mt-4 rounded-xl border border-[#DCE9F5] bg-[#F7FAFD] px-4 py-3 text-xs text-slate-500">
-                Para testar a demonstração, utilize <strong className="text-[#174693]">123.456.789-00</strong>.
-              </p>
+
             </>
           ) : (
             <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-[#D8E6F2] bg-[#F8FBFE] p-5 md:flex-row md:items-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#174693] text-lg font-bold text-white">{iniciais(paciente.nome)}</div>
               <div className="flex-1">
                 <h3 className="font-bold text-[#0B1756]">{paciente.nome}</h3>
-                <p className="mt-1 text-xs text-slate-500">CPF: {paciente.cpf} · {paciente.idade} anos</p>
+                <p className="mt-1 text-xs text-slate-500">CPF: {paciente.cpf}{paciente.idade !== null ? ` · ${paciente.idade} anos` : ""}</p>
               </div>
               <button type="button" onClick={limpar} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:border-[#3563A7]">Trocar paciente</button>
             </div>
@@ -259,7 +288,8 @@ export default function GestaoExamePage() {
             {exame && <span className="w-fit rounded-full bg-[#EDF5FB] px-3 py-1.5 text-xs font-semibold text-[#174693]">{unidadesDisponiveis.length} unidades disponíveis</span>}
           </div>
           {!exame ? <Bloqueado icon={<FileText size={24} />} titulo="Escolha o exame primeiro" texto="As unidades disponíveis aparecerão automaticamente." /> : (
-            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <>
+            {carregandoUnidades ? <p className="mt-5 text-sm text-slate-500">Carregando unidades...</p> : unidadesDisponiveis.length === 0 ? <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Nenhuma unidade ativa está cadastrada no sistema.</p> : <div className="mt-5 grid gap-4 lg:grid-cols-3">
               {unidadesDisponiveis.map((item) => {
                 const selecionada = unidade?.id === item.id;
                 return (
@@ -282,9 +312,8 @@ export default function GestaoExamePage() {
                     </div>
                     <h3 className="mt-4 text-sm font-bold leading-5 text-[#0B1756]">{item.nome}</h3>
                     <div className="mt-4 space-y-2.5">
-                      <Info icon={<MapPin size={15} />} texto={item.bairro} />
-                      <Info icon={<Clock3 size={15} />} texto={item.horario} />
-                      <Info icon={<Building2 size={15} />} texto={`${item.distancia} de distância`} />
+                      <Info icon={<MapPin size={15} />} texto={item.bairro || item.endereco || "Endereço não informado"} />
+                      <Info icon={<Clock3 size={15} />} texto={item.horario_funcionamento || "Horário não informado"} />
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
                       <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600"><CheckCircle2 size={13} /> Disponível neste fluxo</span>
@@ -293,7 +322,8 @@ export default function GestaoExamePage() {
                   </button>
                 );
               })}
-            </div>
+            </div>}
+            </>
           )}
         </section>
         {/* Revisão */}
@@ -331,12 +361,13 @@ export default function GestaoExamePage() {
               <button
                 type="button"
                 onClick={solicitar}
-                disabled={!confirmado}
+                disabled={!confirmado || enviando}
                 className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#174693] text-sm font-semibold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
-                <CheckCircle2 size={18} /> Confirmar exame de urgência/emergência
+                <CheckCircle2 size={18} /> {enviando ? "Enviando solicitação..." : "Confirmar exame de urgência/emergência"}
               </button>
-              <p className="mt-3 text-center text-xs text-slate-400">Demonstração visual: a confirmação não envia nem salva dados no sistema.</p>
+              {erro && <p role="alert" className="mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{erro}</p>}
+              <p className="mt-3 text-center text-xs text-slate-400">A solicitação será registrada no sistema e vinculada ao médico autenticado.</p>
             </div>
           </section>
         )}
@@ -346,8 +377,8 @@ export default function GestaoExamePage() {
           <div className="w-full max-w-[480px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
             <div className="bg-gradient-to-br from-[#174693] to-[#151A67] px-7 py-9 text-center text-white">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/15"><div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-emerald-500"><Check size={30} strokeWidth={3} /></div></div>
-              <h2 className="mt-5 text-2xl font-bold">Demonstração concluída</h2>
-              <p className="mt-2 text-sm text-blue-100">Os dados foram validados nesta tela, mas a solicitação ainda não foi enviada nem registrada no sistema.</p>
+              <h2 className="mt-5 text-2xl font-bold">Solicitação registrada</h2>
+              <p className="mt-2 text-sm text-blue-100">{mensagemSucesso}</p>
             </div>
             <div className="p-6">
               <div className="rounded-2xl border border-[#DFEAF5] bg-[#F8FBFE] p-4">

@@ -626,3 +626,47 @@ export async function alterarSenhaPaciente(req, res, next) {
     return next(error);
   }
 }
+
+
+export async function obterPacienteParaAtendimento(req, res, next) {
+  try {
+    const pacienteId = String(req.params.id ?? "");
+    const medicoId = req.medico?.id;
+
+    if (!/^[1-9]\d*$/.test(pacienteId)) {
+      return res.status(400).json({
+        mensagem: "ID do paciente inválido."
+      });
+    }
+
+    const [pacientes] = await pool.query(
+      `SELECT DISTINCT
+         p.id,
+         p.nome_completo,
+         p.nome_social,
+         p.cpf,
+         p.data_nascimento
+       FROM pacientes p
+       INNER JOIN filas f
+         ON f.paciente_id = p.id
+       WHERE p.id = ?
+         AND p.ativo = TRUE
+         AND f.medico_id = ?
+         AND f.status = 'em_atendimento'
+       LIMIT 1`,
+      [pacienteId, medicoId]
+    );
+
+    if (pacientes.length === 0) {
+      return res.status(404).json({
+        mensagem: "Paciente não encontrado em atendimento com este médico."
+      });
+    }
+
+    return res.status(200).json({
+      paciente: pacientes[0]
+    });
+  } catch (error) {
+    return next(error);
+  }
+}

@@ -8,7 +8,9 @@ import {
   listarExames,
   atualizarStatusExame,
   registrarResultadoExame,
-  buscarExame
+  buscarExame,
+  buscarPacienteParaExame,
+  solicitarExamePeloMedico
 } from "../controllers/exameController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
@@ -25,6 +27,8 @@ router.get("/me", autenticarPaciente, listarMeusExames);
 router.get("/medico/me", autenticarMedico, listarExamesDoMedico);
 router.patch("/:id/status", autenticarMedico, atualizarStatusExame);
 router.patch("/:id/resultado", autenticarMedico, registrarResultadoExame);
+router.get("/medico/paciente", autenticarMedico, buscarPacienteParaExame);
+router.post("/medico", autenticarMedico, solicitarExamePeloMedico);
 
 // Rotas administrativas
 router.get("/", autenticarAdmin, listarExames);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { api } from "@/lib/api";
 import {
   CalendarDays, CalendarOff, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList,
   Clock, FileText, Hospital, Lock, Phone, Play, RotateCcw, Search, UserX, X,
@@ -19,166 +20,30 @@ import {
 */
 
 /* =========================
-   DADOS E CONSTANTES
+   CONSTANTES E ADAPTADORES DA API
 ========================= */
-
-const MEDICO = {
-  nome: "Dra. Helena Duarte",
-  especialidade: "Clínica geral",
-  unidade: "Atende Fácil Saúde Pedro Kassab",
-  unidadeId: 3,
-  dias: ["Seg", "Ter", "Qui"],
-};
-
-const statusLista = ["Agendada", "Em atendimento", "Concluída", "Faltou", "Cancelada"];
+const MEDICO = { nome: "Profissional autenticado", especialidade: "", unidade: "Unidade da consulta", unidadeId: null, dias: [] };
+const statusLista = ["Solicitada", "Agendada", "Em atendimento", "Concluída", "Faltou", "Cancelada"];
 const opcoesRetorno = ["Sem retorno", "15 dias", "30 dias", "60 dias", "90 dias", "6 meses"];
-const DIAS_RETORNO = { "15 dias": 15, "30 dias": 30, "60 dias": 60, "90 dias": 90, "6 meses": 180 };
 const POR_PAGINA = 8;
-
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const nomesSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const diasSemana = nomesSemana.slice(1);
-
-/* Horários de atendimento (manhã e tarde, de 30 em 30 min) */
-const HORARIOS = [[480, 720], [840, 1080]].flatMap(([ini, fim]) =>
-  Array.from({ length: (fim - ini) / 30 }, (_, i) => {
-    const m = ini + i * 30;
-    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  })
-);
-
 const pad = (n) => String(n).padStart(2, "0");
 const paraIso = (ano, mes, dia) => `${ano}-${pad(mes + 1)}-${pad(dia)}`;
 const dataIso = (d) => paraIso(d.getFullYear(), d.getMonth(), d.getDate());
 const dataAtualISO = () => dataIso(new Date());
-const formatarData = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
-const minutos = (h) => { const [hh, mm] = h.split(":").map(Number); return hh * 60 + mm; };
+const formatarData = (iso) => (iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "");
 const meioDia = (iso) => new Date(`${iso}T12:00:00`);
-
-function somarDias(iso, n) {
-  const d = meioDia(iso);
-  d.setDate(d.getDate() + n);
-  return dataIso(d);
-}
-
-function paginasVisiveis(atual, total) {
-  const nums = [...new Set([1, total, atual - 1, atual, atual + 1])].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
-  return nums.flatMap((n, i) => (i > 0 && n - nums[i - 1] > 1 ? [`...${n}`, n] : [n]));
-}
-
-function calcularImc(peso, altura) {
-  const p = parseFloat(String(peso).replace(",", "."));
-  const a = parseFloat(String(altura).replace(",", ".")) / 100;
-  return !p || !a || a < 0.5 || a > 2.5 ? null : (p / (a * a)).toFixed(1).replace(".", ",");
-}
-
-/* Triagens de exemplo (no sistema real vêm da tela do enfermeiro) */
-const tri = (horario, pressao, frequencia, temperatura, saturacao, respiracao, glicemia, queixa, sintomas, inicio, dor, historico, alergias, medicamentos, classificacao, observacoes) => ({
-  horario, registradoPor: "Enf. Camila Reis", pressao, frequencia, temperatura, saturacao, respiracao, glicemia,
-  queixa, sintomas, inicio, dor, historico, alergias, medicamentos, classificacao, observacoes,
-});
-
-const TRIAGENS_DEMO = {
-  "João Pedro Alves": tri("08:40", "150/95", "88", "36.8", "97", "18", "212", "Acompanhamento de diabetes", "Sede excessiva e cansaço nos últimos dias.", "Há uma semana", "Sem dor", "Diabetes tipo 2 e hipertensão.", "Dipirona", "Metformina 850 mg, Losartana 50 mg", "Urgente", "Glicemia elevada na aferição. Paciente consciente e orientado."),
-  "Ana Beatriz Lima": tri("09:20", "118/76", "82", "37.4", "98", "18", "", "Tosse persistente há 2 semanas", "Tosse seca, pior à noite, sem falta de ar.", "Há duas semanas", "Leve", "Rinite alérgica.", "Poeira", "Nenhum", "Pouco urgente", "Sem febre no momento."),
-  "Carlos Eduardo Sá": tri("13:40", "130/85", "76", "36.5", "99", "16", "", "Dor lombar", "Dor na região lombar ao se abaixar, sem irradiação.", "Há cinco dias", "Moderada", "Nega doenças crônicas.", "Não relatadas", "Nenhum", "Pouco urgente", "Deambula sem dificuldade."),
-  "Beatriz Nogueira": tri("15:10", "110/70", "72", "36.4", "99", "15", "", "Atestado e avaliação geral", "Sem sintomas relatados.", "Não se aplica", "Sem dor", "Nega doenças crônicas.", "Não relatadas", "Anticoncepcional oral", "Não urgente", "Paciente estável."),
-};
-
-/* "História da doença atual" montada a partir da triagem */
-const historiaDaTriagem = (t) =>
-  [
-    t.sintomas?.trim(),
-    t.inicio?.trim() && t.inicio !== "Não se aplica" && `Início: ${t.inicio}.`,
-    t.dor?.trim() && `Intensidade da dor: ${t.dor}.`,
-    t.historico?.trim() && `Antecedentes: ${t.historico.trim()}`,
-  ].filter(Boolean).join("\n");
-
-/* Prontuário em branco; se houver triagem, já vem preenchido com ela */
-function prontuarioVazio(motivo = "", triagem = null) {
-  const base = {
-    queixa: motivo, historia: "", alergias: "", medicamentos: "",
-    vitais: { pa: "", fc: "", temp: "", spo2: "", fr: "", glicemia: "", peso: "", altura: "" },
-    exameFisico: "", hipotese: "", cid: "", conduta: "", exames: "", retorno: "Sem retorno",
-    registradoEm: null, registradoPor: null,
-  };
-  if (!triagem) return base;
-  const t = triagem;
-  return {
-    ...base,
-    queixa: t.queixa || motivo,
-    historia: historiaDaTriagem(t),
-    alergias: t.alergias || "",
-    medicamentos: t.medicamentos || "",
-    vitais: {
-      ...base.vitais,
-      pa: t.pressao || "", fc: t.frequencia || "", temp: String(t.temperatura || "").replace(".", ","),
-      spo2: t.saturacao || "", fr: t.respiracao || "", glicemia: t.glicemia || "",
-    },
-  };
-}
-
-/* Prontuários de exemplo: [historia, alergias, medicamentos, pa, fc, temp, spo2, peso, altura, exameFisico, hipotese, cid, conduta, exames, retorno] */
-const pr = (historia, alergias, medicamentos, pa, fc, temp, spo2, peso, altura, exameFisico, hipotese, cid, conduta, exames, retorno) => ({
-  historia, alergias, medicamentos, vitais: { pa, fc, temp, spo2, fr: "", glicemia: "", peso, altura },
-  exameFisico, hipotese, cid, conduta, exames, retorno,
-});
-
-const PRONTUARIOS_DEMO = {
-  "Patrícia Gomes": pr("Paciente hipertensa em uso regular da medicação, sem queixas novas.", "Nenhuma conhecida", "Losartana 50 mg, 1x ao dia", "128/82", "74", "36,5", "98", "68", "165", "Bom estado geral. Ausculta cardíaca e pulmonar sem alterações.", "Hipertensão arterial sistêmica controlada", "I10", "Manter medicação. Reforçar dieta com baixo teor de sódio e atividade física.", "", "90 dias"),
-  "Fernanda Rocha": pr("Cefaleia frequente há cerca de 1 mês, piora ao fim do dia, sem sinais de alarme.", "Dipirona", "Nenhum", "118/76", "80", "36,6", "99", "61", "162", "Exame neurológico sem alterações. Sem rigidez de nuca.", "Cefaleia tensional", "G44.2", "Orientações de higiene do sono e hidratação. Analgésico se necessário.", "Hemograma completo, glicemia de jejum, TSH", "30 dias"),
-  "Mariana Costa": pr("Retorno para avaliação de exames laboratoriais solicitados anteriormente.", "Nenhuma conhecida", "Vitamina D 2.000 UI, 1x ao dia", "122/78", "70", "36,4", "98", "72", "160", "Sem alterações relevantes.", "Exames dentro da normalidade", "Z00.0", "Manter hábitos saudáveis e acompanhamento anual.", "", "6 meses"),
-};
-
-function gerarConsultas(hoje) {
-  const base = [
-    [-2, "09:00", "Patrícia Gomes", 41, "(11) 95512-7743", "Controle de pressão arterial", "Retorno", "Concluída", "Pressão estável. Manter medicação e retorno em 3 meses."],
-    [-1, "10:30", "Fernanda Rocha", 36, "(11) 96655-8890", "Dor de cabeça frequente", "Primeira consulta", "Concluída", "Solicitados exames de rotina."],
-    [-1, "14:00", "Lucas Martins", 29, "(11) 98877-2109", "Avaliação de rotina", "Primeira consulta", "Faltou", ""],
-    [0, "08:00", "Mariana Costa", 52, "(11) 97733-1204", "Resultado de exames", "Retorno", "Concluída", "Exames dentro do esperado."],
-    [0, "09:00", "João Pedro Alves", 68, "(11) 94408-6652", "Acompanhamento de diabetes", "Retorno", "Em atendimento", ""],
-    [0, "10:30", "Ana Beatriz Lima", 34, "(11) 93321-9087", "Tosse persistente há 2 semanas", "Primeira consulta", "Agendada", ""],
-    [0, "14:00", "Carlos Eduardo Sá", 47, "(11) 99120-4581", "Dor lombar", "Primeira consulta", "Agendada", ""],
-    [0, "15:30", "Beatriz Nogueira", 25, "(11) 98421-3370", "Atestado e avaliação geral", "Primeira consulta", "Agendada", ""],
-    [1, "09:00", "Roberto Nunes", 59, "(11) 91234-5678", "Controle de colesterol", "Retorno", "Agendada", ""],
-    [1, "10:30", "Sueli Martins", 82, "(11) 95555-7788", "Acompanhamento de rotina", "Retorno", "Agendada", ""],
-    [3, "08:00", "Paulo Santos", 56, "(11) 94444-9900", "Avaliação pós-curativo", "Retorno", "Agendada", ""],
-    [3, "14:00", "Marta Lima", 44, "(11) 96666-5566", "Check-up anual", "Primeira consulta", "Agendada", ""],
-    [7, "09:00", "Rafael Torres", 38, "(11) 97777-3344", "Febre e mal-estar", "Primeira consulta", "Agendada", ""],
-    [8, "10:30", "Cláudia Ribeiro", 63, "(11) 98888-1122", "Renovação de receita", "Retorno", "Cancelada", ""],
-    [-30, "08:00", "Mariana Costa", 52, "(11) 97733-1204", "Avaliação inicial e coleta de exames", "Primeira consulta", "Concluída", "Solicitados exames laboratoriais."],
-    [-45, "09:00", "João Pedro Alves", 68, "(11) 94408-6652", "Acompanhamento de diabetes", "Retorno", "Concluída", "Glicemia acima da meta. Ajuste de dieta."],
-  ];
-
-  return base.map(([dia, horario, paciente, idade, telefone, motivo, tipo, status, notas], i) => {
-    const demoTri = TRIAGENS_DEMO[paciente];
-    const triagem = dia === 0 && demoTri && ["Agendada", "Em atendimento"].includes(status) ? { ...demoTri, data: hoje } : null;
-    const prontuario = prontuarioVazio(motivo, triagem);
-    const demo = PRONTUARIOS_DEMO[paciente];
-
-    if (status === "Concluída") {
-      Object.assign(prontuario, demo || {}, {
-        historia: demo?.historia || "Atendimento realizado conforme motivo da consulta.",
-        conduta: demo?.conduta || notas,
-        hipotese: demo?.hipotese || "Conforme avaliação clínica",
-        registradoEm: `${formatarData(somarDias(hoje, dia))} ${horario}`,
-        registradoPor: MEDICO.nome,
-      });
-    }
-
-    return {
-      id: i + 1, paciente, idade, telefone, motivo, tipo, unidadeId: MEDICO.unidadeId,
-      data: somarDias(hoje, dia), horario, status, notas, triagem,
-      origemId: null, retornoId: null, prontuario,
-      historico: ["Consulta agendada", ...(status !== "Agendada" ? [status] : [])],
-    };
-  });
-}
-
-/* Afastamentos do médico (definidos pela administração) */
-const gerarAfastamentos = (hoje) => [
-  { id: 1, motivo: "Férias", dataInicio: somarDias(hoje, 20), previsaoRetorno: somarDias(hoje, 34) },
-];
+const somarDias = (iso, n) => { const d = meioDia(iso); d.setDate(d.getDate() + n); return dataIso(d); };
+const minutos = (h) => { const [hh, mm] = h.split(":").map(Number); return hh * 60 + mm; };
+function paginasVisiveis(atual, total) { const nums = [...new Set([1, total, atual - 1, atual, atual + 1])].filter((n) => n >= 1 && n <= total).sort((a,b)=>a-b); return nums.flatMap((n,i)=>(i>0 && n-nums[i-1]>1?[`...${n}`,n]:[n])); }
+function calcularImc(peso, altura) { const p=parseFloat(String(peso).replace(",",".")); const a=parseFloat(String(altura).replace(",","."))/100; return !p||!a||a<0.5||a>2.5?null:(p/(a*a)).toFixed(1).replace(".",","); }
+function prontuarioVazio(motivo="", triagem=null) { const t=triagem||{}; return { queixa:t.queixa||motivo, historia:[t.sintomas,t.inicio_sintomas&&`Início: ${t.inicio_sintomas}`,t.observacoes].filter(Boolean).join("\n"), alergias:"", medicamentos:"", vitais:{pa:t.pressao_arterial||"",fc:t.frequencia_cardiaca||"",temp:t.temperatura??"",spo2:t.saturacao_oxigenio||"",fr:t.frequencia_respiratoria||"",glicemia:t.glicemia||"",peso:t.peso||"",altura:t.altura||""}, exameFisico:"", hipotese:"", cid:"", conduta:"", exames:"", retorno:"Sem retorno", registradoEm:null, registradoPor:null }; }
+function mapearStatus(status) { return ({pendente:"Solicitada",confirmada:"Agendada",em_atendimento:"Em atendimento",concluida:"Concluída",falta:"Faltou",cancelada:"Cancelada"})[status]||status; }
+function mapearTriagem(t) { if(!t) return null; const risco=({azul:"Não urgente",verde:"Pouco urgente",amarelo:"Urgente",laranja:"Muito urgente",vermelho:"Emergência"})[String(t.classificacao_risco||"").toLowerCase()]||t.classificacao_risco; return {id:t.id,data:t.criado_em?String(t.criado_em).slice(0,10):"",horario:t.criado_em?new Date(t.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",registradoPor:t.enfermeiro||"Equipe de enfermagem",pressao:t.pressao_arterial,frequencia:t.frequencia_cardiaca,temperatura:t.temperatura,saturacao:t.saturacao_oxigenio,respiracao:t.frequencia_respiratoria,glicemia:t.glicemia,queixa:t.queixa_principal,sintomas:t.sintomas,inicio:t.inicio_sintomas,dor:t.intensidade_dor===null?"Não informada":`${t.intensidade_dor}/10`,historico:"",alergias:"",medicamentos:"",classificacao:risco,observacoes:t.observacoes}; }
+function mapearProntuario(p, motivo, triagem) { if(!p) return prontuarioVazio(motivo,triagem); return { ...prontuarioVazio(motivo,triagem), queixa:p.queixa||motivo, historia:p.historia||"", alergias:p.alergias||"", medicamentos:p.medicamentos||"", vitais:{pa:p.pressao_arterial||"",fc:p.frequencia_cardiaca||"",temp:p.temperatura??"",spo2:p.saturacao_oxigenio||"",fr:p.frequencia_respiratoria||"",glicemia:p.glicemia||"",peso:p.peso||"",altura:p.altura||""}, exameFisico:p.exame_fisico||"", hipotese:p.hipotese_diagnostica||"", cid:p.cid||"", conduta:p.conduta||"", exames:p.exames_solicitados||"", retorno:p.retorno_prazo||"Sem retorno", registradoEm:p.atualizado_em||null, registradoPor:p.registrado_por||null }; }
+function mapearConsulta(c) { const dt=new Date(c.data_hora); const nasc=c.paciente_data_nascimento?new Date(c.paciente_data_nascimento):null; let idade=""; if(nasc&&!Number.isNaN(nasc.getTime())) { const hoje=new Date(); idade=hoje.getFullYear()-nasc.getFullYear()-((hoje.getMonth()<nasc.getMonth()||(hoje.getMonth()===nasc.getMonth()&&hoje.getDate()<nasc.getDate()))?1:0); } return {id:Number(c.id),paciente_id:c.paciente_id,paciente:c.paciente,cpf:c.paciente_cpf,idade,telefone:c.paciente_telefone||"",motivo:c.observacoes||c.especialidade||"Consulta",tipo:c.especialidade||"Consulta",unidade:c.unidade,unidadeId:c.unidade_id,setor:c.setor,data:dataIso(dt),horario:dt.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),status:mapearStatus(c.status),statusApi:c.status,notas:"",triagem:null,prontuario:prontuarioVazio(c.observacoes||""),historico:[`Consulta ${mapearStatus(c.status).toLowerCase()}`]}; }
 
 /* =========================
    ESTILOS REUTILIZÁVEIS
@@ -774,7 +639,7 @@ function Prontuario({ consulta, editavel, onCampo, onVital, onRestaurar, anterio
         ) : editavel && p.retorno !== "Sem retorno" ? (
           previsaoRetorno ? (
             <Info icone={CalendarDays}>
-              Ao concluir o atendimento, o retorno será agendado automaticamente para{" "}
+              O prazo de retorno será registrado no prontuário. O agendamento deverá ser realizado pela agenda de consultas. Prazo selecionado:{" "}
               <strong>
                 {formatarData(previsaoRetorno.data)} ({meioDia(previsaoRetorno.data).toLocaleDateString("pt-BR", { weekday: "long" })}) às {previsaoRetorno.horario}
               </strong>.
@@ -797,8 +662,13 @@ function Prontuario({ consulta, editavel, onCampo, onVital, onRestaurar, anterio
 export default function MinhasConsultas() {
   const [HOJE] = useState(dataAtualISO);
   const [aba, setAba] = useState("hoje");
-  const [consultas, setConsultas] = useState(() => gerarConsultas(dataAtualISO()));
-  const afastamentos = useMemo(() => gerarAfastamentos(HOJE), [HOJE]);
+  const [consultas, setConsultas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroApi, setErroApi] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [profissional, setProfissional] = useState(null);
+  const [historicoPaciente, setHistoricoPaciente] = useState([]);
+  const afastamentos = [];
   const [agora] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); });
 
   const [mesCal, setMesCal] = useState(() => meioDia(dataAtualISO()));
@@ -818,6 +688,34 @@ export default function MinhasConsultas() {
     setAviso(texto);
     setTimeout(() => setAviso(null), 3500);
   }
+  useEffect(() => {
+    let ativo = true;
+    async function carregar() {
+      setCarregando(true); setErroApi("");
+      try {
+        const [resposta, perfil] = await Promise.all([api("/consultas/medico/me"), api("/medicos/me").catch(() => null)]);
+        const base = Array.isArray(resposta) ? resposta : (resposta.consultas || []);
+        const lista = await Promise.all(base.map(async (item) => {
+          const c = mapearConsulta(item);
+          const [tri, pront] = await Promise.all([
+            api(`/consultas/${c.id}/triagem`).catch(() => null),
+            api(`/consultas/${c.id}/prontuario`).catch(() => null),
+          ]);
+          c.triagem = mapearTriagem(tri);
+          c.prontuario = mapearProntuario(pront?.prontuario, c.motivo, c.triagem);
+          if (c.status === "Concluída" && pront?.prontuario?.atualizado_em) { c.prontuario.registradoEm = new Date(pront.prontuario.atualizado_em).toLocaleString("pt-BR"); c.prontuario.registradoPor = pront.prontuario.registrado_por || "Médico responsável"; }
+          return c;
+        }));
+        if (!ativo) return;
+        setConsultas(lista);
+        const prof = perfil?.medico || perfil?.profissional || perfil;
+        const salvo = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("unesus_profissional") || "null") : null;
+        setProfissional(prof || salvo);
+      } catch (e) { if (ativo) setErroApi(e.message || "Não foi possível carregar as consultas."); }
+      finally { if (ativo) setCarregando(false); }
+    }
+    carregar(); return () => { ativo = false; };
+  }, []);
 
   /* ---------- Dados derivados ---------- */
 
@@ -839,15 +737,21 @@ export default function MinhasConsultas() {
   const detalhe = consultas.find((c) => c.id === consultaId) || null;
 
   /* Prontuários fechados de consultas anteriores do mesmo paciente (mais recentes primeiro) */
-  const anteriores = useMemo(() => {
-    if (!detalhe) return [];
-    return ordenadas
-      .filter((c) =>
-        c.id !== detalhe.id && c.paciente === detalhe.paciente && c.status === "Concluída" &&
-        c.prontuario.registradoEm && (c.data + c.horario).localeCompare(detalhe.data + detalhe.horario) < 0
-      )
-      .reverse();
-  }, [ordenadas, detalhe]);
+  const anteriores = historicoPaciente.map((h) => ({
+    id: h.consulta_id,
+    data: String(h.data_hora).slice(0, 10),
+    tipo: "Consulta anterior",
+    prontuario: { hipotese: h.hipotese_diagnostica, cid: h.cid, conduta: h.conduta },
+  }));
+
+  useEffect(() => {
+    let ativo = true;
+    if (!detalhe?.paciente_id) { setHistoricoPaciente([]); return; }
+    api(`/consultas/medico/paciente/${detalhe.paciente_id}/historico`)
+      .then((r) => { if (ativo) setHistoricoPaciente(r.historico || []); })
+      .catch(() => { if (ativo) setHistoricoPaciente([]); });
+    return () => { ativo = false; };
+  }, [detalhe?.paciente_id]);
 
   const estaAfastado = (iso) => afastamentos.some((a) => a.dataInicio <= iso && a.previsaoRetorno >= iso);
   const situacaoAfast = (a) => (HOJE < a.dataInicio ? "Agendado" : HOJE > a.previsaoRetorno ? "Concluído" : "Em andamento");
@@ -870,9 +774,8 @@ export default function MinhasConsultas() {
     return null;
   }
 
-  const previsaoRetorno =
-    detalhe && !detalhe.prontuario.registradoEm ? buscarVagaRetorno(detalhe.prontuario.retorno, detalhe.horario, consultas) : null;
-  const retornoAgendado = detalhe?.retornoId ? consultas.find((c) => c.id === detalhe.retornoId && c.status !== "Cancelada") || null : null;
+  const previsaoRetorno = null;
+  const retornoAgendado = null;
 
   /* ---------- Agenda ---------- */
 
@@ -932,93 +835,35 @@ export default function MinhasConsultas() {
     listaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  /* ---------- Ações do médico ---------- */
-
+  /* ---------- Ações persistidas no backend ---------- */
   const atualizar = (id, fn) => setConsultas((atuais) => atuais.map((c) => (c.id === id ? fn(c) : c)));
-
-  function mudarStatus(id, status, mensagem) {
-    atualizar(id, (c) => ({ ...c, status, historico: [...c.historico, status] }));
-    mostrarAviso(mensagem);
+  async function mudarStatus(id, status, mensagem) {
+    const endpoint = status === "Em atendimento" ? "iniciar" : status === "Faltou" ? "falta" : null;
+    if (!endpoint) return;
+    try { await api(`/consultas/${id}/${endpoint}`, { method: "PATCH" });
+      const statusApi = status === "Em atendimento" ? "em_atendimento" : "falta";
+      atualizar(id, (c) => ({ ...c, status, statusApi, historico: [...c.historico, status] }));
+      mostrarAviso(mensagem);
+    } catch (e) { mostrarAviso(e.message); }
   }
-
-  const atualizarProntuario = (id, campo, valor) =>
-    atualizar(id, (c) => ({ ...c, prontuario: { ...c.prontuario, [campo]: valor } }));
-
-  const atualizarVital = (id, campo, valor) =>
-    atualizar(id, (c) => ({ ...c, prontuario: { ...c.prontuario, vitais: { ...c.prontuario.vitais, [campo]: valor } } }));
-
-  /* Volta anamnese e sinais vitais ao que o enfermeiro registrou
-     (não mexe em exame físico, diagnóstico, conduta, peso e altura) */
-  function restaurarDaTriagem(id) {
-    atualizar(id, (c) => {
-      if (!c.triagem) return c;
-      const { queixa, historia, alergias, medicamentos, vitais: v } = prontuarioVazio(c.motivo, c.triagem);
-      const { pa, fc, temp, spo2, fr, glicemia } = v;
-      return {
-        ...c,
-        prontuario: {
-          ...c.prontuario, queixa, historia, alergias, medicamentos,
-          vitais: { ...c.prontuario.vitais, pa, fc, temp, spo2, fr, glicemia },
-        },
-      };
-    });
-    mostrarAviso("Dados da triagem restaurados no prontuário.");
+  const atualizarProntuario = (id, campo, valor) => atualizar(id, (c) => ({ ...c, prontuario: { ...c.prontuario, [campo]: valor } }));
+  const atualizarVital = (id, campo, valor) => atualizar(id, (c) => ({ ...c, prontuario: { ...c.prontuario, vitais: { ...c.prontuario.vitais, [campo]: valor } } }));
+  function restaurarDaTriagem(id) { atualizar(id, (c) => ({ ...c, prontuario: { ...prontuarioVazio(c.motivo,c.triagem), exameFisico:c.prontuario.exameFisico, hipotese:c.prontuario.hipotese, cid:c.prontuario.cid, conduta:c.prontuario.conduta, exames:c.prontuario.exames, retorno:c.prontuario.retorno } })); mostrarAviso("Dados originais da triagem reaplicados. Salve o prontuário para persistir as alterações."); }
+  async function salvarProntuario(c) {
+    const p=c.prontuario; setSalvando(true);
+    const body={queixa:p.queixa,historia:p.historia,alergias:p.alergias,medicamentos:p.medicamentos,pressao_arterial:p.vitais.pa,frequencia_cardiaca:p.vitais.fc,temperatura:p.vitais.temp,saturacao_oxigenio:p.vitais.spo2,frequencia_respiratoria:p.vitais.fr,glicemia:p.vitais.glicemia,peso:p.vitais.peso,altura:p.vitais.altura,exame_fisico:p.exameFisico,hipotese_diagnostica:p.hipotese,cid:p.cid,conduta:p.conduta,exames_solicitados:p.exames,retorno_prazo:p.retorno};
+    try { await api(`/consultas/${c.id}/prontuario`,{method:"PUT",body:JSON.stringify(body)}); mostrarAviso("Prontuário salvo com sucesso."); } catch(e) { mostrarAviso(e.message); } finally { setSalvando(false); }
   }
-
-  /* Só conclui com os campos obrigatórios; depois, fecha o prontuário */
-  function concluirAtendimento(c) {
-    const p = c.prontuario;
-    const faltando = [
-      !p.queixa.trim() && "queixa principal",
-      !p.hipotese.trim() && "hipótese diagnóstica",
-      !p.conduta.trim() && "conduta",
-    ].filter(Boolean);
-
-    if (faltando.length) {
-      setAbaModal("prontuario");
-      mostrarAviso(`Preencha no prontuário: ${faltando.join(", ")}.`);
-      return;
-    }
-
-    const carimbo = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-    const vaga = buscarVagaRetorno(p.retorno, c.horario, consultas);
-    const novoId = Math.max(0, ...consultas.map((x) => x.id)) + 1;
-    const motivoRetorno = p.exames.trim() ? "Retorno com resultado de exames" : "Retorno";
-
-    setConsultas((atuais) => {
-      const atualizadas = atuais.map((x) =>
-        x.id !== c.id ? x : {
-          ...x,
-          status: "Concluída",
-          retornoId: vaga ? novoId : null,
-          historico: [
-            ...x.historico, "Concluída",
-            ...(vaga ? [`Retorno agendado para ${formatarData(vaga.data)} às ${vaga.horario}`] : []),
-          ],
-          prontuario: { ...x.prontuario, registradoEm: carimbo, registradoPor: MEDICO.nome },
-        }
-      );
-
-      return !vaga ? atualizadas : [
-        ...atualizadas,
-        {
-          id: novoId, paciente: c.paciente, idade: c.idade, telefone: c.telefone,
-          motivo: motivoRetorno, tipo: "Retorno", unidadeId: c.unidadeId,
-          data: vaga.data, horario: vaga.horario, status: "Agendada", notas: "",
-          triagem: null, origemId: c.id, retornoId: null,
-          prontuario: prontuarioVazio(motivoRetorno),
-          historico: ["Consulta agendada automaticamente pelo retorno do prontuário"],
-        },
-      ];
-    });
-
-    mostrarAviso(
-      vaga
-        ? `Atendimento concluído. Retorno agendado para ${formatarData(vaga.data)} às ${vaga.horario}.`
-        : p.retorno !== "Sem retorno"
-          ? "Atendimento concluído, mas não há vaga para o retorno. Marque manualmente."
-          : "Atendimento concluído e prontuário registrado."
-    );
+  async function concluirAtendimento(c) {
+    const p=c.prontuario; const faltando=[!p.queixa.trim()&&"queixa principal",!p.hipotese.trim()&&"hipótese diagnóstica",!p.conduta.trim()&&"conduta"].filter(Boolean);
+    if(faltando.length){setAbaModal("prontuario");mostrarAviso(`Preencha no prontuário: ${faltando.join(", ")}.`);return;}
+    setSalvando(true);
+    try {
+      await api(`/consultas/${c.id}/prontuario`,{method:"PUT",body:JSON.stringify({queixa:p.queixa,historia:p.historia,alergias:p.alergias,medicamentos:p.medicamentos,pressao_arterial:p.vitais.pa,frequencia_cardiaca:p.vitais.fc,temperatura:p.vitais.temp,saturacao_oxigenio:p.vitais.spo2,frequencia_respiratoria:p.vitais.fr,glicemia:p.vitais.glicemia,peso:p.vitais.peso,altura:p.vitais.altura,exame_fisico:p.exameFisico,hipotese_diagnostica:p.hipotese,cid:p.cid,conduta:p.conduta,exames_solicitados:p.exames,retorno_prazo:p.retorno})});
+      await api(`/consultas/${c.id}/concluir`,{method:"PATCH"});
+      atualizar(c.id,(x)=>({...x,status:"Concluída",statusApi:"concluida",prontuario:{...x.prontuario,registradoEm:new Date().toLocaleString("pt-BR"),registradoPor:profissional?.nome_completo||"Médico responsável"}}));
+      mostrarAviso("Atendimento concluído e prontuário registrado."); setConsultaId(null);
+    } catch(e){mostrarAviso(e.message);} finally{setSalvando(false);}
   }
 
   const abrir = (id, abaInicial = "consulta") => { setAbaModal(abaInicial); setConsultaId(id); };
@@ -1046,6 +891,8 @@ export default function MinhasConsultas() {
       <div className="pointer-events-none fixed -bottom-40 -left-32 h-96 w-96 rounded-full bg-white/70" />
 
       <main className="relative z-10 mx-auto max-w-[1400px] space-y-7 px-4 py-7 sm:px-6 lg:px-8">
+        {carregando && <Info tipo="azul">Carregando consultas do servidor...</Info>}
+        {erroApi && <Info tipo="neutro">{erroApi} <button type="button" className="ml-2 font-bold underline" onClick={() => window.location.reload()}>Tentar novamente</button></Info>}
         {/* CABEÇALHO E NAVEGAÇÃO */}
         <section className="relative pb-0">
           <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-20 pt-7 shadow-sm sm:px-10 sm:pt-9 sm:pb-22">
@@ -1060,7 +907,7 @@ export default function MinhasConsultas() {
                 </p>
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-white/80">
                   <Hospital size={16} className="shrink-0" />
-                  {MEDICO.nome} · {MEDICO.especialidade} · {MEDICO.unidade}
+                  {profissional?.nome_completo || "Médico"} · {detalhe?.unidade || "Consultas da sua agenda"}
                 </p>
               </div>
 
@@ -1166,11 +1013,7 @@ export default function MinhasConsultas() {
 
                 <CardSecao titulo="Seus dias de atendimento">
                   <div className="flex flex-wrap gap-2">
-                    {diasSemana.map((d) => (
-                      <span key={d} className={`rounded-full px-3 py-1 text-xs font-semibold ${MEDICO.dias.includes(d) ? "bg-[#023E8A] text-white" : "bg-[#EAF3F7] text-slate-400"}`}>
-                        {d}
-                      </span>
-                    ))}
+                    <span className="text-sm text-slate-500">A agenda exibirá os dias conforme as consultas cadastradas.</span>
                   </div>
                 </CardSecao>
 
@@ -1371,7 +1214,7 @@ export default function MinhasConsultas() {
                     <Clock size={16} className="ml-2 shrink-0 text-[#3563A7]" />
                     {detalhe.horario}
                   </p>
-                  <p className="flex items-start gap-2"><Hospital size={16} className="mt-0.5 shrink-0 text-[#3563A7]" />{MEDICO.unidade}</p>
+                  <p className="flex items-start gap-2"><Hospital size={16} className="mt-0.5 shrink-0 text-[#3563A7]" />{detalhe.unidade || "Unidade informada na consulta"}</p>
                   <p className="flex items-center gap-2"><Phone size={16} className="shrink-0 text-[#3563A7]" />{detalhe.telefone || "Não informado"}</p>
                   <p><strong>Motivo:</strong> {detalhe.motivo}</p>
                 </div>
@@ -1407,6 +1250,12 @@ export default function MinhasConsultas() {
             )}
 
             {/* Ações (sempre visíveis, em qualquer aba) */}
+            {detalhe.status === "Solicitada" && (
+              <div className="border-t border-slate-100 pt-4">
+                <button type="button" disabled={salvando} onClick={async()=>{setSalvando(true);try{await api(`/consultas/${detalhe.id}/confirmar`,{method:"PATCH"});atualizar(detalhe.id,c=>({...c,status:"Agendada",statusApi:"confirmada"}));mostrarAviso("Consulta confirmada.");}catch(e){mostrarAviso(e.message);}finally{setSalvando(false);}}} className={`${botaoPrimario} w-full`}>Confirmar consulta</button>
+              </div>
+            )}
+
             {detalhe.status === "Agendada" && (
               <div className="space-y-2 border-t border-slate-100 pt-4">
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -1432,10 +1281,9 @@ export default function MinhasConsultas() {
             )}
 
             {detalhe.status === "Em atendimento" && (
-              <div className="border-t border-slate-100 pt-4">
-                <button type="button" onClick={() => concluirAtendimento(detalhe)} className={`${botaoPrimario} w-full`}>
-                  <Check size={16} />Concluir atendimento e fechar prontuário
-                </button>
+              <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row">
+                <button type="button" disabled={salvando} onClick={() => salvarProntuario(detalhe)} className={`${botaoSecundario} flex-1`}>{salvando ? "Salvando..." : "Salvar prontuário"}</button>
+                <button type="button" disabled={salvando} onClick={() => concluirAtendimento(detalhe)} className={`${botaoPrimario} flex-1`}><Check size={16} />Concluir atendimento</button>
               </div>
             )}
           </div>

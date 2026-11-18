@@ -2,15 +2,17 @@
 import { Router } from "express";
 
 import {
-    entrarPacienteNaFila,
-    listarMinhaFila,
-    cancelarMinhaEntrada,
-    realizarCheckin,
-    listarFilaDoMedico,
-    atualizarStatusDaFila,
-    listarFilasAdmin,
-    listarFilaDoEnfermeiro
+  entrarPacienteNaFila,
+  listarMinhaFila,
+  cancelarMinhaEntrada,
+  realizarCheckin,
+  listarFilasAdmin
 } from "../controllers/filaController.js";
+
+import {
+  listarFilaDoMedico,
+  atualizarStatusDaFila
+} from "../controllers/filaMedicoController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
 import { autenticarMedico } from "../middlewares/medicoAuthMiddleware.js";
@@ -30,10 +32,5 @@ router.patch("/:id/status", autenticarMedico, atualizarStatusDaFila);
 
 // Rotas do administrador
 router.get("/", autenticarAdmin, listarFilasAdmin);
-
-import { autenticarEnfermeiro } from "../middlewares/enfermeiroAuthMiddleware.js";
-
-// Enfermeiro consulta fila da unidade e setor selecionados
-router.get("/enfermeiro", autenticarEnfermeiro, listarFilaDoEnfermeiro);
 
 export default router;

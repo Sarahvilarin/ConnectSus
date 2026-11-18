@@ -21,6 +21,135 @@ function validarIdParametro(id, res) {
   return true;
 }
 
+
+// Busca paciente pelo CPF para o médico autenticado.
+export async function buscarPacienteParaExame(req, res, next) {
+  try {
+    const cpf = String(req.query.cpf ?? "").replace(/\D/g, "");
+
+    if (!/^\d{11}$/.test(cpf)) {
+      return res.status(400).json({ mensagem: "Informe um CPF válido." });
+    }
+
+    const [pacientes] = await pool.query(
+      `SELECT id, nome_completo, cpf, data_nascimento
+       FROM pacientes
+       WHERE cpf = ? AND ativo = TRUE
+       LIMIT 1`,
+      [cpf]
+    );
+
+    if (!pacientes.length) {
+      return res.status(404).json({
+        mensagem: "Nenhum paciente ativo encontrado com este CPF."
+      });
+    }
+
+    return res.status(200).json({ paciente: pacientes[0] });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Médico solicita exame para um paciente.
+export async function solicitarExamePeloMedico(req, res, next) {
+  try {
+    const medicoId = req.medico.id;
+    const {
+      paciente_id,
+      unidade_id,
+      tipo_exame,
+      consulta_id = null,
+      observacoes = null
+    } = req.body ?? {};
+
+    if (
+      !Number.isSafeInteger(paciente_id) || paciente_id < 1 ||
+      !Number.isSafeInteger(unidade_id) || unidade_id < 1 ||
+      typeof tipo_exame !== "string" ||
+      tipo_exame.trim().length < 3 ||
+      tipo_exame.trim().length > 150 ||
+      (consulta_id !== null &&
+        (!Number.isSafeInteger(consulta_id) || consulta_id < 1)) ||
+      (observacoes !== null &&
+        (typeof observacoes !== "string" || observacoes.length > 1000))
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe paciente, unidade e tipo de exame válidos."
+      });
+    }
+
+    const [pacientes] = await pool.query(
+      "SELECT id FROM pacientes WHERE id = ? AND ativo = TRUE",
+      [paciente_id]
+    );
+
+    if (!pacientes.length) {
+      return res.status(404).json({
+        mensagem: "Paciente não encontrado ou desativado."
+      });
+    }
+
+    const [unidades] = await pool.query(
+      "SELECT id FROM unidades WHERE id = ? AND ativo = TRUE",
+      [unidade_id]
+    );
+
+    if (!unidades.length) {
+      return res.status(404).json({
+        mensagem: "Unidade não encontrada ou desativada."
+      });
+    }
+
+    if (consulta_id !== null) {
+      const [consultas] = await pool.query(
+        `SELECT id FROM consultas
+         WHERE id = ? AND paciente_id = ?
+           AND medico_id = ? AND unidade_id = ?
+           AND status IN ('pendente', 'confirmada', 'concluida')`,
+        [consulta_id, paciente_id, medicoId, unidade_id]
+      );
+
+      if (!consultas.length) {
+        return res.status(400).json({
+          mensagem: "A consulta informada não corresponde ao paciente, médico e unidade."
+        });
+      }
+    }
+
+    const [resultado] = await pool.query(
+      `INSERT INTO exames
+       (paciente_id, medico_id, unidade_id, consulta_id,
+        tipo_exame, observacoes)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        paciente_id,
+        medicoId,
+        unidade_id,
+        consulta_id,
+        tipo_exame.trim(),
+        observacoes?.trim() || null
+      ]
+    );
+
+    return res.status(201).json({
+      mensagem: "Exame solicitado com sucesso.",
+      exame: {
+        id: resultado.insertId,
+        paciente_id,
+        medico_id: medicoId,
+        unidade_id,
+        consulta_id,
+        tipo_exame: tipo_exame.trim(),
+        status: "solicitado"
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
 // Paciente solicita um exame
 export async function solicitarExame(req, res, next) {
   try {

@@ -147,7 +147,8 @@ function AtendimentoModal({ paciente, onClose, onFinish, atualizando = false }) 
     if (Array.isArray(dado)) return dado.length ? dado.join("; ") : "Não informado na triagem";
     return dado || "Não informado na triagem";
   };
-  const linkDocumento = (tipo) => `/medico/prescricao?paciente=${encodeURIComponent(paciente.id)}&tipo=${tipo}`;
+  const linkDocumento = (tipo) =>
+    `/medico/prescricao?paciente=${encodeURIComponent(paciente.pacienteId)}&tipo=${tipo === "medicamento" ? "receita" : tipo}`;
 
   useEffect(() => {
     const anterior = document.body.style.overflow;
@@ -415,30 +416,55 @@ export default function PacientesProntoAtendimentoPage() {
     }
   }
 
+
   async function abrirAtendimento(paciente) {
-    if (paciente.rawStatus === "aguardando" || paciente.rawStatus === "chamado") {
+    if (
+      paciente.rawStatus === "aguardando" ||
+      paciente.rawStatus === "chamado"
+    ) {
       setAtualizando(true);
       setErro("");
+
       try {
+        const dadosFila = {
+          unidade_id: paciente.unidadeId,
+          setor_id: paciente.setorId,
+        };
+
+        // Primeiro, chama o paciente.
+        if (paciente.rawStatus === "aguardando") {
+          await api(`/filas/${paciente.filaId}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              ...dadosFila,
+              status: "chamado",
+            }),
+          });
+        }
+
+        // Depois, inicia o atendimento.
         await api(`/filas/${paciente.filaId}/status`, {
           method: "PATCH",
           body: JSON.stringify({
-            unidade_id: paciente.unidadeId,
-            setor_id: paciente.setorId,
+            ...dadosFila,
             status: "em_atendimento",
           }),
         });
+
         await carregarFila();
       } catch (error) {
-        setErro(error.message || "Não foi possível iniciar o atendimento.");
-        setAtualizando(false);
+        setErro(
+          error.message || "Não foi possível iniciar o atendimento."
+        );
         return;
       } finally {
         setAtualizando(false);
       }
     }
+
     setSelecionadoId(paciente.id);
   }
+
 
   function fecharAtendimento() {
     setSelecionadoId(null);
