@@ -584,7 +584,7 @@ function FilaOnlineConteudo() {
         setErroUnidades("");
 
         // Busca todas as unidades
-        const resposta = await api("/unidades");
+        const resposta = await api("/api/unidades");
 
         const listaUnidades = Array.isArray(resposta)
           ? resposta
@@ -605,7 +605,7 @@ function FilaOnlineConteudo() {
 
         try {
           const respostaEstimativas = await api(
-            "/unidades/estimativas-espera"
+            "/api/unidades/estimativas-espera"
           );
 
           estimativas = Array.isArray(respostaEstimativas)
@@ -659,7 +659,7 @@ function FilaOnlineConteudo() {
   useEffect(() => {
     async function recuperarFila() {
       try {
-        const resposta = await api("/filas/me");
+        const resposta = await api("/api/filas/me");
 
         const filas = Array.isArray(resposta)
           ? resposta
@@ -727,7 +727,7 @@ function FilaOnlineConteudo() {
         setCarregandoFila(true);
         setErroFila("");
 
-        const resposta = await api("/filas/me");
+        const resposta = await api("/api/filas/me");
         console.log("RESPOSTA COMPLETA:", JSON.stringify(resposta, null, 2));
         console.log("TIPO DA RESPOSTA:", typeof resposta);
         console.log("É ARRAY?", Array.isArray(resposta));
@@ -804,7 +804,7 @@ function FilaOnlineConteudo() {
     setCarregandoSetores(true);
 
     try {
-      const resposta = await api(`/setores/unidade/${unidade.id}`);
+      const resposta = await api(`/api/setores/unidade/${unidade.id}`);
       setSetoresUnidade(Array.isArray(resposta) ? resposta : []);
     } catch (erro) {
       console.error("Erro ao carregar setores:", erro);
@@ -841,7 +841,7 @@ function FilaOnlineConteudo() {
     try {
       setEnviandoEntrada(true);
 
-      await api("/filas", {
+      await api("/api/filas", {
         method: "POST",
         body: JSON.stringify({
           unidade_id: Number(unidadeParaConfirmar.id),
@@ -851,7 +851,7 @@ function FilaOnlineConteudo() {
         }),
       });
 
-      const resposta = await api("/filas/me");
+      const resposta = await api("/api/filas/me");
 
       const filas = Array.isArray(resposta)
         ? resposta
@@ -907,7 +907,7 @@ function FilaOnlineConteudo() {
     }
 
     try {
-      await api(`/filas/${entradaFila.id}/cancelar`, {
+      await api(`/api/filas/${entradaFila.id}/cancelar`, {
         method: "PATCH",
       });
 

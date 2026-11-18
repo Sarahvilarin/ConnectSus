@@ -335,7 +335,7 @@ function Tela() {
     setMedico(null);
 
     try {
-      const resposta = await api("/medicos/me", { signal });
+      const resposta = await api("/api/medicos/me", { signal });
       const item = resposta.medico || resposta;
 
       const especialidades = resposta.especialidades || [];
@@ -385,7 +385,7 @@ function Tela() {
 
       try {
         const resposta = await api(
-          `/pacientes/${encodeURIComponent(pacienteId)}/atendimento`,
+          `/api/pacientes/${encodeURIComponent(pacienteId)}/atendimento`,
           { signal: c.signal }
         );
 

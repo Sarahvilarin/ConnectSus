@@ -12,11 +12,13 @@ import {
   buscarProntuarioConsulta,
   salvarProntuarioConsulta,
   listarHistoricoProntuariosPaciente,
-  listarDisponibilidadeConsultas
+  listarDisponibilidadeConsultas,
+  listarTodasConsultasAdmin
 } from "../controllers/consultaController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
 import { autenticarMedico } from "../middlewares/medicoAuthMiddleware.js";
+import { autenticarAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
@@ -44,5 +46,6 @@ router.get("/:id/triagem", autenticarMedico, buscarTriagemDaConsulta);
 router.get("/:id/prontuario", autenticarMedico, buscarProntuarioConsulta);
 router.put("/:id/prontuario", autenticarMedico, salvarProntuarioConsulta);
 router.patch("/:id/concluir", autenticarMedico, concluirConsulta);
+router.get("/admin", autenticarAdmin, listarTodasConsultasAdmin);
 
 export default router;

@@ -57,7 +57,7 @@ export default function GestaoExamePage() {
     let ativo = true;
     async function carregarUnidades() {
       try {
-        const resposta = await api("/unidades");
+        const resposta = await api("/api/unidades");
         const lista = Array.isArray(resposta) ? resposta : resposta.unidades || [];
         if (ativo) setUnidades(lista.filter((item) => item.ativo !== 0));
       } catch (error) {
@@ -89,7 +89,7 @@ export default function GestaoExamePage() {
     setCarregandoPaciente(true);
     setErro("");
     try {
-      const resposta = await api(`/exames/medico/paciente?cpf=${cpfNumerico}`);
+      const resposta = await api(`/api/exames/medico/paciente?cpf=${cpfNumerico}`);
       const dados = resposta.paciente || resposta;
       const nascimento = dados.data_nascimento ? new Date(`${dados.data_nascimento}T00:00:00`) : null;
       let idade = null;
@@ -131,7 +131,7 @@ export default function GestaoExamePage() {
     setEnviando(true);
     setErro("");
     try {
-      const resposta = await api("/exames/medico", {
+      const resposta = await api("/api/exames/medico", {
         method: "POST",
         body: JSON.stringify({
           paciente_id: paciente.id,

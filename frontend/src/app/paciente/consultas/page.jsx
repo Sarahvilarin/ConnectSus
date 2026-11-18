@@ -358,7 +358,7 @@ export default function Consultas() {
   async function carregarConsultas() {
     setCarregandoConsultas(true);
     try {
-      const resposta = await api("/consultas/me");
+      const resposta = await api("/api/consultas/me");
       setConsultas(extrairLista(resposta, ["consultas", "dados", "resultados"]).map(normalizarConsulta));
     } catch (error) {
       setErro(error.message || "Não foi possível carregar suas consultas.");
@@ -371,7 +371,7 @@ export default function Consultas() {
     (async () => {
       setCarregandoDados(true);
       try {
-        const [resEsp, resUni] = await Promise.all([api("/especialidades"), api("/unidades")]);
+        const [resEsp, resUni] = await Promise.all([api("/api/especialidades"), api("/api/unidades")]);
         if (!ativo) return;
         setEspecialidades(
           extrairLista(resEsp, ["especialidades", "dados", "resultados"])
@@ -413,7 +413,7 @@ export default function Consultas() {
       setErro("");
       try {
         const params = new URLSearchParams({ unidade_id: String(unidade.id), especialidade_id: String(especialidadeSelecionada.id), data: dia });
-        const resposta = await api(`/consultas/disponibilidade?${params.toString()}`);
+        const resposta = await api(`/api/consultas/disponibilidade?${params.toString()}`);
         if (ativo) setHorariosDisponiveis(Array.isArray(resposta?.horarios) ? resposta.horarios : []);
       } catch (error) {
         if (ativo) setErro(error.message || "Não foi possível consultar os horários disponíveis.");
@@ -447,7 +447,7 @@ export default function Consultas() {
     setSalvando(true);
     setErro("");
     try {
-      await api("/consultas", {
+      await api("/api/consultas", {
         method: "POST",
         body: JSON.stringify({
           unidade_id: unidade.id,
@@ -484,7 +484,7 @@ export default function Consultas() {
   async function cancelarConsulta(id) {
     setErro("");
     try {
-      await api(`/consultas/${id}/cancelar`, { method: "PATCH" });
+      await api(`/api/consultas/${id}/cancelar`, { method: "PATCH" });
       await carregarConsultas();
     } catch (error) {
       setErro(error.message || "Não foi possível cancelar a consulta.");

@@ -42,7 +42,7 @@ export default function LoginPage() {
 
     try {
       // Autenticação exclusiva de administrador.
-      const resposta = await api("/auth/admin/login", {
+      const resposta = await api("/api/auth/admin/login", {
         method: "POST",
         body: JSON.stringify(credenciais),
       });

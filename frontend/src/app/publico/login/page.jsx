@@ -44,7 +44,7 @@ export default function LoginPage() {
 
       // Tenta primeiro autenticar como administrador.
       try {
-        resposta = await api("/auth/admin/login", {
+        resposta = await api("/api/auth/admin/login", {
           method: "POST",
           body: JSON.stringify(credenciais),
         });
@@ -57,7 +57,7 @@ export default function LoginPage() {
           throw erroAdmin;
         }
 
-        resposta = await api("/auth/paciente/login", {
+        resposta = await api("/api/auth/paciente/login", {
           method: "POST",
           body: JSON.stringify(credenciais),
         });

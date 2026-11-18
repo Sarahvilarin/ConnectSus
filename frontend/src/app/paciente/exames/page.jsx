@@ -123,7 +123,7 @@ export default function MeusExamesPage() {
       try {
         setCarregando(true);
         setErro("");
-        const resposta = await api("/exames/me");
+        const resposta = await api("/api/exames/me");
         const lista = Array.isArray(resposta) ? resposta : Array.isArray(resposta?.exames) ? resposta.exames : [];
         if (ativo) setExames(lista.map(adaptarExame));
       } catch (error) {

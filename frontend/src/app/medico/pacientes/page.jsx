@@ -356,7 +356,7 @@ export default function PacientesProntoAtendimentoPage() {
     setCarregando(true);
     setErro("");
     try {
-      const resposta = await api("/filas/medico/me");
+      const resposta = await api("/api/filas/medico/me");
       const registros = Array.isArray(resposta) ? resposta : resposta?.filas || resposta?.data?.filas || [];
       setPacientes(registros.map(mapearFila));
     } catch (error) {
@@ -399,7 +399,7 @@ export default function PacientesProntoAtendimentoPage() {
     setAtualizando(true);
     setErro("");
     try {
-      await api(`/filas/${paciente.filaId}/status`, {
+      await api(`/api/filas/${paciente.filaId}/status`, {
         method: "PATCH",
         body: JSON.stringify({
           unidade_id: paciente.unidadeId,
@@ -433,7 +433,7 @@ export default function PacientesProntoAtendimentoPage() {
 
         // Primeiro, chama o paciente.
         if (paciente.rawStatus === "aguardando") {
-          await api(`/filas/${paciente.filaId}/status`, {
+          await api(`/api/filas/${paciente.filaId}/status`, {
             method: "PATCH",
             body: JSON.stringify({
               ...dadosFila,
@@ -443,7 +443,7 @@ export default function PacientesProntoAtendimentoPage() {
         }
 
         // Depois, inicia o atendimento.
-        await api(`/filas/${paciente.filaId}/status`, {
+        await api(`/api/filas/${paciente.filaId}/status`, {
           method: "PATCH",
           body: JSON.stringify({
             ...dadosFila,

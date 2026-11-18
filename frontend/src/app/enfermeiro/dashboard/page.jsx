@@ -145,7 +145,7 @@ export default function Home() {
         setCarregando(true);
         setErro("");
 
-        const resposta = await api("/dashboard/enfermeiro/me");
+        const resposta = await api("/api/dashboard/enfermeiro/me");
 
         setDados(resposta.dados);
       } catch (error) {

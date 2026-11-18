@@ -693,13 +693,13 @@ export default function MinhasConsultas() {
     async function carregar() {
       setCarregando(true); setErroApi("");
       try {
-        const [resposta, perfil] = await Promise.all([api("/consultas/medico/me"), api("/medicos/me").catch(() => null)]);
+        const [resposta, perfil] = await Promise.all([api("/api/consultas/medico/me"), api("/medicos/me").catch(() => null)]);
         const base = Array.isArray(resposta) ? resposta : (resposta.consultas || []);
         const lista = await Promise.all(base.map(async (item) => {
           const c = mapearConsulta(item);
           const [tri, pront] = await Promise.all([
-            api(`/consultas/${c.id}/triagem`).catch(() => null),
-            api(`/consultas/${c.id}/prontuario`).catch(() => null),
+            api(`/api/consultas/${c.id}/triagem`).catch(() => null),
+            api(`/api/consultas/${c.id}/prontuario`).catch(() => null),
           ]);
           c.triagem = mapearTriagem(tri);
           c.prontuario = mapearProntuario(pront?.prontuario, c.motivo, c.triagem);
@@ -747,7 +747,7 @@ export default function MinhasConsultas() {
   useEffect(() => {
     let ativo = true;
     if (!detalhe?.paciente_id) { setHistoricoPaciente([]); return; }
-    api(`/consultas/medico/paciente/${detalhe.paciente_id}/historico`)
+    api(`/api/consultas/medico/paciente/${detalhe.paciente_id}/historico`)
       .then((r) => { if (ativo) setHistoricoPaciente(r.historico || []); })
       .catch(() => { if (ativo) setHistoricoPaciente([]); });
     return () => { ativo = false; };
@@ -840,7 +840,7 @@ export default function MinhasConsultas() {
   async function mudarStatus(id, status, mensagem) {
     const endpoint = status === "Em atendimento" ? "iniciar" : status === "Faltou" ? "falta" : null;
     if (!endpoint) return;
-    try { await api(`/consultas/${id}/${endpoint}`, { method: "PATCH" });
+    try { await api(`/api/consultas/${id}/${endpoint}`, { method: "PATCH" });
       const statusApi = status === "Em atendimento" ? "em_atendimento" : "falta";
       atualizar(id, (c) => ({ ...c, status, statusApi, historico: [...c.historico, status] }));
       mostrarAviso(mensagem);
@@ -852,15 +852,15 @@ export default function MinhasConsultas() {
   async function salvarProntuario(c) {
     const p=c.prontuario; setSalvando(true);
     const body={queixa:p.queixa,historia:p.historia,alergias:p.alergias,medicamentos:p.medicamentos,pressao_arterial:p.vitais.pa,frequencia_cardiaca:p.vitais.fc,temperatura:p.vitais.temp,saturacao_oxigenio:p.vitais.spo2,frequencia_respiratoria:p.vitais.fr,glicemia:p.vitais.glicemia,peso:p.vitais.peso,altura:p.vitais.altura,exame_fisico:p.exameFisico,hipotese_diagnostica:p.hipotese,cid:p.cid,conduta:p.conduta,exames_solicitados:p.exames,retorno_prazo:p.retorno};
-    try { await api(`/consultas/${c.id}/prontuario`,{method:"PUT",body:JSON.stringify(body)}); mostrarAviso("Prontuário salvo com sucesso."); } catch(e) { mostrarAviso(e.message); } finally { setSalvando(false); }
+    try { await api(`/api/consultas/${c.id}/prontuario`,{method:"PUT",body:JSON.stringify(body)}); mostrarAviso("Prontuário salvo com sucesso."); } catch(e) { mostrarAviso(e.message); } finally { setSalvando(false); }
   }
   async function concluirAtendimento(c) {
     const p=c.prontuario; const faltando=[!p.queixa.trim()&&"queixa principal",!p.hipotese.trim()&&"hipótese diagnóstica",!p.conduta.trim()&&"conduta"].filter(Boolean);
     if(faltando.length){setAbaModal("prontuario");mostrarAviso(`Preencha no prontuário: ${faltando.join(", ")}.`);return;}
     setSalvando(true);
     try {
-      await api(`/consultas/${c.id}/prontuario`,{method:"PUT",body:JSON.stringify({queixa:p.queixa,historia:p.historia,alergias:p.alergias,medicamentos:p.medicamentos,pressao_arterial:p.vitais.pa,frequencia_cardiaca:p.vitais.fc,temperatura:p.vitais.temp,saturacao_oxigenio:p.vitais.spo2,frequencia_respiratoria:p.vitais.fr,glicemia:p.vitais.glicemia,peso:p.vitais.peso,altura:p.vitais.altura,exame_fisico:p.exameFisico,hipotese_diagnostica:p.hipotese,cid:p.cid,conduta:p.conduta,exames_solicitados:p.exames,retorno_prazo:p.retorno})});
-      await api(`/consultas/${c.id}/concluir`,{method:"PATCH"});
+      await api(`/api/consultas/${c.id}/prontuario`,{method:"PUT",body:JSON.stringify({queixa:p.queixa,historia:p.historia,alergias:p.alergias,medicamentos:p.medicamentos,pressao_arterial:p.vitais.pa,frequencia_cardiaca:p.vitais.fc,temperatura:p.vitais.temp,saturacao_oxigenio:p.vitais.spo2,frequencia_respiratoria:p.vitais.fr,glicemia:p.vitais.glicemia,peso:p.vitais.peso,altura:p.vitais.altura,exame_fisico:p.exameFisico,hipotese_diagnostica:p.hipotese,cid:p.cid,conduta:p.conduta,exames_solicitados:p.exames,retorno_prazo:p.retorno})});
+      await api(`/api/consultas/${c.id}/concluir`,{method:"PATCH"});
       atualizar(c.id,(x)=>({...x,status:"Concluída",statusApi:"concluida",prontuario:{...x.prontuario,registradoEm:new Date().toLocaleString("pt-BR"),registradoPor:profissional?.nome_completo||"Médico responsável"}}));
       mostrarAviso("Atendimento concluído e prontuário registrado."); setConsultaId(null);
     } catch(e){mostrarAviso(e.message);} finally{setSalvando(false);}
@@ -1252,7 +1252,7 @@ export default function MinhasConsultas() {
             {/* Ações (sempre visíveis, em qualquer aba) */}
             {detalhe.status === "Solicitada" && (
               <div className="border-t border-slate-100 pt-4">
-                <button type="button" disabled={salvando} onClick={async()=>{setSalvando(true);try{await api(`/consultas/${detalhe.id}/confirmar`,{method:"PATCH"});atualizar(detalhe.id,c=>({...c,status:"Agendada",statusApi:"confirmada"}));mostrarAviso("Consulta confirmada.");}catch(e){mostrarAviso(e.message);}finally{setSalvando(false);}}} className={`${botaoPrimario} w-full`}>Confirmar consulta</button>
+                <button type="button" disabled={salvando} onClick={async()=>{setSalvando(true);try{await api(`/api/consultas/${detalhe.id}/confirmar`,{method:"PATCH"});atualizar(detalhe.id,c=>({...c,status:"Agendada",statusApi:"confirmada"}));mostrarAviso("Consulta confirmada.");}catch(e){mostrarAviso(e.message);}finally{setSalvando(false);}}} className={`${botaoPrimario} w-full`}>Confirmar consulta</button>
               </div>
             )}
 

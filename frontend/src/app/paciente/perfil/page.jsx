@@ -40,7 +40,7 @@ export default function PerfilPage() {
   useEffect(() => {
     async function carregarPerfil() {
       try {
-        const resposta = await api("/pacientes/me");
+        const resposta = await api("/api/pacientes/me");
 
         const paciente = resposta.paciente;
 
@@ -77,7 +77,7 @@ export default function PerfilPage() {
     setSalvandoDados(true);
 
     try {
-      const resposta = await api("/pacientes/me", {
+      const resposta = await api("/api/pacientes/me", {
         method: "PUT",
         body: JSON.stringify({
           nome_completo: nomeEditado.trim(),
@@ -163,7 +163,7 @@ export default function PerfilPage() {
     setSalvandoSenha(true);
 
     try {
-      const resposta = await api("/pacientes/me/senha", {
+      const resposta = await api("/api/pacientes/me/senha", {
         method: "PATCH",
         body: JSON.stringify({
           senha_atual: senhaAtual,
@@ -209,7 +209,7 @@ export default function PerfilPage() {
     setSalvandoEmail(true);
 
     try {
-      const resposta = await api("/pacientes/me", {
+      const resposta = await api("/api/pacientes/me", {
         method: "PUT",
         body: JSON.stringify({
           email: emailLimpo,

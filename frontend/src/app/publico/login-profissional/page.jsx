@@ -63,7 +63,7 @@ export default function LoginProfissionalPage() {
 
     try {
       // Uma única requisição identifica médico ou enfermeiro no backend.
-      const resposta = await api("/auth/medico/login", {
+      const resposta = await api("/api/auth/medico/login", {
         method: "POST",
         body: JSON.stringify({
           registro,

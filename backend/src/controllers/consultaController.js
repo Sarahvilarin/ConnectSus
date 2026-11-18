@@ -787,3 +787,42 @@ export async function listarHistoricoProntuariosPaciente(req, res, next) {
   } catch (error) { return next(error); }
 }
 
+
+export async function listarTodasConsultasAdmin(req, res, next) {
+  try {
+    const [consultas] = await pool.query(
+      `SELECT
+        c.id,
+        c.paciente_id,
+        p.nome_completo AS paciente,
+        p.telefone AS telefone,
+        c.medico_id,
+        m.nome_completo AS medico,
+        c.unidade_id,
+        u.nome AS unidade,
+        c.especialidade_id,
+        e.nome AS especialidade,
+        c.setor_id,
+        s.nome AS setor,
+        c.data_hora,
+        c.status,
+        c.observacoes,
+        c.criado_em
+      FROM consultas c
+      INNER JOIN pacientes p ON p.id = c.paciente_id
+      INNER JOIN medicos m ON m.id = c.medico_id
+      INNER JOIN unidades u ON u.id = c.unidade_id
+      INNER JOIN especialidades e ON e.id = c.especialidade_id
+      INNER JOIN setores s ON s.id = c.setor_id
+      ORDER BY c.data_hora DESC, c.id DESC`
+    );
+
+    return res.status(200).json({
+      total: consultas.length,
+      consultas
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+

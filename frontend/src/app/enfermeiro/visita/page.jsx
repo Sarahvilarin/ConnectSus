@@ -149,7 +149,7 @@ export default function MinhasVisitasPage() {
     setErro("");
 
     try {
-      const resposta = await api("/atendimentos-domiciliares/enfermeiro/me");
+      const resposta = await api("/api/atendimentos-domiciliares/enfermeiro/me");
       setVisitas(extrairLista(resposta).map(normalizarAtendimento));
     } catch (error) {
       setErro(error?.message || "Não foi possível carregar suas visitas.");
@@ -211,7 +211,7 @@ export default function MinhasVisitasPage() {
     if (!visitaSelecionada) return;
     setSalvando(true);
     try {
-      await api(`/atendimentos-domiciliares/enfermeiro/${visitaSelecionada.id}/status`, {
+      await api(`/api/atendimentos-domiciliares/enfermeiro/${visitaSelecionada.id}/status`, {
         method: "PATCH",
         body: JSON.stringify({
           status: novoStatus,

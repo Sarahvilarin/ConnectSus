@@ -80,9 +80,9 @@ export default function MinhasVisitasPage() {
     setErro("");
     try {
       const [perfilResposta, visitasResposta, unidadesResposta] = await Promise.all([
-        api("/pacientes/me"),
-        api("/atendimentos-domiciliares/paciente/me"),
-        api("/unidades"),
+        api("/api/pacientes/me"),
+        api("/api/atendimentos-domiciliares/paciente/me"),
+        api("/api/unidades"),
       ]);
       const perfil = perfilResposta?.paciente || perfilResposta;
       const listaVisitas = Array.isArray(visitasResposta) ? visitasResposta : visitasResposta?.atendimentos || [];
@@ -116,7 +116,7 @@ export default function MinhasVisitasPage() {
     }
     setEnviando(true);
     try {
-      await api("/atendimentos-domiciliares", {
+      await api("/api/atendimentos-domiciliares", {
         method: "POST",
         body: JSON.stringify({
           unidade_id: Number(form.unidade_id),
@@ -143,7 +143,7 @@ export default function MinhasVisitasPage() {
   async function cancelarSolicitacao(id) {
     setErro("");
     try {
-      await api(`/atendimentos-domiciliares/${id}/cancelar`, { method: "PATCH" });
+      await api(`/api/atendimentos-domiciliares/${id}/cancelar`, { method: "PATCH" });
       setModal(null);
       setAviso("Solicitação cancelada.");
       await carregarDados();

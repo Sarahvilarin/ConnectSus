@@ -107,7 +107,7 @@ export default function UnidadesPage() {
       try {
         setCarregando(true);
         setErro("");
-        const resposta = await api("/unidades");
+        const resposta = await api("/api/unidades");
         const lista = Array.isArray(resposta)
           ? resposta
           : resposta?.unidades || resposta?.dados || resposta?.resultados || [];

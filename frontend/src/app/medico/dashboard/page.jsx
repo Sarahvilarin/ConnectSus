@@ -235,7 +235,7 @@ export default function DashboardMedico() {
 
     async function carregarConsultas() {
       try {
-        const resposta = await api("/consultas/medico/me");
+        const resposta = await api("/api/consultas/medico/me");
         if (ativo) setConsultas(Array.isArray(resposta.consultas) ? resposta.consultas : []);
       } catch (error) {
         if (ativo) setErro(error.message || "Não foi possível carregar as consultas.");
