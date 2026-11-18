@@ -6,10 +6,12 @@ import {
   obterMeuPerfil,
   atualizarMeuPerfil,
   alterarSenhaPaciente,
-  obterPacienteParaAtendimento
+  obterPacienteParaAtendimento,
+  buscarPacientesParaTriagem
 } from "../controllers/pacienteController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
+import { autenticarEnfermeiro } from "../middlewares/enfermeiroAuthMiddleware.js";
 import { autenticarMedico } from "../middlewares/medicoAuthMiddleware.js";
 
 const router = Router();
@@ -22,6 +24,11 @@ router.get(
   "/:id/atendimento",
   autenticarMedico,
   obterPacienteParaAtendimento
+);
+router.get(
+  "/busca",
+  autenticarEnfermeiro,
+  buscarPacientesParaTriagem
 );
 
 export default router;

@@ -670,3 +670,46 @@ export async function obterPacienteParaAtendimento(req, res, next) {
     return next(error);
   }
 }
+
+export async function buscarPacientesParaTriagem(req, res, next) {
+  try {
+    const termo = String(req.query.termo ?? "").trim();
+
+    if (termo.length < 2) {
+      return res.status(400).json({
+        mensagem: "Informe pelo menos 2 caracteres para pesquisar."
+      });
+    }
+
+    const cpf = termo.replace(/\D/g, "");
+
+    const [pacientes] = await pool.execute(
+      `SELECT
+        id,
+        nome_completo,
+        nome_social,
+        cpf,
+        data_nascimento
+       FROM pacientes
+       WHERE ativo = TRUE
+         AND (
+           nome_completo LIKE ?
+           OR nome_social LIKE ?
+           OR cpf LIKE ?
+         )
+       ORDER BY nome_completo
+       LIMIT 20`,
+      [
+        `%${termo}%`,
+        `%${termo}%`,
+        `%${cpf}%`
+      ]
+    );
+
+    return res.status(200).json({
+      pacientes
+    });
+  } catch (error) {
+    return next(error);
+  }
+}

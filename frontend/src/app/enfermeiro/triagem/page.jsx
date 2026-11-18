@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Activity,
@@ -23,88 +23,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-
-/* =========================
-   DADOS DEMONSTRATIVOS
-   Substituir pela API depois
-========================= */
-
-const PACIENTES = [
-  { id: 1, nome: "Mariana Silva Costa", cpf: "123.456.789-00", idade: 28, sexo: "Feminino" },
-  { id: 2, nome: "João Pedro Alves", cpf: "987.654.321-00", idade: 44, sexo: "Masculino" },
-  { id: 3, nome: "Carlos Eduardo Lima", cpf: "111.222.333-44", idade: 61, sexo: "Masculino" },
-  { id: 4, nome: "Ana Beatriz Martins", cpf: "222.333.444-55", idade: 35, sexo: "Feminino" },
-  { id: 5, nome: "Lucas Henrique Souza", cpf: "333.444.555-66", idade: 19, sexo: "Masculino" },
-];
-
-const TRIAGENS_INICIAIS = [
-  {
-    id: 1001,
-    paciente: PACIENTES[0],
-    data: "2026-11-12",
-    horario: "08:15",
-    pressao: "120/80",
-    frequencia: "78",
-    temperatura: "36.5",
-    saturacao: "98",
-    respiracao: "16",
-    glicemia: "92",
-    queixa: "Dor de cabeça e tontura",
-    sintomas: "Dor na região frontal e tontura leve.",
-    inicio: "Hoje pela manhã",
-    dor: "Leve",
-    historico: "Nega doenças crônicas.",
-    alergias: "Não relatadas",
-    medicamentos: "Nenhum",
-    classificacao: "Pouco urgente",
-    observacoes: "Paciente consciente e orientada.",
-    status: "Encaminhada ao médico",
-  },
-  {
-    id: 1002,
-    paciente: PACIENTES[1],
-    data: "2026-11-12",
-    horario: "08:40",
-    pressao: "130/85",
-    frequencia: "88",
-    temperatura: "37.2",
-    saturacao: "97",
-    respiracao: "18",
-    glicemia: "",
-    queixa: "Dor abdominal",
-    sintomas: "Desconforto na região abdominal.",
-    inicio: "Há dois dias",
-    dor: "Moderada",
-    historico: "Hipertensão",
-    alergias: "Dipirona",
-    medicamentos: "Losartana",
-    classificacao: "Urgente",
-    observacoes: "Relata piora do desconforto.",
-    status: "Aguardando atendimento médico",
-  },
-  {
-    id: 1003,
-    paciente: PACIENTES[2],
-    data: "2026-11-12",
-    horario: "09:10",
-    pressao: "118/76",
-    frequencia: "74",
-    temperatura: "36.4",
-    saturacao: "99",
-    respiracao: "17",
-    glicemia: "105",
-    queixa: "Renovação de receita",
-    sintomas: "Sem sintomas relatados.",
-    inicio: "Não se aplica",
-    dor: "Sem dor",
-    historico: "Diabetes tipo 2",
-    alergias: "Não relatadas",
-    medicamentos: "Metformina",
-    classificacao: "Não urgente",
-    observacoes: "Paciente estável.",
-    status: "Encaminhada ao médico",
-  },
-];
 
 function dataLocalISO() {
   const hoje = new Date();
@@ -137,13 +55,63 @@ function iniciais(nome = "") {
     .toUpperCase();
 }
 
+function formatarTriagemApi(item) {
+  const dataHora = item.criado_em ? new Date(item.criado_em) : new Date();
+  const classificacoes = {
+    azul: "Não urgente",
+    verde: "Pouco urgente",
+    amarelo: "Urgente",
+    laranja: "Muito urgente",
+    vermelho: "Emergência",
+  };
+
+  const data = Number.isNaN(dataHora.getTime()) ? dataLocalISO() : dataHora.toLocaleDateString("sv-SE");
+  const horario = Number.isNaN(dataHora.getTime())
+    ? "—"
+    : dataHora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  return {
+    id: item.id,
+    paciente: {
+      id: item.paciente_id,
+      nome: item.paciente || item.nome_completo || "Paciente",
+      cpf: item.cpf || "",
+      idade: item.idade ?? null,
+      sexo: item.sexo || "",
+    },
+    data,
+    horario,
+    pressao: item.pressao_arterial || "Não informada",
+    frequencia: item.frequencia_cardiaca ?? "Não informada",
+    temperatura: item.temperatura ?? "Não informada",
+    saturacao: item.saturacao_oxigenio ?? "Não informada",
+    respiracao: item.frequencia_respiratoria ?? "Não informada",
+    glicemia: item.glicemia ?? "",
+    queixa: item.queixa_principal || "Não informada",
+    sintomas: item.sintomas || "",
+    inicio: item.inicio_sintomas || "",
+    dor: item.intensidade_dor ?? "",
+    historico: item.historico_saude || "",
+    alergias: item.alergias || "",
+    medicamentos: item.medicamentos || "",
+    classificacao: classificacoes[item.classificacao_risco] || item.classificacao_risco || "Não definida",
+    observacoes: item.observacoes || "",
+    status: item.consulta_id ? "Encaminhada ao médico" : "Aguardando atendimento médico",
+  };
+}
+
 /* =========================
    COMPONENTE PRINCIPAL
 ========================= */
 
 export default function TriagemEnfermagemPage() {
+  const [salvandoTriagem, setSalvandoTriagem] = useState(false);
+  const [pacientesEncontrados, setPacientesEncontrados] = useState([]);
+  const [carregandoPacientes, setCarregandoPacientes] = useState(false);
+  const [erroBuscaPaciente, setErroBuscaPaciente] = useState("");
   const [aba, setAba] = useState("nova");
-  const [triagens, setTriagens] = useState(TRIAGENS_INICIAIS);
+  const [triagens, setTriagens] = useState([]);
+  const [carregandoTriagens, setCarregandoTriagens] = useState(true);
 
   const [buscaPaciente, setBuscaPaciente] = useState("");
   const [paciente, setPaciente] = useState(null);
@@ -171,17 +139,121 @@ export default function TriagemEnfermagemPage() {
   const [buscaLista, setBuscaLista] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [detalhe, setDetalhe] = useState(null);
+  const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
+  const [erroDetalhe, setErroDetalhe] = useState("");
 
-  const pacientesEncontrados = useMemo(() => {
-    const termo = buscaPaciente.trim().toLowerCase();
+  useEffect(() => {
+    async function carregarTriagens() {
+      try {
+        setCarregandoTriagens(true);
+        const token = localStorage.getItem("unesus_token");
+        const resposta = await fetch("http://localhost:8080/api/triagens", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const dados = await resposta.json();
 
-    if (!termo || paciente) return [];
+        if (!resposta.ok) {
+          throw new Error(dados.mensagem || "Não foi possível carregar as triagens.");
+        }
 
-    return PACIENTES.filter(
-      (item) =>
-        item.nome.toLowerCase().includes(termo) ||
-        item.cpf.includes(termo)
-    );
+        const lista = Array.isArray(dados) ? dados : dados.triagens || [];
+        setTriagens(lista.map(formatarTriagemApi));
+      } catch (error) {
+        console.error("Erro ao carregar triagens:", error);
+        setErro(error.message || "Erro ao carregar histórico de triagens.");
+      } finally {
+        setCarregandoTriagens(false);
+      }
+    }
+
+    carregarTriagens();
+  }, []);
+
+  useEffect(() => {
+    const termo = buscaPaciente.trim();
+
+    if (termo.length < 2 || paciente) {
+      setPacientesEncontrados([]);
+      setErroBuscaPaciente("");
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const timer = setTimeout(async () => {
+      try {
+        setCarregandoPacientes(true);
+        setErroBuscaPaciente("");
+
+        const token = localStorage.getItem("unesus_token");
+
+        const resposta = await fetch(
+          `http://localhost:8080/api/pacientes/busca?termo=${encodeURIComponent(termo)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          }
+        );
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          throw new Error(dados.mensagem || "Erro ao buscar pacientes.");
+        }
+
+        const pacientes = (dados.pacientes || []).map((item) => {
+          const nascimento = item.data_nascimento
+            ? new Date(item.data_nascimento)
+            : null;
+
+          let idade = null;
+
+          if (nascimento) {
+            const hoje = new Date();
+
+            idade = hoje.getFullYear() - nascimento.getFullYear();
+
+            const aindaNaoFezAniversario =
+              hoje.getMonth() < nascimento.getMonth() ||
+              (
+                hoje.getMonth() === nascimento.getMonth() &&
+                hoje.getDate() < nascimento.getDate()
+              );
+
+            if (aindaNaoFezAniversario) {
+              idade--;
+            }
+          }
+
+          return {
+            id: item.id,
+            nome: item.nome_social || item.nome_completo,
+            nome_completo: item.nome_completo,
+            cpf: item.cpf,
+            idade,
+            sexo: "",
+          };
+        });
+
+        setPacientesEncontrados(pacientes);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setErroBuscaPaciente(error.message);
+          setPacientesEncontrados([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setCarregandoPacientes(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [buscaPaciente, paciente]);
 
   const triagensFiltradas = useMemo(() => {
@@ -257,7 +329,7 @@ export default function TriagemEnfermagemPage() {
     setErro("");
   }
 
-  function salvarTriagem(event) {
+  async function salvarTriagem(event) {
     event.preventDefault();
 
     if (!paciente) {
@@ -281,52 +353,153 @@ export default function TriagemEnfermagemPage() {
       return;
     }
 
-    const registro = {
-      id: Date.now(),
-      paciente,
-      data: dataLocalISO(),
-      horario: horarioAtual(),
-      pressao,
-      frequencia,
-      temperatura,
-      saturacao,
-      respiracao,
-      glicemia,
-      queixa,
-      sintomas,
-      inicio,
-      dor,
-      historico,
-      alergias,
-      medicamentos,
-      classificacao,
-      observacoes,
-      status: "Aguardando atendimento médico",
+    const classificacoes = {
+      "Não urgente": "azul",
+      "Pouco urgente": "verde",
+      "Urgente": "amarelo",
+      "Muito urgente": "laranja",
     };
 
-    setTriagens((atuais) => [registro, ...atuais]);
+    const payload = {
+      paciente_id: paciente.id,
+      fila_id: null,
+      queixa_principal: queixa.trim(),
+      sintomas: sintomas.trim() || null,
+      inicio_sintomas: inicio.trim() || null,
+      intensidade_dor: dor !== "" && dor !== null ? Number(dor) : null,
+      pressao_arterial: pressao.trim(),
+      temperatura: Number(temperatura),
+      frequencia_cardiaca: Number(frequencia),
+      frequencia_respiratoria: Number(respiracao),
+      saturacao_oxigenio: Number(saturacao),
+      glicemia: glicemia ? Number(glicemia) : null,
+      peso: null,
+      altura: null,
+      classificacao_risco: classificacoes[classificacao],
+      observacoes: observacoes.trim() || null,
+    };
 
-    setAviso(
-      "Triagem registrada e encaminhada para a fila de atendimento médico."
-    );
+    try {
+      setSalvandoTriagem(true);
+      setErro("");
 
-    limparFormulario();
-    setAba("lista");
-    setBuscaLista("");
-    setFiltroStatus("Todos");
+      const token = localStorage.getItem("unesus_token");
+
+      const resposta = await fetch("http://localhost:8080/api/triagens", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        throw new Error(dados.mensagem || "Não foi possível registrar a triagem.");
+      }
+
+      const registro = {
+        id: dados.triagem.id,
+        paciente,
+        data: dataLocalISO(),
+        horario: horarioAtual(),
+        pressao,
+        frequencia,
+        temperatura,
+        saturacao,
+        respiracao,
+        glicemia,
+        queixa,
+        sintomas,
+        inicio,
+        dor,
+        historico,
+        alergias,
+        medicamentos,
+        classificacao,
+        observacoes,
+        status: "Aguardando atendimento médico",
+      };
+
+      setTriagens((atuais) => [registro, ...atuais]);
+
+      setAviso(dados.mensagem || "Triagem registrada com sucesso!");
+
+      limparFormulario();
+      setAba("lista");
+      setBuscaLista("");
+      setFiltroStatus("Todos");
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setSalvandoTriagem(false);
+    }
   }
 
-  function atualizarStatus(item, status) {
-    setTriagens((atuais) =>
-      atuais.map((registro) =>
-        registro.id === item.id
-          ? { ...registro, status }
-          : registro
-      )
-    );
+  async function abrirDetalhe(item) {
+    // Abre o modal imediatamente com os dados já disponíveis na tabela.
+    setDetalhe(item);
+    setCarregandoDetalhe(true);
+    setErroDetalhe("");
 
+    try {
+      const token = localStorage.getItem("unesus_token");
+      const resposta = await fetch(
+        `http://localhost:8080/api/triagens/${item.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        throw new Error(dados.mensagem || "Não foi possível carregar os detalhes da triagem.");
+      }
+
+      const classificacoes = {
+        azul: "Não urgente",
+        verde: "Pouco urgente",
+        amarelo: "Urgente",
+        laranja: "Muito urgente",
+        vermelho: "Emergência",
+      };
+
+      setDetalhe({
+        ...item,
+        paciente: {
+          ...item.paciente,
+          nome: dados.paciente || item.paciente?.nome || "Paciente",
+          cpf: dados.cpf || item.paciente?.cpf || "",
+          idade: dados.idade ?? item.paciente?.idade ?? null,
+        },
+        pressao: dados.pressao_arterial || "Não informada",
+        frequencia: dados.frequencia_cardiaca ?? "Não informada",
+        temperatura: dados.temperatura ?? "Não informada",
+        saturacao: dados.saturacao_oxigenio ?? "Não informada",
+        respiracao: dados.frequencia_respiratoria ?? "Não informada",
+        glicemia: dados.glicemia ?? "",
+        queixa: dados.queixa_principal || item.queixa || "Não informada",
+        sintomas: dados.sintomas || "",
+        inicio: dados.inicio_sintomas || "",
+        dor: dados.intensidade_dor ?? "",
+        observacoes: dados.observacoes || "",
+        classificacao: classificacoes[dados.classificacao_risco] || dados.classificacao_risco || item.classificacao,
+        enfermeiro: dados.enfermeiro || "",
+        consultaId: dados.consulta_id || null,
+      });
+    } catch (error) {
+      setErroDetalhe(error.message || "Erro ao carregar os detalhes.");
+    } finally {
+      setCarregandoDetalhe(false);
+    }
+  }
+
+  function atualizarStatus() {
     setDetalhe(null);
-    setAviso(`Situação atualizada para "${status}".`);
+    setAviso("O encaminhamento é atualizado quando a triagem é vinculada a uma consulta médica.");
   }
 
   const camposPreenchidos = [
@@ -420,11 +593,10 @@ export default function TriagemEnfermagemPage() {
                 setAba("nova");
                 setAviso("");
               }}
-              className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                aba === "nova"
-                  ? "bg-[#194391] text-white shadow-sm"
-                  : "text-[#174693] hover:bg-[#F0F5FA]"
-              }`}
+              className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${aba === "nova"
+                ? "bg-[#194391] text-white shadow-sm"
+                : "text-[#174693] hover:bg-[#F0F5FA]"
+                }`}
             >
               <Plus size={17} />
               Nova triagem
@@ -436,11 +608,10 @@ export default function TriagemEnfermagemPage() {
                 setAba("lista");
                 setAviso("");
               }}
-              className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                aba === "lista"
-                  ? "bg-[#194391] text-white shadow-sm"
-                  : "text-[#174693] hover:bg-[#F0F5FA]"
-              }`}
+              className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${aba === "lista"
+                ? "bg-[#194391] text-white shadow-sm"
+                : "text-[#174693] hover:bg-[#F0F5FA]"
+                }`}
             >
               <ListChecks size={17} />
               Triagens realizadas ({triagens.length})
@@ -467,7 +638,7 @@ export default function TriagemEnfermagemPage() {
         {aba === "nova" ? (
           <form onSubmit={salvarTriagem} className="mt-5">
 
-            
+
 
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,1fr)]">
 
@@ -505,6 +676,18 @@ export default function TriagemEnfermagemPage() {
                         className="h-13 w-full rounded-xl border border-slate-200 bg-[#F8FAFD] py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#3563A7] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10"
                       />
 
+                      {carregandoPacientes && (
+                        <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-lg">
+                          Buscando pacientes...
+                        </div>
+                      )}
+
+                      {erroBuscaPaciente && (
+                        <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                          {erroBuscaPaciente}
+                        </div>
+                      )}
+
                       {pacientesEncontrados.length > 0 && (
                         <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
                           {pacientesEncontrados.map((item) => (
@@ -520,7 +703,7 @@ export default function TriagemEnfermagemPage() {
                                   {item.nome}
                                 </span>
                                 <span className="mt-0.5 block text-xs text-slate-500">
-                                  CPF: {item.cpf} · {item.idade} anos
+                                  CPF: {item.cpf} · {item.idade !== null ? `${item.idade} anos` : "Idade não informada"}
                                 </span>
                               </span>
                               <ChevronDown size={16} className="text-slate-400" />
@@ -741,7 +924,7 @@ export default function TriagemEnfermagemPage() {
                   </div>
                 </section>
 
-                
+
               </div>
 
               {/* COLUNA LATERAL */}
@@ -749,7 +932,7 @@ export default function TriagemEnfermagemPage() {
 
                 <section className="overflow-hidden rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_10px_30px_rgba(2,62,138,0.06)]">
                   <div className="bg-gradient-to-r from-[#174693] to-[#234E96] px-5 py-5 text-white">
-                    
+
                     <h3 className="mt-1 text-lg font-bold">
                       Dados do atendimento
                     </h3>
@@ -825,10 +1008,11 @@ export default function TriagemEnfermagemPage() {
 
                     <button
                       type="submit"
+                      disabled={salvandoTriagem}
                       className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#194391] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#0B1756]"
                     >
                       <CheckCircle2 size={18} />
-                      Finalizar e encaminhar
+                      {salvandoTriagem ? "Registrando triagem..." : "Finalizar e encaminhar"}
                     </button>
                   </div>
                 </section>
@@ -878,11 +1062,10 @@ export default function TriagemEnfermagemPage() {
                           key={item.nome}
                           type="button"
                           onClick={() => setClassificacao(item.nome)}
-                          className={`rounded-xl border p-4 text-left transition ${
-                            classificacao === item.nome
-                              ? item.selecionado
-                              : `${item.cor} hover:brightness-[0.98]`
-                          }`}
+                          className={`rounded-xl border p-4 text-left transition ${classificacao === item.nome
+                            ? item.selecionado
+                            : `${item.cor} hover:brightness-[0.98]`
+                            }`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm font-bold">
@@ -988,6 +1171,19 @@ export default function TriagemEnfermagemPage() {
               />
             </div>
 
+            {carregandoTriagens && (
+              <div className="border-t border-slate-100 p-6 text-center text-sm text-slate-500">
+                Carregando triagens do banco de dados...
+              </div>
+            )}
+
+            {!carregandoTriagens && erro && (
+              <div className="border-t border-red-100 bg-red-50 p-4 text-sm text-red-700">
+                {erro}
+              </div>
+            )}
+
+            {!carregandoTriagens && (
             <div className="hidden overflow-x-auto border-t border-slate-100 md:block">
               <table className="w-full min-w-[950px] text-left">
                 <thead className="bg-[#F7FAFD] text-[11px] uppercase tracking-wide text-slate-500">
@@ -1046,7 +1242,7 @@ export default function TriagemEnfermagemPage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
-                            onClick={() => setDetalhe(item)}
+                            onClick={() => abrirDetalhe(item)}
                             title="Ver detalhes"
                             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-[#174693]"
                           >
@@ -1068,7 +1264,10 @@ export default function TriagemEnfermagemPage() {
               )}
             </div>
 
+            )}
+
             {/* VERSÃO MOBILE */}
+            {!carregandoTriagens && (
             <div className="space-y-3 border-t border-slate-100 p-4 md:hidden">
               {triagensFiltradas.map((item) => (
                 <article
@@ -1107,7 +1306,7 @@ export default function TriagemEnfermagemPage() {
 
                   <button
                     type="button"
-                    onClick={() => setDetalhe(item)}
+                    onClick={() => abrirDetalhe(item)}
                     className="mt-4 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     Ver detalhes da triagem
@@ -1124,11 +1323,13 @@ export default function TriagemEnfermagemPage() {
               )}
             </div>
 
+            )}
+
             <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500 sm:px-6">
               <span>
                 Exibindo {triagensFiltradas.length} de {triagens.length} triagens
               </span>
-              <span>Dados demonstrativos</span>
+              <span>Dados do banco de dados</span>
             </div>
           </section>
         )}
@@ -1140,6 +1341,16 @@ export default function TriagemEnfermagemPage() {
           onClose={() => setDetalhe(null)}
           title="Detalhes da triagem"
         >
+          {carregandoDetalhe && (
+            <div className="mb-4 rounded-xl bg-[#F8FAFD] p-4 text-sm text-slate-500">
+              Carregando informações completas da triagem...
+            </div>
+          )}
+          {erroDetalhe && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {erroDetalhe}
+            </div>
+          )}
           <div className="flex items-center gap-3 rounded-xl bg-[#F1F6FB] p-4">
             <Avatar nome={detalhe.paciente.nome} />
             <div>
@@ -1147,7 +1358,7 @@ export default function TriagemEnfermagemPage() {
                 {detalhe.paciente.nome}
               </p>
               <p className="text-xs text-slate-500">
-                {detalhe.paciente.cpf} · {detalhe.paciente.idade} anos
+                {detalhe.paciente.cpf || "CPF não disponível"}{detalhe.paciente.idade != null ? ` · ${detalhe.paciente.idade} anos` : ""}
               </p>
             </div>
           </div>
@@ -1157,11 +1368,11 @@ export default function TriagemEnfermagemPage() {
               Sinais vitais
             </h3>
             <div className="space-y-3">
-              <SummaryLine label="Pressão arterial" value={`${detalhe.pressao} mmHg`} />
-              <SummaryLine label="Frequência cardíaca" value={`${detalhe.frequencia} bpm`} />
-              <SummaryLine label="Temperatura" value={`${detalhe.temperatura} °C`} />
-              <SummaryLine label="Saturação" value={`${detalhe.saturacao}%`} />
-              <SummaryLine label="Frequência respiratória" value={`${detalhe.respiracao} irpm`} />
+              <SummaryLine label="Pressão arterial" value={detalhe.pressao === "Não informada" ? detalhe.pressao : `${detalhe.pressao} mmHg`} />
+              <SummaryLine label="Frequência cardíaca" value={detalhe.frequencia === "Não informada" ? detalhe.frequencia : `${detalhe.frequencia} bpm`} />
+              <SummaryLine label="Temperatura" value={detalhe.temperatura === "Não informada" ? detalhe.temperatura : `${detalhe.temperatura} °C`} />
+              <SummaryLine label="Saturação" value={detalhe.saturacao === "Não informada" ? detalhe.saturacao : `${detalhe.saturacao}%`} />
+              <SummaryLine label="Frequência respiratória" value={detalhe.respiracao === "Não informada" ? detalhe.respiracao : `${detalhe.respiracao} irpm`} />
               <SummaryLine label="Glicemia" value={detalhe.glicemia ? `${detalhe.glicemia} mg/dL` : "Não informada"} />
             </div>
           </div>
@@ -1175,9 +1386,9 @@ export default function TriagemEnfermagemPage() {
               <SummaryLine label="Sintomas" value={detalhe.sintomas || "Não informado"} />
               <SummaryLine label="Início" value={detalhe.inicio || "Não informado"} />
               <SummaryLine label="Intensidade da dor" value={detalhe.dor || "Não informada"} />
-              <SummaryLine label="Histórico" value={detalhe.historico || "Não informado"} />
-              <SummaryLine label="Alergias" value={detalhe.alergias || "Não informado"} />
-              <SummaryLine label="Medicamentos" value={detalhe.medicamentos || "Não informado"} />
+              <SummaryLine label="Histórico de saúde" value="Não registrado no banco de dados da triagem" />
+              <SummaryLine label="Alergias" value="Não registradas no banco de dados da triagem" />
+              <SummaryLine label="Medicamentos em uso" value="Não registrados no banco de dados da triagem" />
               <SummaryLine label="Observações" value={detalhe.observacoes || "Nenhuma"} />
             </div>
           </div>
@@ -1191,30 +1402,10 @@ export default function TriagemEnfermagemPage() {
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap justify-end gap-2">
-            {detalhe.status !== "Encaminhada ao médico" && (
-              <button
-                type="button"
-                onClick={() =>
-                  atualizarStatus(detalhe, "Encaminhada ao médico")
-                }
-                className="rounded-xl bg-[#194391] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0B1756]"
-              >
-                Encaminhar ao médico
-              </button>
-            )}
-
-            {detalhe.status !== "Aguardando atendimento médico" && (
-              <button
-                type="button"
-                onClick={() =>
-                  atualizarStatus(detalhe, "Aguardando atendimento médico")
-                }
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-[#174693]"
-              >
-                Aguardando atendimento
-              </button>
-            )}
+          <div className="mt-5 space-y-2 rounded-xl border border-[#DCE8F3] bg-[#F8FAFD] p-3 text-xs leading-5 text-slate-500">
+            <p><strong className="text-[#174693]">Enfermeiro responsável:</strong> {detalhe.enfermeiro || "Não informado"}</p>
+            <p><strong className="text-[#174693]">Consulta vinculada:</strong> {detalhe.consultaId || "Nenhuma"}</p>
+            <p>A situação é determinada pelo vínculo da triagem com uma consulta médica no sistema.</p>
           </div>
         </Modal>
       )}
@@ -1271,13 +1462,12 @@ function Step({ number, title, description, active, done }) {
   return (
     <div className="flex min-w-0 items-center gap-3 rounded-xl bg-[#F8FAFD] px-3 py-3">
       <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
-          done
-            ? "bg-emerald-500 text-white"
-            : active
-              ? "bg-[#194391] text-white"
-              : "bg-[#E7EFF7] text-[#174693]"
-        }`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${done
+          ? "bg-emerald-500 text-white"
+          : active
+            ? "bg-[#194391] text-white"
+            : "bg-[#E7EFF7] text-[#174693]"
+          }`}
       >
         {done ? <Check size={17} /> : number}
       </span>
@@ -1361,11 +1551,10 @@ function ChecklistItem({ done, title, description }) {
   return (
     <div className="flex items-start gap-3">
       <span
-        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-          done
-            ? "bg-emerald-100 text-emerald-700"
-            : "bg-slate-100 text-slate-400"
-        }`}
+        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${done
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-slate-100 text-slate-400"
+          }`}
       >
         {done ? <Check size={14} /> : <Clock3 size={13} />}
       </span>
@@ -1387,13 +1576,13 @@ function RiskBadge({ classificacao }) {
     "Pouco urgente": "border-emerald-100 bg-emerald-50 text-emerald-700",
     Urgente: "border-amber-100 bg-amber-50 text-amber-700",
     "Muito urgente": "border-red-100 bg-red-50 text-red-700",
+    Emergência: "border-red-200 bg-red-100 text-red-800",
   };
 
   return (
     <span
-      className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${
-        styles[classificacao] || "border-slate-200 bg-slate-50 text-slate-600"
-      }`}
+      className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${styles[classificacao] || "border-slate-200 bg-slate-50 text-slate-600"
+        }`}
     >
       {classificacao}
     </span>
@@ -1418,11 +1607,10 @@ function StatusPill({ status, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-        active
-          ? "border-[#174693] bg-[#174693] text-white"
-          : "border-slate-200 bg-white text-slate-600 hover:border-[#B8CEE4]"
-      }`}
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${active
+        ? "border-[#174693] bg-[#174693] text-white"
+        : "border-slate-200 bg-white text-slate-600 hover:border-[#B8CEE4]"
+        }`}
     >
       {status}
     </button>
