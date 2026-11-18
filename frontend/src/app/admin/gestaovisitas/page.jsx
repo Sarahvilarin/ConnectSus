@@ -227,7 +227,7 @@ export default function GestaoVisitasPage() {
     setErro("");
 
     try {
-      const resposta = await api("/atendimentos-domiciliares/admin");
+      const resposta = await api("/api/atendimentos-domiciliares/admin");
       const lista = extrairLista(resposta).map(normalizarAtendimento);
       setVisitas(lista);
     } catch (error) {
@@ -402,8 +402,8 @@ export default function GestaoVisitasPage() {
     setCarregandoDetalhe(true);
 
     const [detalheResultado, enfermeirosResultado] = await Promise.allSettled([
-      api(`/atendimentos-domiciliares/admin/${visita.id}`),
-      api("/atendimentos-domiciliares/admin/enfermeiros"),
+      api(`/api/atendimentos-domiciliares/admin/${visita.id}`),
+      api("/api/atendimentos-domiciliares/admin/enfermeiros"),
     ]);
 
     if (detalheResultado.status === "fulfilled") {
@@ -477,7 +477,7 @@ export default function GestaoVisitasPage() {
 
     try {
       await api(
-        `/atendimentos-domiciliares/admin/${visitaSelecionada.id}/agendar`,
+        `/api/atendimentos-domiciliares/admin/${visitaSelecionada.id}/agendar`,
         {
           method: "PATCH",
           body: JSON.stringify({
@@ -504,7 +504,7 @@ export default function GestaoVisitasPage() {
 
     try {
       await api(
-        `/atendimentos-domiciliares/admin/${visitaSelecionada.id}/status`,
+        `/api/atendimentos-domiciliares/admin/${visitaSelecionada.id}/status`,
         {
           method: "PATCH",
           body: JSON.stringify({

@@ -54,7 +54,9 @@ const inputClass =
 
 function obterToken() {
   if (typeof window === "undefined") return null;
+
   return (
+    localStorage.getItem("unesus_token") ||
     localStorage.getItem("token") ||
     localStorage.getItem("accessToken") ||
     localStorage.getItem("authToken") ||
@@ -85,10 +87,10 @@ async function requisicaoApi(caminho, opcoes = {}) {
   if (!resposta.ok) {
     throw new Error(
       dados?.mensagem ||
-        dados?.message ||
-        (resposta.status === 401 || resposta.status === 403
-          ? "Acesso não autorizado. Entre novamente com uma conta administradora."
-          : `Não foi possível concluir a operação (erro ${resposta.status}).`),
+      dados?.message ||
+      (resposta.status === 401 || resposta.status === 403
+        ? "Acesso não autorizado. Entre novamente com uma conta administradora."
+        : `Não foi possível concluir a operação (erro ${resposta.status}).`),
     );
   }
   return dados;
@@ -192,7 +194,7 @@ function ListaEscolha({
     };
   }, [aberta]);
 
- 
+
 
   return (
     <div ref={raizRef} className="relative min-w-0">
@@ -202,27 +204,24 @@ function ListaEscolha({
         aria-haspopup="listbox"
         aria-expanded={aberta}
         onClick={() => setAberta((atual) => !atual)}
-        className={`flex h-[45px] w-full items-center gap-3 rounded-xl border bg-white px-3 py-2 text-left shadow-[0_2px_5px_rgba(15,45,85,0.035)] outline-none transition hover:border-[#AFC5DF] hover:bg-[#FCFDFF] focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10 ${
-          aberta
+        className={`flex h-[45px] w-full items-center gap-3 rounded-xl border bg-white px-3 py-2 text-left shadow-[0_2px_5px_rgba(15,45,85,0.035)] outline-none transition hover:border-[#AFC5DF] hover:bg-[#FCFDFF] focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10 ${aberta
             ? "border-[#8EADD0] ring-4 ring-[#023E8A]/[0.08]"
             : "border-[#D8E4F1]"
-        }`}
+          }`}
       >
-       
+
         <span
-          className={`min-w-0 flex-1 truncate text-sm ${
-            selecionada
+          className={`min-w-0 flex-1 truncate text-sm ${selecionada
               ? "font-semibold text-[#14245B]"
               : "text-slate-400"
-          }`}
+            }`}
         >
           {selecionada?.label || placeholder}
         </span>
         <ChevronDown
           size={17}
-          className={`shrink-0 text-[#6B83A3] transition-transform duration-200 ${
-            aberta ? "rotate-180" : ""
-          }`}
+          className={`shrink-0 text-[#6B83A3] transition-transform duration-200 ${aberta ? "rotate-180" : ""
+            }`}
         />
       </button>
 
@@ -271,17 +270,15 @@ function ListaEscolha({
                       setAberta(false);
                       setTermo("");
                     }}
-                    className={`mb-1 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition last:mb-0 ${
-                      ativa
+                    className={`mb-1 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition last:mb-0 ${ativa
                         ? "bg-[#1B438E] text-white shadow-sm"
                         : "text-[#14245B] hover:bg-[#F1F6FB]"
-                    }`}
-                  >
-                    
-                    <span
-                      className={`min-w-0 flex-1 truncate text-sm ${
-                        ativa ? "font-bold" : "font-medium"
                       }`}
+                  >
+
+                    <span
+                      className={`min-w-0 flex-1 truncate text-sm ${ativa ? "font-bold" : "font-medium"
+                        }`}
                     >
                       {opcao.label}
                     </span>
@@ -475,8 +472,8 @@ export default function GestaoUnidadesPage() {
       cnes: unidade.cnes || "",
       tipo_unidade_id: String(
         unidade.tipo_unidade_id ||
-          TIPOS_UNIDADE.find((tipo) => tipo.nome === unidade.tipo)?.id ||
-          "",
+        TIPOS_UNIDADE.find((tipo) => tipo.nome === unidade.tipo)?.id ||
+        "",
       ),
       rua: unidade.rua || "",
       bairro: unidade.bairro || "",
@@ -659,7 +656,7 @@ export default function GestaoUnidadesPage() {
                   Quantidade de cada categoria cadastrada.
                 </p>
               </div>
-              
+
             </div>
 
             {carregando ? (
@@ -729,7 +726,7 @@ export default function GestaoUnidadesPage() {
                   Veja em quais regiões as unidades estão distribuídas.
                 </p>
               </div>
-              
+
             </div>
 
             {carregando ? (
@@ -829,7 +826,7 @@ export default function GestaoUnidadesPage() {
                 ...tiposContagem.map(([tipo]) => ({
                   value: tipo,
                   label: tipo,
-                 
+
                 })),
               ]}
             />
@@ -841,11 +838,11 @@ export default function GestaoUnidadesPage() {
               icon={MapPin}
               searchable
               options={[
-                { value: "todos", label: "Todos os bairros"},
+                { value: "todos", label: "Todos os bairros" },
                 ...bairros.map((bairro) => ({
                   value: bairro,
                   label: bairro,
-                  
+
                 })),
               ]}
             />
@@ -856,9 +853,9 @@ export default function GestaoUnidadesPage() {
               ariaLabel="Filtrar por situação"
               icon={CheckCircle2}
               options={[
-                { value: "todas", label: "Todas as situações"},
-                { value: "ativas", label: "Somente ativas"},
-                { value: "inativas", label: "Somente inativas"},
+                { value: "todas", label: "Todas as situações" },
+                { value: "ativas", label: "Somente ativas" },
+                { value: "inativas", label: "Somente inativas" },
               ]}
             />
           </div>
@@ -1022,16 +1019,14 @@ export default function GestaoUnidadesPage() {
 
                     <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-                          unidadeAtiva(unidade)
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${unidadeAtiva(unidade)
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-slate-100 text-slate-500"
-                        }`}
+                          }`}
                       >
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            unidadeAtiva(unidade) ? "bg-emerald-500" : "bg-slate-400"
-                          }`}
+                          className={`h-1.5 w-1.5 rounded-full ${unidadeAtiva(unidade) ? "bg-emerald-500" : "bg-slate-400"
+                            }`}
                         />
                         {unidadeAtiva(unidade) ? "Ativa" : "Inativa"}
                       </span>
@@ -1071,7 +1066,7 @@ export default function GestaoUnidadesPage() {
             </div>
           )}
 
-         
+
         </section>
 
         {/* Modal de cadastro e edição */}
