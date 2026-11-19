@@ -129,7 +129,7 @@ export default function DashboardAdmin() {
   useEffect(() => {
     async function carregarDashboard() {
       try {
-        const resposta = await api("/dashboard/admin");
+        const resposta = await api("/api/dashboard/admin");
         setDadosDashboard(resposta.dados);
       } catch (error) {
         setErro(error.message);
