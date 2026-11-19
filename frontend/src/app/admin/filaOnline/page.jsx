@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { Building2 } from "lucide-react";
+import { Building2, Check, ChevronDown } from "lucide-react";
 
 const ITENS_POR_PAGINA = 6;
 
@@ -71,31 +71,78 @@ function SecaoTitulo({ titulo, descricao }) {
 // MODAL DE CADASTRO E EDIÇÃO
 // ======================================================
 
+
 function FiltroSelect({ value, onChange, placeholder, options }) {
   const [aberto, setAberto] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const ref = useRef(null);
 
   const selecionado = options.find((option) => option.value === value);
 
+  // fecha ao rolar a página ou redimensionar a janela
+  useEffect(() => {
+    if (!aberto) return;
+    const fechar = (e) => {
+      if (e.target?.closest?.("[data-popup]")) return;
+      setAberto(false);
+    };
+    window.addEventListener("scroll", fechar, true);
+    window.addEventListener("resize", fechar);
+    return () => {
+      window.removeEventListener("scroll", fechar, true);
+      window.removeEventListener("resize", fechar);
+    };
+  }, [aberto]);
+
+  function alternar() {
+    if (!aberto && ref.current) {
+      const altura = Math.min(240, options.length * 44 + 12);
+      const r = ref.current.getBoundingClientRect();
+      const largura = Math.max(r.width, 170);
+      let top = r.bottom + 8;
+
+      // abre para cima se não couber embaixo
+      if (top + altura > window.innerHeight - 12) {
+        const acima = r.top - altura - 8;
+        top = acima >= 12 ? acima : Math.max(12, window.innerHeight - altura - 12);
+      }
+
+      setPos({
+        top,
+        left: Math.max(12, Math.min(r.left, window.innerWidth - largura - 12)),
+        width: largura,
+      });
+    }
+    setAberto((atual) => !atual);
+  }
+
   return (
-    <div className="relative w-full">
+    <div
+      ref={ref}
+      className="relative w-full"
+      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
+    >
       <button
         type="button"
-        onClick={() => setAberto((atual) => !atual)}
-        className="flex w-full items-center justify-between rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition hover:border-[#3563A7] focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        onClick={alternar}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#C9D7EB] bg-white px-4 py-3 text-left text-sm text-[#121554] outline-none transition hover:bg-[#EAF3F7] focus:ring-4 focus:ring-[#C9D7EB]/30"
       >
-        <span>{selecionado?.label || placeholder}</span>
+        <span
+          className={`min-w-0 truncate ${
+            selecionado ? "text-[#0B1756]" : "text-slate-400"
+          }`}
+        >
+          {selecionado ? selecionado.label : placeholder}
+        </span>
 
-        <svg
-          className={`h-4 w-4 transition-transform ${
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#023E8A] transition-transform ${
             aberto ? "rotate-180" : ""
           }`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        />
       </button>
 
       {aberto && (
@@ -103,26 +150,36 @@ function FiltroSelect({ value, onChange, placeholder, options }) {
           <button
             type="button"
             aria-label="Fechar opções"
-            className="fixed inset-0 z-10 cursor-default"
             onClick={() => setAberto(false)}
+            className="fixed inset-0 z-10 cursor-default"
           />
 
-          <div className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#C8D8EC] bg-white p-1.5 shadow-lg">
+          <div
+            data-popup
+            role="listbox"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+            className="fixed z-20 max-h-60 overflow-y-auto rounded-2xl border border-[#D5E2F1] bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+          >
             {options.map((option) => (
               <button
                 key={option.value}
                 type="button"
+                role="option"
+                aria-selected={option.value === value}
                 onClick={() => {
                   onChange(option.value);
                   setAberto(false);
                 }}
-                className={`w-full rounded-xl px-4 py-3 text-left text-sm transition ${
-                  value === option.value
-                    ? "bg-[#0B1756] font-semibold text-white"
-                    : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
+                  option.value === value
+                    ? "bg-[#023E8A] font-semibold text-white"
+                    : "bg-white text-[#0B1756] hover:bg-[#EAF3F7]"
                 }`}
               >
-                {option.label}
+                <span>{option.label}</span>
+                {option.value === value && (
+                  <Check size={16} className="shrink-0 text-white" />
+                )}
               </button>
             ))}
           </div>
@@ -707,19 +764,23 @@ export default function FilaOnlineAdminPage() {
                   descricao="Acompanhe os registros de entrada e saída das filas."
                 />
 
-                <select
-                  value={filtroHistorico}
-                  onChange={(e) => setFiltroHistorico(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-[#0B1756] outline-none focus:border-[#023E8A]"
-                >
-                  <option value="Todos">Todos os status</option>
-                  <option value="Aguardando">Aguardando</option>
-                  <option value="Em atendimento">Em atendimento</option>
-                  <option value="Chamado">Chamado</option>
-                  <option value="Concluído">Concluído</option>
-                  <option value="Desistente">Desistente</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
+                <div className="w-full sm:w-64">
+               <FiltroSelect
+                value={filtroHistorico}
+                onChange={setFiltroHistorico}
+                placeholder="Todos os status"
+                options={[
+                  { value: "Todos", label: "Todos os status" },
+                  { value: "Aguardando", label: "Aguardando" },
+                  { value: "Em atendimento", label: "Em atendimento" },
+                  { value: "Chamado", label: "Chamado" },
+                  { value: "Concluído", label: "Concluído" },
+                  { value: "Desistente", label: "Desistente" },
+                  { value: "Cancelado", label: "Cancelado" },
+                ]}
+              />
+              </div>
+
               </div>
             </div>
 
