@@ -693,3 +693,37 @@ export async function listarEstimativasPorUnidade() {
         })
     );
 }
+
+
+export async function listarTodasFilasAdmin() {
+    const [filas] = await pool.query(
+        `SELECT
+            f.id,
+            f.paciente_id,
+            p.nome_completo AS paciente,
+            f.unidade_id,
+            u.nome AS unidade,
+            f.setor_id,
+            s.nome AS setor,
+            f.consulta_id,
+            f.medico_id,
+            m.nome_completo AS medico_responsavel,
+            f.status,
+            f.prioridade,
+            f.posicao,
+            f.entrada_em,
+            f.chamada_em,
+            f.inicio_atendimento_em,
+            f.fim_atendimento_em,
+            f.checkin_realizado,
+            f.checkin_em
+         FROM filas f
+         INNER JOIN pacientes p ON p.id = f.paciente_id
+         INNER JOIN unidades u ON u.id = f.unidade_id
+         INNER JOIN setores s ON s.id = f.setor_id
+         LEFT JOIN medicos m ON m.id = f.medico_id
+         ORDER BY f.entrada_em DESC, f.id DESC`
+    );
+
+    return filas;
+}

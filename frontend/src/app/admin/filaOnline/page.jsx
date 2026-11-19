@@ -1,137 +1,9 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 "use client";
 
-import { useMemo, useState } from "react";
-
-// ======================================================
-// DADOS DEMONSTRATIVOS
-// ======================================================
+import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 
 const ITENS_POR_PAGINA = 6;
-
-const unidadesIniciais = [
-  {
-    id: 1,
-    nome: "UPA Bangu",
-    endereco: "Rua Avaré, 107 — Vila São Pedro",
-    pacientes: 42,
-    espera: 35,
-    status: "Ativa",
-  },
-  {
-    id: 2,
-    nome: "UBS Vila Aliança",
-    endereco: "Rua do Governo, 450 — Bangu",
-    pacientes: 28,
-    espera: 22,
-    status: "Ativa",
-  },
-  {
-    id: 3,
-    nome: "UPA Realengo",
-    endereco: "Av. Brasil, 28000 — Realengo",
-    pacientes: 35,
-    espera: 48,
-    status: "Ativa",
-  },
-  {
-    id: 4,
-    nome: "UBS Jardim das Flores",
-    endereco: "Rua das Flores, 120 — Centro",
-    pacientes: 23,
-    espera: 18,
-    status: "Ativa",
-  },
-];
-
-const especialidadesIniciais = [
-  { id: 1, nome: "Clínico geral", atendimentos: 185, status: "Ativa" },
-  { id: 2, nome: "Pediatria", atendimentos: 126, status: "Ativa" },
-  { id: 3, nome: "Ginecologia", atendimentos: 84, status: "Ativa" },
-  { id: 4, nome: "Odontologia", atendimentos: 62, status: "Ativa" },
-  { id: 5, nome: "Ortopedia", atendimentos: 29, status: "Ativa" },
-];
-
-const historicoInicial = [
-  {
-    id: 1,
-    senha: "A-084",
-    unidade: "UPA Bangu",
-    especialidade: "Clínico geral",
-    entrada: "08:15",
-    saida: "09:02",
-    status: "Concluído",
-  },
-  {
-    id: 2,
-    senha: "B-021",
-    unidade: "UBS Vila Aliança",
-    especialidade: "Pediatria",
-    entrada: "08:30",
-    saida: "09:10",
-    status: "Concluído",
-  },
-  {
-    id: 3,
-    senha: "A-085",
-    unidade: "UPA Realengo",
-    especialidade: "Ortopedia",
-    entrada: "09:05",
-    saida: "—",
-    status: "Aguardando",
-  },
-  {
-    id: 4,
-    senha: "C-014",
-    unidade: "UPA Bangu",
-    especialidade: "Ginecologia",
-    entrada: "09:20",
-    saida: "—",
-    status: "Aguardando",
-  },
-  {
-    id: 5,
-    senha: "B-022",
-    unidade: "UBS Jardim das Flores",
-    especialidade: "Clínico geral",
-    entrada: "09:35",
-    saida: "10:12",
-    status: "Concluído",
-  },
-  {
-    id: 6,
-    senha: "A-086",
-    unidade: "UPA Realengo",
-    especialidade: "Pediatria",
-    entrada: "10:00",
-    saida: "—",
-    status: "Cancelado",
-  },
-];
-
-const demandaSemanal = [
-  { dia: "Seg", quantidade: 72 },
-  { dia: "Ter", quantidade: 95 },
-  { dia: "Qua", quantidade: 83 },
-  { dia: "Qui", quantidade: 110 },
-  { dia: "Sex", quantidade: 96 },
-  { dia: "Sáb", quantidade: 65 },
-  { dia: "Dom", quantidade: 48 },
-];
 
 // ======================================================
 // COMPONENTES AUXILIARES
@@ -166,6 +38,9 @@ function StatusBadge({ status }) {
     "Concluído": "bg-[#0B1756] text-white",
     Aguardando: "bg-[#023E8A] text-white",
     Cancelado: "bg-[#3563A7] text-white",
+    Chamado: "bg-[#3563A7] text-white",
+    "Em atendimento": "bg-[#168052] text-white",
+    Desistente: "bg-slate-500 text-white",
   };
 
   return (
@@ -257,111 +132,68 @@ function FiltroSelect({ value, onChange, placeholder, options }) {
 }
 
 
-function ModalCadastro({ tipo, item, onFechar, onSalvar }) {
-  const [nome, setNome] = useState(item?.nome || "");
-  const [endereco, setEndereco] = useState(item?.endereco || "");
-
+function ModalCadastro({ tipo, item, onFechar, onSalvar, salvando }) {
   const ehUnidade = tipo === "unidade";
+  const [form, setForm] = useState({
+    nome: item?.nome || "",
+    cnes: item?.cnes || "",
+    tipo_unidade_id: item?.tipo_unidade_id || "",
+    rua: item?.rua || "",
+    bairro: item?.bairro || "",
+    cep: item?.cep || "",
+    telefone: item?.telefone || "",
+    horario_funcionamento: item?.horario_funcionamento || "",
+    servicos_disponiveis: item?.servicos_disponiveis || "",
+  });
+
+  function alterar(campo, valor) {
+    setForm((atual) => ({ ...atual, [campo]: valor }));
+  }
 
   function enviar(e) {
     e.preventDefault();
-
-    if (!nome.trim()) return;
-
-    onSalvar({
-      ...item,
-      nome: nome.trim(),
-      ...(ehUnidade ? { endereco: endereco.trim() } : {}),
-    });
+    if (!form.nome.trim()) return;
+    onSalvar(ehUnidade ? {
+      ...form,
+      nome: form.nome.trim(),
+      tipo_unidade_id: Number(form.tipo_unidade_id),
+    } : { nome: form.nome.trim() });
   }
 
+  const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/10";
+  const labelClass = "mb-2 block text-xs font-semibold text-[#0B1756]";
+
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-[#071638]/55 p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onFechar();
-      }}
-    >
-      <form
-        onSubmit={enviar}
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
-      >
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-[#071638]/55 p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onFechar(); }}>
+      <form onSubmit={enviar} className="my-6 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
-            <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-semibold text-[#3563A7]">
-              Gerenciamento
-            </span>
-
-            <h2 className="mt-3 text-xl font-bold text-[#0B1756]">
-              {item ? "Editar" : "Cadastrar"}{" "}
-              {ehUnidade ? "unidade" : "especialidade"}
-            </h2>
-
-            <p className="mt-1 text-sm font-normal text-slate-600">
-              Preencha as informações abaixo.
-            </p>
+            <span className="rounded-full bg-[#EAF3F7] px-3 py-1 text-xs font-semibold text-[#3563A7]">Gerenciamento</span>
+            <h2 className="mt-3 text-xl font-bold text-[#0B1756]">{item ? "Editar" : "Cadastrar"} {ehUnidade ? "unidade" : "especialidade"}</h2>
+            <p className="mt-1 text-sm text-slate-600">Preencha as informações abaixo.</p>
           </div>
-
-          <button
-            type="button"
-            onClick={onFechar}
-            className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-[#EAF3F7]"
-            aria-label="Fechar"
-          >
-            Fechar
-          </button>
+          <button type="button" onClick={onFechar} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-[#EAF3F7]">Fechar</button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-[#0B1756]">
-              {ehUnidade ? "Nome da unidade" : "Nome da especialidade"}
-            </label>
-
-            <input
-              autoFocus
-              required
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder={
-                ehUnidade ? "Ex.: UPA Central" : "Ex.: Cardiologia"
-              }
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/10"
-            />
+        {ehUnidade ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2"><label className={labelClass}>Nome da unidade</label><input required maxLength={150} value={form.nome} onChange={(e) => alterar("nome", e.target.value)} placeholder="Ex.: UBS Central" className={inputClass} /></div>
+            <div><label className={labelClass}>CNES</label><input required value={form.cnes} onChange={(e) => alterar("cnes", e.target.value)} className={inputClass} /></div>
+            <div><label className={labelClass}>Código do tipo de unidade</label><input required type="number" min="1" value={form.tipo_unidade_id} onChange={(e) => alterar("tipo_unidade_id", e.target.value)} placeholder="ID cadastrado no banco" className={inputClass} /></div>
+            <div><label className={labelClass}>Rua e número</label><input required value={form.rua} onChange={(e) => alterar("rua", e.target.value)} className={inputClass} /></div>
+            <div><label className={labelClass}>Bairro</label><input required value={form.bairro} onChange={(e) => alterar("bairro", e.target.value)} className={inputClass} /></div>
+            <div><label className={labelClass}>CEP</label><input required value={form.cep} onChange={(e) => alterar("cep", e.target.value)} className={inputClass} /></div>
+            <div><label className={labelClass}>Telefone</label><input value={form.telefone} onChange={(e) => alterar("telefone", e.target.value)} className={inputClass} /></div>
+            <div><label className={labelClass}>Horário de funcionamento</label><input value={form.horario_funcionamento} onChange={(e) => alterar("horario_funcionamento", e.target.value)} className={inputClass} /></div>
+            <div className="sm:col-span-2"><label className={labelClass}>Serviços disponíveis</label><textarea rows={3} value={form.servicos_disponiveis} onChange={(e) => alterar("servicos_disponiveis", e.target.value)} className={inputClass} /></div>
           </div>
-
-          {ehUnidade && (
-            <div>
-              <label className="mb-2 block text-xs font-semibold text-[#0B1756]">
-                Endereço
-              </label>
-
-              <input
-                required
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
-                placeholder="Rua, número e bairro"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/10"
-              />
-            </div>
-          )}
-        </div>
+        ) : (
+          <div><label className={labelClass}>Nome da especialidade</label><input autoFocus required minLength={3} maxLength={100} value={form.nome} onChange={(e) => alterar("nome", e.target.value)} placeholder="Ex.: Cardiologia" className={inputClass} /></div>
+        )}
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
-          <button
-            type="button"
-            onClick={onFechar}
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-[#0B1756] transition hover:bg-[#EAF3F7]"
-          >
-            Cancelar
-          </button>
-
-          <button
-            type="submit"
-            className="flex-1 rounded-xl bg-[#3563A7] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A]"
-          >
-            Salvar
-          </button>
+          <button type="button" onClick={onFechar} className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-[#0B1756] transition hover:bg-[#EAF3F7]">Cancelar</button>
+          <button type="submit" disabled={salvando} className="flex-1 rounded-xl bg-[#3563A7] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A] disabled:cursor-not-allowed disabled:opacity-60">{salvando ? "Salvando..." : "Salvar"}</button>
         </div>
       </form>
     </div>
@@ -373,159 +205,120 @@ function ModalCadastro({ tipo, item, onFechar, onSalvar }) {
 // ======================================================
 
 export default function FilaOnlineAdminPage() {
-  const [unidades, setUnidades] = useState(unidadesIniciais);
-  const [especialidades, setEspecialidades] = useState(especialidadesIniciais);
-  const [historico] = useState(historicoInicial);
+  const [unidades, setUnidades] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
+  const [historico, setHistorico] = useState([]);
+  const [estimativas, setEstimativas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [mensagem, setMensagem] = useState("");
 
   const [aba, setAba] = useState("visao-geral");
-
   const [buscaUnidade, setBuscaUnidade] = useState("");
   const [buscaEspecialidade, setBuscaEspecialidade] = useState("");
-
   const [filtroStatusUnidade, setFiltroStatusUnidade] = useState("Todos");
   const [filtroHistorico, setFiltroHistorico] = useState("Todos");
-
   const [paginaUnidades, setPaginaUnidades] = useState(1);
-
   const [modal, setModal] = useState(null);
 
-  // ======================================================
-  // INDICADORES
-  // ======================================================
+  async function carregarDados() {
+    setCarregando(true);
+    setErro("");
+    try {
+      const [listaUnidades, listaEspecialidades, respostaFilas, listaEstimativas] = await Promise.all([
+        api("/api/unidades"),
+        api("/api/especialidades"),
+        api("/api/filas/"),
+        api("/api/unidades/estimativas-espera"),
+      ]);
+      const filas = Array.isArray(respostaFilas) ? respostaFilas : (respostaFilas?.filas || []);
+      const estimativasArray = Array.isArray(listaEstimativas) ? listaEstimativas : [];
+      const estimativasPorUnidade = new Map(estimativasArray.map((item) => [Number(item.unidade_id), Number(item.espera_minutos) || 0]));
+      const filasAtivas = filas.filter((fila) => ["aguardando", "chamado", "em_atendimento"].includes(String(fila.status).toLowerCase()));
+      setUnidades((Array.isArray(listaUnidades) ? listaUnidades : []).map((u) => ({
+        ...u,
+        endereco: [u.rua, u.bairro].filter(Boolean).join(" — "),
+        pacientes: filasAtivas.filter((f) => Number(f.unidade_id) === Number(u.id) && String(f.status).toLowerCase() === "aguardando").length,
+        espera: estimativasPorUnidade.get(Number(u.id)) ?? 0,
+        status: "Ativa",
+      })));
+      setEspecialidades(Array.isArray(listaEspecialidades) ? listaEspecialidades : []);
+      setEstimativas(estimativasArray);
+      setHistorico(filas.map((f) => ({
+        id: f.id,
+        senha: `#${f.id}`,
+        unidade: f.unidade || "—",
+        especialidade: f.setor || "—",
+        entradaOriginal: f.entrada_em,
+        saidaOriginal: f.fim_atendimento_em,
+        entrada: formatarDataHora(f.entrada_em),
+        saida: formatarDataHora(f.fim_atendimento_em),
+        status: traduzirStatus(f.status),
+        statusOriginal: String(f.status || "").toLowerCase(),
+      })));
+    } catch (error) {
+      setErro(error.message || "Não foi possível carregar os dados da fila online.");
+    } finally {
+      setCarregando(false);
+    }
+  }
 
-  const totalPacientes = unidades.reduce(
-    (total, unidade) => total + unidade.pacientes,
-    0
-  );
+  useEffect(() => { carregarDados(); }, []);
 
-  const unidadesAtivas = unidades.filter(
-    (unidade) => unidade.status === "Ativa"
-  ).length;
+  function formatarDataHora(valor) {
+    if (!valor) return "—";
+    const data = new Date(valor);
+    if (Number.isNaN(data.getTime())) return String(valor);
+    return data.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
 
-  const totalAtendimentos = especialidades.reduce(
-    (total, especialidade) => total + especialidade.atendimentos,
-    0
-  );
+  function traduzirStatus(status) {
+    const mapa = { aguardando: "Aguardando", chamado: "Chamado", em_atendimento: "Em atendimento", concluido: "Concluído", desistente: "Desistente", cancelado: "Cancelado" };
+    return mapa[String(status || "").toLowerCase()] || status || "—";
+  }
 
-  // ======================================================
-  // FILTROS E PAGINAÇÃO
-  // ======================================================
+  const totalPacientes = historico.filter((registro) => registro.statusOriginal === "aguardando").length;
+  const unidadesAtivas = unidades.length;
+  const esperasValidas = unidades.map((u) => Number(u.espera)).filter((n) => Number.isFinite(n) && n > 0);
+  const esperaMedia = esperasValidas.length ? Math.round(esperasValidas.reduce((a, b) => a + b, 0) / esperasValidas.length) : 0;
+  const atendimentosHoje = historico.filter((r) => { const data = r.saidaOriginal ? new Date(r.saidaOriginal) : null; return r.statusOriginal === "concluido" && data && !Number.isNaN(data.getTime()) && data.toDateString() === new Date().toDateString(); }).length;
+  const demandaSemanal = Array.from({ length: 7 }, (_, indice) => { const data = new Date(); data.setDate(data.getDate() - (6 - indice)); const chave = data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""); const quantidade = historico.filter((r) => { const original = new Date(r.saidaOriginal || 0); return r.statusOriginal === "concluido" && original.toDateString() === data.toDateString(); }).length; return { dia: chave.slice(0, 3), quantidade }; });
 
-  const historicoFiltrado = useMemo(() => {
-    return historico.filter((registro) => {
-      return (
-        filtroHistorico === "Todos" ||
-        registro.status === filtroHistorico
-      );
-    });
-  }, [historico, filtroHistorico]);
-
+  const historicoFiltrado = useMemo(() => historico.filter((registro) => filtroHistorico === "Todos" || registro.status === filtroHistorico), [historico, filtroHistorico]);
   const unidadesFiltradas = unidades.filter((unidade) => {
-    const correspondeBusca = `${unidade.nome} ${unidade.endereco}`
-      .toLowerCase()
-      .includes(buscaUnidade.toLowerCase());
-
-    const correspondeStatus =
-      filtroStatusUnidade === "Todos" ||
-      unidade.status === filtroStatusUnidade;
-
+    const correspondeBusca = `${unidade.nome} ${unidade.endereco}`.toLowerCase().includes(buscaUnidade.toLowerCase());
+    const correspondeStatus = filtroStatusUnidade === "Todos" || unidade.status === filtroStatusUnidade;
     return correspondeBusca && correspondeStatus;
   });
+  const totalPaginas = Math.max(1, Math.ceil(unidadesFiltradas.length / ITENS_POR_PAGINA));
+  const unidadesPaginadas = unidadesFiltradas.slice((paginaUnidades - 1) * ITENS_POR_PAGINA, paginaUnidades * ITENS_POR_PAGINA);
+  const especialidadesFiltradas = especialidades.filter((item) => item.nome.toLowerCase().includes(buscaEspecialidade.toLowerCase()));
 
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(unidadesFiltradas.length / ITENS_POR_PAGINA)
-  );
-
-  const unidadesPaginadas = unidadesFiltradas.slice(
-    (paginaUnidades - 1) * ITENS_POR_PAGINA,
-    paginaUnidades * ITENS_POR_PAGINA
-  );
-
-  const especialidadesFiltradas = especialidades.filter((item) =>
-    item.nome.toLowerCase().includes(buscaEspecialidade.toLowerCase())
-  );
-
-  // ======================================================
-  // CADASTRO E EDIÇÃO
-  // ======================================================
-
-  function salvarUnidade(dados) {
-    if (dados.id) {
-      setUnidades((atuais) =>
-        atuais.map((item) =>
-          item.id === dados.id ? { ...item, ...dados } : item
-        )
-      );
-    } else {
-      setUnidades((atuais) => [
-        ...atuais,
-        {
-          ...dados,
-          id: Date.now(),
-          pacientes: 0,
-          espera: 0,
-          status: "Ativa",
-        },
-      ]);
-    }
-
-    setPaginaUnidades(1);
-    setModal(null);
+  async function salvarUnidade(dados) {
+    setSalvando(true); setMensagem("");
+    try {
+      if (modal.item?.id) await api(`/api/unidades/${modal.item.id}`, { method: "PUT", body: JSON.stringify(dados) });
+      else await api("/api/unidades", { method: "POST", body: JSON.stringify(dados) });
+      setModal(null); setMensagem("Unidade salva com sucesso!"); await carregarDados(); setPaginaUnidades(1);
+    } catch (error) { setErro(error.message || "Não foi possível salvar a unidade."); }
+    finally { setSalvando(false); }
   }
 
-  function salvarEspecialidade(dados) {
-    if (dados.id) {
-      setEspecialidades((atuais) =>
-        atuais.map((item) =>
-          item.id === dados.id ? { ...item, ...dados } : item
-        )
-      );
-    } else {
-      setEspecialidades((atuais) => [
-        ...atuais,
-        {
-          ...dados,
-          id: Date.now(),
-          atendimentos: 0,
-          status: "Ativa",
-        },
-      ]);
-    }
-
-    setModal(null);
+  async function salvarEspecialidade(dados) {
+    setSalvando(true); setMensagem("");
+    try {
+      if (modal.item?.id) await api(`/api/especialidades/${modal.item.id}`, { method: "PUT", body: JSON.stringify(dados) });
+      else await api("/api/especialidades", { method: "POST", body: JSON.stringify(dados) });
+      setModal(null); setMensagem("Especialidade salva com sucesso!"); await carregarDados();
+    } catch (error) { setErro(error.message || "Não foi possível salvar a especialidade."); }
+    finally { setSalvando(false); }
   }
 
-  // ======================================================
-  // ALTERAÇÃO DE STATUS
-  // ======================================================
-
-  function alternarStatusUnidade(id) {
-    setUnidades((atuais) =>
-      atuais.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: item.status === "Ativa" ? "Inativa" : "Ativa",
-            }
-          : item
-      )
-    );
-
-    setPaginaUnidades(1);
-  }
-
-  function alternarStatusEspecialidade(id) {
-    setEspecialidades((atuais) =>
-      atuais.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: item.status === "Ativa" ? "Inativa" : "Ativa",
-            }
-          : item
-      )
-    );
+  async function desativarUnidade(id) {
+    if (!window.confirm("Deseja realmente desativar esta unidade?")) return;
+    try { await api(`/api/unidades/${id}`, { method: "DELETE" }); setMensagem("Unidade desativada com sucesso!"); await carregarDados(); }
+    catch (error) { setErro(error.message || "Não foi possível desativar a unidade."); }
   }
 
   // ======================================================
@@ -555,6 +348,12 @@ export default function FilaOnlineAdminPage() {
       <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/50" />
 
       <main className="relative z-10 mx-auto w-full max-w-[1480px] space-y-6 px-4 pb-12 pt-8 sm:px-6 xl:px-8">
+        {(erro || mensagem) && (
+          <div className={`rounded-xl border px-4 py-3 text-sm ${erro ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+            <div className="flex items-center justify-between gap-3"><span>{erro || mensagem}</span><button type="button" onClick={() => { setErro(""); setMensagem(""); }} className="font-semibold">Fechar</button></div>
+          </div>
+        )}
+        {carregando && <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">Carregando dados da fila online...</div>}
 
         {/* ==================================================
             CABEÇALHO E NAVEGAÇÃO
@@ -576,6 +375,7 @@ export default function FilaOnlineAdminPage() {
                   Acompanhe a demanda, os indicadores e o funcionamento das
                   unidades de saúde.
                 </p>
+                <button type="button" onClick={carregarDados} className="mt-5 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Atualizar dados</button>
               </div>
             </div>
           </div>
@@ -666,7 +466,7 @@ export default function FilaOnlineAdminPage() {
                   </p>
 
                   <p className="mt-1 text-4xl font-bold text-white">
-                    32 min
+                    {esperaMedia} min
                   </p>
 
                   <p className="mt-1 text-sm text-white/75">
@@ -680,11 +480,11 @@ export default function FilaOnlineAdminPage() {
                   </p>
 
                   <p className="mt-1 text-4xl font-bold text-white">
-                    486
+                    {atendimentosHoje}
                   </p>
 
                   <p className="mt-1 text-sm font-semibold text-white/90">
-                    +8,5%{" "}
+                    {" "}
                     <span className="font-normal text-white/75">
                       Total registrado no dia
                     </span>
@@ -751,53 +551,21 @@ export default function FilaOnlineAdminPage() {
 
               <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <SecaoTitulo
-                  titulo="Atendimentos por especialidade"
-                  descricao="Distribuição da procura por atendimento."
+                  titulo="Especialidades cadastradas"
+                  descricao="Especialidades disponíveis no sistema."
                 />
-
-                <div className="space-y-4">
-                  {especialidades
-                    .slice()
-                    .sort((a, b) => b.atendimentos - a.atendimentos)
-                    .map((item) => {
-                      const maior = Math.max(
-                        ...especialidades.map((esp) => esp.atendimentos),
-                        1
-                      );
-
-                      return (
-                        <div key={item.id}>
-                          <div className="mb-1.5 flex items-center justify-between gap-3">
-                            <span className="text-sm font-normal text-slate-600">
-                              {item.nome}
-                            </span>
-
-                            <span className="text-sm font-semibold text-[#3563A7]">
-                              {item.atendimentos}
-                            </span>
-                          </div>
-
-                          <div className="h-2 overflow-hidden rounded-full bg-[#EAF3F7]">
-                            <div
-                              className="h-full rounded-full bg-[#3563A7]"
-                              style={{
-                                width: `${(item.atendimentos / maior) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="space-y-3">
+                  {especialidades.slice(0, 6).map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 rounded-xl bg-[#EAF3F7] px-4 py-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-sm font-bold text-[#3563A7]">{item.nome.slice(0, 1).toUpperCase()}</span>
+                      <span className="text-sm font-semibold text-[#0B1756]">{item.nome}</span>
+                    </div>
+                  ))}
+                  {especialidades.length === 0 && <p className="text-sm text-slate-500">Nenhuma especialidade cadastrada.</p>}
                 </div>
-
                 <div className="mt-5 rounded-xl bg-[#EAF3F7] p-3.5">
-                  <p className="text-xs font-normal text-slate-600">
-                    Total de atendimentos registrados
-                  </p>
-
-                  <p className="mt-1 text-2xl font-bold text-[#023E8A]">
-                    {totalAtendimentos}
-                  </p>
+                  <p className="text-xs font-normal text-slate-600">Total de especialidades cadastradas</p>
+                  <p className="mt-1 text-2xl font-bold text-[#023E8A]">{especialidades.length}</p>
                 </div>
               </section>
             </div>
@@ -891,9 +659,6 @@ export default function FilaOnlineAdminPage() {
                               {unidade.nome}
                             </p>
 
-                            <p className="mt-1 text-sm font-normal text-slate-500">
-                              {unidade.endereco}
-                            </p>
                           </td>
 
                           <td className="px-4 py-4 text-base font-semibold text-[#3563A7]">
@@ -937,7 +702,10 @@ export default function FilaOnlineAdminPage() {
                 >
                   <option value="Todos">Todos os status</option>
                   <option value="Aguardando">Aguardando</option>
+                  <option value="Em atendimento">Em atendimento</option>
+                  <option value="Chamado">Chamado</option>
                   <option value="Concluído">Concluído</option>
+                  <option value="Desistente">Desistente</option>
                   <option value="Cancelado">Cancelado</option>
                 </select>
               </div>
@@ -949,7 +717,7 @@ export default function FilaOnlineAdminPage() {
                   <tr>
                     <th className="px-5 py-4 font-semibold">Senha</th>
                     <th className="px-5 py-4 font-semibold">Unidade</th>
-                    <th className="px-5 py-4 font-semibold">Especialidade</th>
+                    <th className="px-5 py-4 font-semibold">Setor</th>
                     <th className="px-5 py-4 font-semibold">Entrada</th>
                     <th className="px-5 py-4 font-semibold">Saída</th>
                     <th className="px-5 py-4 font-semibold">Status</th>
@@ -1022,7 +790,7 @@ export default function FilaOnlineAdminPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <SecaoTitulo
                   titulo="Unidades de saúde"
-                  descricao="Cadastre, edite ou altere a situação das unidades."
+                  descricao="Cadastre, edite ou desative as unidades de saúde."
                 />
 
                 <button
@@ -1090,9 +858,6 @@ export default function FilaOnlineAdminPage() {
                           {unidade.nome}
                         </p>
 
-                        <p className="mt-1 text-sm font-normal text-slate-500">
-                          {unidade.endereco}
-                        </p>
                       </td>
 
                       <td className="px-5 py-4 text-base font-semibold text-[#3563A7]">
@@ -1121,13 +886,9 @@ export default function FilaOnlineAdminPage() {
 
                           <button
                             type="button"
-                            onClick={() => alternarStatusUnidade(unidade.id)}
+                            onClick={() => desativarUnidade(unidade.id)}
                             className="rounded-lg border border-[#C8D9EB] px-4 py-2.5 text-sm font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7]"
-                          >
-                            {unidade.status === "Ativa"
-                              ? "Desativar"
-                              : "Ativar"}
-                          </button>
+                          >Desativar</button>
                         </div>
                       </td>
                     </tr>
@@ -1243,12 +1004,10 @@ export default function FilaOnlineAdminPage() {
             {/* TABELA */}
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[620px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[420px] border-collapse text-left text-sm">
                 <thead className="bg-[#EAF3F7] text-xs uppercase text-slate-600">
                   <tr>
                     <th className="px-5 py-4 font-semibold">Especialidade</th>
-                    <th className="px-5 py-4 font-semibold">Atendimentos</th>
-                    <th className="px-5 py-4 font-semibold">Status</th>
                     <th className="px-5 py-4 text-right font-semibold">
                       Ações
                     </th>
@@ -1267,14 +1026,6 @@ export default function FilaOnlineAdminPage() {
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 text-base font-semibold text-[#3563A7]">
-                        {item.atendimentos}
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <StatusBadge status={item.status} />
-                      </td>
-
                       <td className="px-5 py-4">
                         <div className="flex justify-end gap-2">
                           <button
@@ -1290,17 +1041,7 @@ export default function FilaOnlineAdminPage() {
                             Editar
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              alternarStatusEspecialidade(item.id)
-                            }
-                            className="rounded-lg border border-[#C8D9EB] px-4 py-2.5 text-sm font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7]"
-                          >
-                            {item.status === "Ativa"
-                              ? "Desativar"
-                              : "Ativar"}
-                          </button>
+
                         </div>
                       </td>
                     </tr>
@@ -1327,11 +1068,8 @@ export default function FilaOnlineAdminPage() {
           tipo={modal.tipo}
           item={modal.item}
           onFechar={() => setModal(null)}
-          onSalvar={
-            modal.tipo === "unidade"
-              ? salvarUnidade
-              : salvarEspecialidade
-          }
+          onSalvar={modal.tipo === "unidade" ? salvarUnidade : salvarEspecialidade}
+          salvando={salvando}
         />
       )}
     </div>

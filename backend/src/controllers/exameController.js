@@ -477,3 +477,56 @@ export async function buscarExame(req, res, next) {
     next(error);
   }
 }
+
+export async function agendarExameAdmin(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { data_agendada } = req.body ?? {};
+
+    if (!validarIdParametro(id, res)) return;
+
+    if (
+      typeof data_agendada !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(data_agendada) ||
+      Number.isNaN(Date.parse(data_agendada)) ||
+      new Date(data_agendada) <= new Date()
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe uma data e horário futuros válidos."
+      });
+    }
+
+    const [resultado] = await pool.query(
+      `UPDATE exames
+       SET status = 'agendado',
+           data_agendada = ?
+       WHERE id = ?
+         AND status IN ('solicitado', 'agendado')`,
+      [data_agendada.replace("T", " ") + ":00", id]
+    );
+
+    if (!resultado.affectedRows) {
+      const [exames] = await pool.query(
+        "SELECT id, status FROM exames WHERE id = ?",
+        [id]
+      );
+
+      if (!exames.length) {
+        return res.status(404).json({
+          mensagem: "Exame não encontrado."
+        });
+      }
+
+      return res.status(409).json({
+        mensagem: "Este exame não pode mais ser agendado."
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: "Agendamento registrado com sucesso.",
+      status: "agendado"
+    });
+  } catch (error) {
+    next(error);
+  }
+}

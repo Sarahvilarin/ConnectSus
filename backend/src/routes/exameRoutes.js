@@ -10,7 +10,8 @@ import {
   registrarResultadoExame,
   buscarExame,
   buscarPacienteParaExame,
-  solicitarExamePeloMedico
+  solicitarExamePeloMedico,
+  agendarExameAdmin
 } from "../controllers/exameController.js";
 
 import { autenticarPaciente } from "../middlewares/pacienteAuthMiddleware.js";
@@ -33,5 +34,6 @@ router.post("/medico", autenticarMedico, solicitarExamePeloMedico);
 // Rotas administrativas
 router.get("/", autenticarAdmin, listarExames);
 router.get("/:id", autenticarAdmin, buscarExame);
+router.patch("/:id/agendamento", autenticarAdmin, agendarExameAdmin);
 
 export default router;

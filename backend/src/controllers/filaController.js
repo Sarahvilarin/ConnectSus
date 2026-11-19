@@ -3,6 +3,7 @@ import { pool } from "../config/database.js";
 import {
     entrarNaFila,
     listarFilaPorUnidadeSetor,
+    listarTodasFilasAdmin,
     atualizarStatusFila,
     listarFilasDoPaciente,
     cancelarEntradaDoPaciente,
@@ -231,12 +232,26 @@ export async function atualizarStatusDaFila(req, res, next) {
 
 
 // Administrador consulta filas de qualquer unidade e setor
+
 export async function listarFilasAdmin(req, res, next) {
     try {
         const { unidade_id, setor_id } = req.query;
 
-        if (!idValido(String(unidade_id ?? "")) ||
-            !idValido(String(setor_id ?? ""))) {
+        // Sem filtros: retorna todas as entradas para o painel administrativo.
+        if (!unidade_id && !setor_id) {
+            const filas = await listarTodasFilasAdmin();
+
+            return res.status(200).json({
+                total: filas.length,
+                filas
+            });
+        }
+
+        // Com filtros: exige os dois IDs válidos.
+        if (
+            !idValido(String(unidade_id ?? "")) ||
+            !idValido(String(setor_id ?? ""))
+        ) {
             return res.status(400).json({
                 mensagem: "Informe unidade_id e setor_id válidos."
             });
@@ -255,6 +270,7 @@ export async function listarFilasAdmin(req, res, next) {
         next(error);
     }
 }
+
 
 // Paciente realiza check-in na própria entrada
 export async function realizarCheckin(req, res, next) {

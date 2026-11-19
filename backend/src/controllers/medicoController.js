@@ -209,6 +209,7 @@ export async function buscarMedico(req, res, next) {
       `SELECT
         id,
         nome_completo,
+        cpf,
         email,
         telefone,
         crm,
