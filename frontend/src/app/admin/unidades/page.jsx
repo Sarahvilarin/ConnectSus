@@ -305,14 +305,7 @@ function Campo({ label, children, className = "" }) {
   );
 }
 
-function Indicador({ titulo, valor, detalhe, icone: Icone, cor = "azul" }) {
-  const cores = {
-    azul: "bg-[#EAF2FB] text-[#023E8A]",
-    verde: "bg-emerald-50 text-emerald-700",
-    roxo: "bg-violet-50 text-violet-700",
-    cinza: "bg-slate-100 text-slate-600",
-  };
-
+function Indicador({ titulo, valor, detalhe, icone: Icone }) {
   return (
     <article className="rounded-2xl border border-[#DFEAF5] bg-white p-5 shadow-[0_5px_18px_rgba(20,55,100,0.04)] sm:p-6">
       <div className="flex items-start justify-between gap-3">
@@ -323,11 +316,9 @@ function Indicador({ titulo, valor, detalhe, icone: Icone, cor = "azul" }) {
           </p>
           <p className="mt-2 text-xs text-slate-400">{detalhe}</p>
         </div>
-        <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${cores[cor]}`}
-        >
-          <Icone size={21} />
-        </span>
+       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
+        <Icone size={21} />
+      </span>
       </div>
     </article>
   );
