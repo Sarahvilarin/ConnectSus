@@ -540,19 +540,6 @@ export default function TriagemEnfermagemPage() {
                 e encaminhe as informações do paciente para avaliação médica.
               </p>
             </div>
-
-            <div className="grid w-full max-w-[410px] grid-cols-2 gap-3">
-              <HeroInfo
-                icon={<ShieldCheck size={18} />}
-                titulo="Registro seguro"
-                texto="Avaliação inicial"
-              />
-              <HeroInfo
-                icon={<Activity size={18} />}
-                titulo="Fluxo clínico"
-                texto="Encaminhamento médico"
-              />
-            </div>
           </div>
         </section>
 
