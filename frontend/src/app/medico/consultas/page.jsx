@@ -50,7 +50,7 @@ function mapearConsulta(c) { const dt=new Date(c.data_hora); const nasc=c.pacien
 ========================= */
 
 const inputCls =
-  "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-600 disabled:hover:border-slate-200";
+  "w-full rounded-2xl border border-[#C9D7EB] bg-white px-4 py-3 text-sm text-[#121554] outline-none transition placeholder:text-slate-400 hover:border-[#C9D7EB] focus:border-[#C9D7EB] focus:ring-4 focus:ring-[#C9D7EB]/30 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-600 disabled:hover:border-slate-200";
 const botaoPrimario =
   "inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0B1756] focus:outline-none focus:ring-4 focus:ring-[#3563A7]/30 disabled:cursor-not-allowed disabled:opacity-40";
 const botaoSecundario =
@@ -188,16 +188,20 @@ function Dropdown({ rotulo, valor, opcoes, onChange, placeholder = "Selecione", 
         aria-expanded={aberto}
         disabled={desabilitado}
         onClick={() => alternar(Math.min(240, lista.length * 44 + 12), 170)}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15 ${
-          desabilitado
-            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-600"
-            : aberto
-              ? "border-[#0B1756] ring-4 ring-[#0B1756]/15"
-              : "border-[#C8D8EC] hover:border-[#3563A7]"
-        }`}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl border border-[#C9D7EB] px-4 py-3 text-left text-sm outline-none transition focus:ring-4 focus:ring-[#C9D7EB]/30 ${
+        desabilitado
+          ? "cursor-not-allowed bg-slate-50 text-slate-600"
+          : "bg-white text-[#121554] hover:bg-[#EAF3F7]"
+      }`}
       >
-        <span className={`min-w-0 truncate ${atual ? "" : "text-slate-400"}`}>{atual ? atual.texto : placeholder}</span>
-        <ChevronDown size={16} className={`shrink-0 transition-transform ${aberto ? "rotate-180" : ""}`} />
+        <span className={`min-w-0 truncate ${atual ? "text-[#0B1756]" : "text-slate-400"}`}>
+        {atual ? atual.texto : placeholder}
+      </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#023E8A] transition-transform ${aberto ? "rotate-180" : ""}`}
+        />
       </button>
 
       {aberto && !desabilitado && (
@@ -214,13 +218,21 @@ function Dropdown({ rotulo, valor, opcoes, onChange, placeholder = "Selecione", 
               type="button"
               role="option"
               aria-selected={o.valor === valor}
-              onClick={() => { onChange(o.valor); setAberto(false); }}
+              onClick={() => {
+                onChange(o.valor);
+                setAberto(false);
+              }}
               className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
-                o.valor === valor ? "bg-[#0B1756] font-semibold text-white" : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                o.valor === valor
+                  ? "bg-[#023E8A] font-semibold text-white"
+                  : "bg-white text-[#0B1756] hover:bg-[#EAF3F7]"
               }`}
             >
               <span>{o.texto}</span>
-              {o.valor === valor && <Check size={16} className="shrink-0" />}
+
+              {o.valor === valor && (
+                <Check size={16} className="shrink-0 text-white" />
+              )}
             </button>
           ))}
         </Popup>
@@ -238,22 +250,39 @@ function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data",
   function abrir() {
     alternar(380, 300, () => {
       const base = valor ? new Date(`${valor}T00:00:00`) : new Date();
-      setVisao({ ano: base.getFullYear(), mes: base.getMonth() });
+
+      setVisao({
+        ano: base.getFullYear(),
+        mes: base.getMonth(),
+      });
     });
   }
 
   const mudarMes = (delta) =>
     setVisao(({ ano, mes }) => {
       const d = new Date(ano, mes + delta, 1);
-      return { ano: d.getFullYear(), mes: d.getMonth() };
+
+      return {
+        ano: d.getFullYear(),
+        mes: d.getMonth(),
+      };
     });
 
-  const escolher = (iso) => { onChange(iso); setAberto(false); };
+  const escolher = (iso) => {
+    onChange(iso);
+    setAberto(false);
+  };
 
   const primeiroDia = new Date(visao.ano, visao.mes, 1).getDay();
   const totalDias = new Date(visao.ano, visao.mes + 1, 0).getDate();
-  const celulas = [...Array(primeiroDia).fill(null), ...Array.from({ length: totalDias }, (_, i) => i + 1)];
-  const setaCls = "flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20";
+
+  const celulas = [
+    ...Array(primeiroDia).fill(null),
+    ...Array.from({ length: totalDias }, (_, i) => i + 1),
+  ];
+
+  const setaCls =
+    "flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20";
 
   return (
     <div ref={ref} className="relative w-full" onKeyDown={(e) => e.key === "Escape" && setAberto(false)}>
@@ -263,12 +292,13 @@ function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data",
         aria-haspopup="dialog"
         aria-expanded={aberto}
         onClick={abrir}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left text-sm text-[#0B1756] transition focus:outline-none focus:ring-4 focus:ring-[#3563A7]/15 ${
-          aberto ? "border-[#0B1756] ring-4 ring-[#3563A7]/15" : "border-[#C8D8EC] hover:border-[#3563A7]"
-        }`}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#C9D7EB] bg-white px-4 py-3 text-left text-sm text-[#121554] transition hover:bg-[#F8FAFC] focus:outline-none focus:ring-4 focus:ring-[#C9D7EB]/30"
       >
-        <span className={`min-w-0 truncate ${valor ? "" : "text-slate-400"}`}>{valor ? formatarData(valor) : placeholder}</span>
-        <CalendarDays size={16} className="shrink-0" />
+        <span className="min-w-0 truncate">
+          {valor ? formatarData(valor) : placeholder}
+        </span>
+
+        <CalendarDays size={16} className="shrink-0 text-[#023E8A]" />
       </button>
 
       {aberto && (
@@ -277,26 +307,53 @@ function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data",
           role="dialog"
           rotulo={rotulo}
           style={{ top: pos.top, left: pos.left }}
-          className="w-[300px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[#0B1756]/20 bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.28)]"
+          className="w-[300px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[#D5E2F1] bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.20)]"
         >
-          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#0B1756] px-3 py-2.5">
-            <p className="text-sm font-bold text-white">{nomesMeses[visao.mes]} {visao.ano}</p>
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#023E8A] px-3 py-2.5">
+            <p className="text-sm font-bold text-white">
+              {nomesMeses[visao.mes]} {visao.ano}
+            </p>
+
             <div className="flex gap-1">
-              <button type="button" aria-label="Mês anterior" onClick={() => mudarMes(-1)} className={setaCls}><ChevronLeft size={16} /></button>
-              <button type="button" aria-label="Próximo mês" onClick={() => mudarMes(1)} className={setaCls}><ChevronRight size={16} /></button>
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => mudarMes(-1)}
+                className={setaCls}
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => mudarMes(1)}
+                className={setaCls}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
 
           <div className="mb-1 grid grid-cols-7 text-center">
             {nomesSemana.map((d) => (
-              <span key={d} className="py-1 text-xs font-semibold text-[#0B1756]">{d}</span>
+              <span
+                key={d}
+                className="py-1 text-xs font-semibold text-[#023E8A]"
+              >
+                {d}
+              </span>
             ))}
           </div>
 
           <div className="grid grid-cols-7 gap-1">
             {celulas.map((dia, i) => {
-              if (!dia) return <span key={`vazio-${i}`} className="h-8" />;
+              if (!dia) {
+                return <span key={`vazio-${i}`} className="h-8" />;
+              }
+
               const iso = paraIso(visao.ano, visao.mes, dia);
+
               return (
                 <button
                   key={iso}
@@ -305,10 +362,10 @@ function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data",
                   onClick={() => escolher(iso)}
                   className={`h-8 rounded-lg text-xs font-medium transition ${
                     iso === valor
-                      ? "bg-[#0B1756] text-white shadow-md ring-2 ring-[#0B1756]/20"
+                      ? "bg-[#023E8A] font-bold text-white shadow-md"
                       : iso === hojeIso
-                        ? "border-2 border-[#0B1756] bg-[#EAF3F7] font-extrabold text-[#0B1756]"
-                        : "text-[#0B1756] hover:bg-[#0B1756] hover:text-white"
+                        ? "border-2 border-[#023E8A] bg-[#EAF3F7] font-extrabold text-[#023E8A]"
+                        : "bg-white text-[#0B1756] hover:bg-[#EAF3F7] hover:text-[#023E8A]"
                   }`}
                 >
                   {dia}
@@ -317,11 +374,26 @@ function DatePicker({ rotulo, valor, onChange, placeholder = "Selecione a data",
             })}
           </div>
 
-          <div className="mt-3 flex items-center justify-between border-t border-[#0B1756]/15 pt-3 text-xs font-semibold">
+          <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs font-semibold">
             {limpavel && valor ? (
-              <button type="button" onClick={() => escolher("")} className="rounded-lg px-2 py-1 text-[#0B1756] hover:bg-[#EAF3F7]">Limpar</button>
-            ) : <span />}
-            <button type="button" onClick={() => escolher(hojeIso)} className="rounded-lg bg-[#0B1756] px-3 py-2 text-white hover:bg-[#023E8A]">Hoje</button>
+              <button
+                type="button"
+                onClick={() => escolher("")}
+                className="rounded-lg bg-white px-3 py-2 text-[#023E8A] transition hover:bg-[#EAF3F7]"
+              >
+                Limpar
+              </button>
+            ) : (
+              <span />
+            )}
+
+            <button
+              type="button"
+              onClick={() => escolher(hojeIso)}
+              className="rounded-lg border border-[#023E8A] bg-white px-3 py-2 text-[#023E8A] transition hover:bg-[#EAF3F7]"
+            >
+              Hoje
+            </button>
           </div>
         </Popup>
       )}
@@ -459,7 +531,10 @@ function ResumoTriagem({ triagem: t, editavel, onRestaurar }) {
         </span>
         <span className="flex shrink-0 items-center gap-3">
           <RiskBadge classificacao={t.classificacao} />
-          <ChevronDown size={16} className={`text-slate-500 transition-transform ${aberto ? "rotate-180" : ""}`} />
+          <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#0B1756] transition-transform ${aberto ? "rotate-180" : ""}`}
+        />
         </span>
       </button>
 
@@ -755,24 +830,6 @@ export default function MinhasConsultas() {
 
   const estaAfastado = (iso) => afastamentos.some((a) => a.dataInicio <= iso && a.previsaoRetorno >= iso);
   const situacaoAfast = (a) => (HOJE < a.dataInicio ? "Agendado" : HOJE > a.previsaoRetorno ? "Concluído" : "Em andamento");
-
-  /* ---------- Retorno automático ---------- */
-
-  /* A partir do prazo escolhido, acha o primeiro dia em que o médico atende, não está
-     afastado e tem horário livre. Prefere o mesmo horário da consulta de origem. */
-  function buscarVagaRetorno(retorno, horarioPreferido, lista) {
-    const dias = DIAS_RETORNO[retorno];
-    if (!dias) return null;
-
-    let d = somarDias(HOJE, dias);
-    for (let i = 0; i < 365; i++, d = somarDias(d, 1)) {
-      if (!MEDICO.dias.includes(nomesSemana[meioDia(d).getDay()]) || estaAfastado(d)) continue;
-      const ocupados = lista.filter((c) => c.data === d && c.status !== "Cancelada").map((c) => c.horario);
-      const livres = HORARIOS.filter((h) => !ocupados.includes(h));
-      if (livres.length) return { data: d, horario: livres.includes(horarioPreferido) ? horarioPreferido : livres[0] };
-    }
-    return null;
-  }
 
   const previsaoRetorno = null;
   const retornoAgendado = null;

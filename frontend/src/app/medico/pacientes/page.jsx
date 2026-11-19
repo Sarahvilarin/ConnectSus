@@ -117,8 +117,7 @@ function Select({ valor, alterar, titulo, opcoes }) {
 
   return (
     <div ref={containerRef} className="relative min-w-0">
-      <button type="button" aria-label={`${titulo}: ${valor}`} aria-haspopup="listbox" aria-expanded={aberto} aria-controls={`opcoes-${id}`} onClick={() => setAberto((atual) => !atual)} className={`flex h-11 w-full items-center gap-2.5 rounded-2xl border px-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#3563A7]/20 ${aberto ? "border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]" : "border-[#3563A7]/20 bg-white text-[#0B1756] hover:border-[#3563A7]"}`}>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#EAF3F7] text-[#023E8A]"><AlertTriangle size={16} strokeWidth={1.8} /></span>
+      <button type="button" aria-label={`${titulo}: ${valor}`} aria-haspopup="listbox" aria-expanded={aberto} aria-controls={`opcoes-${id}`} onClick={() => setAberto((atual) => !atual)} className={`flex h-11 w-full items-center gap-2.5 rounded-2xl border px-4 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#3563A7]/20 ${aberto ? "border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]" : "border-[#3563A7]/20 bg-white text-[#0B1756] hover:border-[#3563A7]"}`}>
         <span className="min-w-0 flex-1 truncate">{valor}</span>
         <ChevronDown size={16} className={`shrink-0 text-[#3563A7] transition-transform ${aberto ? "rotate-180" : ""}`} />
       </button>
@@ -127,7 +126,6 @@ function Select({ valor, alterar, titulo, opcoes }) {
           {opcoes.map((opcao) => {
             const selecionado = opcao === valor;
             return <button key={opcao} type="button" role="option" aria-selected={selecionado} onClick={() => { alterar(opcao); setAberto(false); }} className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left text-sm transition ${selecionado ? "bg-[#023E8A] font-bold text-white" : "bg-white font-medium text-[#0B1756] hover:bg-[#EAF3F7]"}`}>
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${selecionado ? "bg-white/15 text-white" : "bg-[#EAF3F7] text-[#023E8A]"}`}><AlertTriangle size={16} /></span>
               <span className="min-w-0 flex-1">{opcao}</span>
               {selecionado && <Check size={16} />}
             </button>;
