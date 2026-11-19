@@ -1,7 +1,14 @@
+
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 function iniciais(nome = "") {
   return nome.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
@@ -41,6 +48,7 @@ function StatusBadge({ status }) {
     concluido: "border-emerald-100 bg-emerald-50 text-emerald-700",
     cancelado: "border-red-100 bg-red-50 text-red-700",
   };
+
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-semibold ${classes[status] || "border-slate-200 bg-slate-50 text-slate-600"}`}>
       {statusLabel(status)}
@@ -67,7 +75,11 @@ function MetricCard({ label, value }) {
 
 function TabButton({ active, onClick, children }) {
   return (
-    <button type="button" onClick={onClick} className={`flex min-h-11 items-center justify-center rounded-xl px-3 py-3 text-center text-xs font-semibold transition sm:px-4 sm:text-sm ${active ? "bg-[#023E8A] text-white shadow-sm" : "text-[#3563A7] hover:bg-[#EAF3F7]"}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-11 items-center justify-center rounded-xl px-3 py-3 text-center text-xs font-semibold transition sm:px-4 sm:text-sm ${active ? "bg-[#023E8A] text-white shadow-sm" : "text-[#3563A7] hover:bg-[#EAF3F7]"}`}
+    >
       {children}
     </button>
   );
@@ -91,6 +103,317 @@ function EmptyState({ title, description }) {
   );
 }
 
+/* =========================
+   CALENDÁRIO PERSONALIZADO
+========================= */
+
+const nomesMeses = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+const nomesSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+const pad = (n) => String(n).padStart(2, "0");
+
+const paraIso = (ano, mes, dia) =>
+  `${ano}-${pad(mes + 1)}-${pad(dia)}`;
+
+const dataAtualISO = () => {
+  const d = new Date();
+  return paraIso(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+function formatarDataCalendario(iso) {
+  if (!iso) return "";
+
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+/* Controle dos menus flutuantes */
+
+function usePopup() {
+  const [aberto, setAberto] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    const fechar = (e) =>
+      !e.target?.closest?.("[data-popup]") &&
+      setAberto(false);
+
+    window.addEventListener("scroll", fechar, true);
+    window.addEventListener("resize", fechar);
+
+    return () => {
+      window.removeEventListener("scroll", fechar, true);
+      window.removeEventListener("resize", fechar);
+    };
+  }, [aberto]);
+
+  function alternar(altura, largura, aoAbrir) {
+    if (!aberto && ref.current) {
+      const r = ref.current.getBoundingClientRect();
+
+      let top = r.bottom + 8;
+
+      if (top + altura > window.innerHeight - 12) {
+        const acima = r.top - altura - 8;
+
+        top =
+          acima >= 12
+            ? acima
+            : Math.max(12, window.innerHeight - altura - 12);
+      }
+
+      setPos({
+        top,
+        left: Math.max(
+          12,
+          Math.min(r.left, window.innerWidth - largura - 12)
+        ),
+      });
+
+      aoAbrir?.();
+    }
+
+    setAberto((a) => !a);
+  }
+
+  return { aberto, setAberto, pos, ref, alternar };
+}
+
+/* Componente do calendário */
+
+function DatePicker({ valor, onChange }) {
+  const { aberto, setAberto, pos, ref, alternar } = usePopup();
+
+  const [visao, setVisao] = useState(() => {
+    const hoje = new Date();
+
+    return {
+      ano: hoje.getFullYear(),
+      mes: hoje.getMonth(),
+    };
+  });
+
+  const hojeIso = dataAtualISO();
+
+  function abrir() {
+    alternar(380, 300, () => {
+      const base = valor
+        ? new Date(`${valor}T00:00:00`)
+        : new Date();
+
+      setVisao({
+        ano: base.getFullYear(),
+        mes: base.getMonth(),
+      });
+    });
+  }
+
+  function mudarMes(delta) {
+    setVisao(({ ano, mes }) => {
+      const d = new Date(ano, mes + delta, 1);
+
+      return {
+        ano: d.getFullYear(),
+        mes: d.getMonth(),
+      };
+    });
+  }
+
+  function escolher(iso) {
+    onChange(iso);
+    setAberto(false);
+  }
+
+  const primeiroDia = new Date(
+    visao.ano,
+    visao.mes,
+    1
+  ).getDay();
+
+  const totalDias = new Date(
+    visao.ano,
+    visao.mes + 1,
+    0
+  ).getDate();
+
+  const celulas = [
+    ...Array(primeiroDia).fill(null),
+    ...Array.from({ length: totalDias }, (_, i) => i + 1),
+  ];
+
+  const setaCls =
+    "flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20";
+
+  return (
+    <div
+      ref={ref}
+      className="relative w-full"
+      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
+    >
+      <button
+        type="button"
+        aria-label="Selecionar data do exame"
+        aria-haspopup="dialog"
+        aria-expanded={aberto}
+        onClick={abrir}
+        className="flex h-11 w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 text-left text-sm text-[#0B1756] outline-none transition hover:bg-[#F8FAFC] focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
+      >
+        <span className={valor ? "text-[#0B1756]" : "text-slate-400"}>
+          {valor ? formatarDataCalendario(valor) : "dd/mm/aaaa"}
+        </span>
+
+        <CalendarDays
+          size={16}
+          className="shrink-0 text-[#023E8A]"
+        />
+      </button>
+
+      {aberto && (
+        <>
+          <button
+            type="button"
+            aria-label="Fechar calendário"
+            onClick={() => setAberto(false)}
+            className="fixed inset-0 z-10 cursor-default"
+          />
+
+          <div
+            data-popup
+            role="dialog"
+            aria-label="Selecionar data"
+            style={{
+              top: pos.top,
+              left: pos.left,
+            }}
+            className="fixed z-20 w-[300px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[#D5E2F1] bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.20)]"
+          >
+            {/* CABEÇALHO */}
+
+            <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#023E8A] px-3 py-2.5">
+              <p className="text-sm font-bold text-white">
+                {nomesMeses[visao.mes]} {visao.ano}
+              </p>
+
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  aria-label="Mês anterior"
+                  onClick={() => mudarMes(-1)}
+                  className={setaCls}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="Próximo mês"
+                  onClick={() => mudarMes(1)}
+                  className={setaCls}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* DIAS DA SEMANA */}
+
+            <div className="mb-1 grid grid-cols-7 text-center">
+              {nomesSemana.map((dia) => (
+                <span
+                  key={dia}
+                  className="py-1 text-xs font-semibold text-[#023E8A]"
+                >
+                  {dia}
+                </span>
+              ))}
+            </div>
+
+            {/* DIAS DO MÊS */}
+
+            <div className="grid grid-cols-7 gap-1">
+              {celulas.map((dia, i) => {
+                if (!dia) {
+                  return (
+                    <span
+                      key={`vazio-${i}`}
+                      className="h-8"
+                    />
+                  );
+                }
+
+                const iso = paraIso(
+                  visao.ano,
+                  visao.mes,
+                  dia
+                );
+
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    aria-pressed={iso === valor}
+                    onClick={() => escolher(iso)}
+                    className={`h-8 rounded-lg text-xs font-medium transition ${
+                      iso === valor
+                        ? "bg-[#023E8A] font-bold text-white shadow-md"
+                        : iso === hojeIso
+                          ? "border-2 border-[#023E8A] bg-[#EAF3F7] font-extrabold text-[#023E8A]"
+                          : "bg-white text-[#0B1756] hover:bg-[#EAF3F7] hover:text-[#023E8A]"
+                    }`}
+                  >
+                    {dia}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* RODAPÉ */}
+
+            <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => escolher("")}
+                className="text-slate-500 transition hover:text-red-600"
+              >
+                Limpar data
+              </button>
+
+              <button
+                type="button"
+                onClick={() => escolher(hojeIso)}
+                className="rounded-lg border border-[#023E8A] bg-white px-3 py-2 text-[#023E8A] transition hover:bg-[#EAF3F7]"
+              >
+                Hoje
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* =========================
+   PÁGINA PRINCIPAL
+========================= */
+
 export default function GestaoExamesPage() {
   const [exames, setExames] = useState([]);
   const [selecionadoId, setSelecionadoId] = useState(null);
@@ -105,12 +428,23 @@ export default function GestaoExamesPage() {
   const carregarExames = useCallback(async () => {
     setCarregando(true);
     setErro("");
+
     try {
       const resposta = await api("/api/exames");
-      const lista = Array.isArray(resposta) ? resposta : resposta?.exames || [];
+      const lista = Array.isArray(resposta)
+        ? resposta
+        : resposta?.exames || [];
+
       setExames(lista);
+
       setSelecionadoId((atual) => {
-        if (atual && lista.some((item) => Number(item.id) === Number(atual))) return atual;
+        if (
+          atual &&
+          lista.some((item) => Number(item.id) === Number(atual))
+        ) {
+          return atual;
+        }
+
         return lista[0]?.id ?? null;
       });
     } catch (e) {
@@ -124,42 +458,78 @@ export default function GestaoExamesPage() {
     carregarExames();
   }, [carregarExames]);
 
-  const pendentes = useMemo(() => exames.filter((item) => item.status === "solicitado"), [exames]);
-  const selecionado = exames.find((item) => Number(item.id) === Number(selecionadoId)) || null;
+  const pendentes = useMemo(
+    () => exames.filter((item) => item.status === "solicitado"),
+    [exames]
+  );
+
+  const selecionado =
+    exames.find(
+      (item) => Number(item.id) === Number(selecionadoId)
+    ) || null;
 
   useEffect(() => {
-    setDataAgendada(selecionado?.data_agendada ? dataHoraLocal(selecionado.data_agendada) : "");
+    setDataAgendada(
+      selecionado?.data_agendada
+        ? dataHoraLocal(selecionado.data_agendada)
+        : ""
+    );
+
     setErro("");
   }, [selecionadoId, selecionado?.data_agendada]);
 
   const listaBase = aba === "pendentes" ? pendentes : exames;
+
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
+
     if (!termo) return listaBase;
+
     return listaBase.filter((item) =>
-      [item.paciente, item.medico, item.unidade, item.tipo_exame, item.paciente_id, item.id, item.observacoes]
-        .some((valor) => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo))
+      [
+        item.paciente,
+        item.medico,
+        item.unidade,
+        item.tipo_exame,
+        item.paciente_id,
+        item.id,
+        item.observacoes,
+      ].some((valor) =>
+        String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo)
+      )
     );
   }, [listaBase, busca]);
 
-  const indicadores = useMemo(() => ({
-    pendentes: exames.filter((item) => item.status === "solicitado").length,
-    agendados: exames.filter((item) => item.status === "agendado").length,
-    andamento: exames.filter((item) => item.status === "em_andamento").length,
-    concluidos: exames.filter((item) => item.status === "concluido").length,
-  }), [exames]);
+  const indicadores = useMemo(
+    () => ({
+      pendentes: exames.filter((item) => item.status === "solicitado").length,
+      agendados: exames.filter((item) => item.status === "agendado").length,
+      andamento: exames.filter((item) => item.status === "em_andamento").length,
+      concluidos: exames.filter((item) => item.status === "concluido").length,
+    }),
+    [exames]
+  );
 
   async function salvarAgendamento(event) {
     event.preventDefault();
+
     if (!selecionado) return;
-    if (!dataAgendada) {
+
+    if (!dataAgendada || !dataAgendada.slice(11, 16)) {
       setErro("Informe a data e o horário do exame.");
       return;
     }
-    if (new Date(dataAgendada) <= new Date()) {
+
+    const [ano, mes, dia] = dataAgendada.slice(0, 10).split("-").map(Number);
+    const [hora, minuto] = dataAgendada.slice(11, 16).split(":").map(Number);
+
+    const dataEscolhida = new Date(ano, mes - 1, dia, hora, minuto);
+
+    if (dataEscolhida <= new Date()) {
       setErro("O agendamento precisa ser em uma data e horário futuros.");
       return;
     }
+
     if (!["solicitado", "agendado"].includes(selecionado.status)) {
       setErro("Este exame não pode mais ter o agendamento alterado.");
       return;
@@ -168,12 +538,17 @@ export default function GestaoExamesPage() {
     setSalvando(true);
     setErro("");
     setAviso("");
+
     try {
       await api(`/api/exames/${selecionado.id}/agendamento`, {
         method: "PATCH",
-        body: JSON.stringify({ data_agendada: dataAgendada }),
+        body: JSON.stringify({
+          data_agendada: dataAgendada,
+        }),
       });
+
       setAviso("Agendamento registrado com sucesso.");
+
       await carregarExames();
       setAba("todos");
     } catch (e) {
@@ -183,6 +558,31 @@ export default function GestaoExamesPage() {
     }
   }
 
+  const dataSelecionada = dataAgendada.slice(0, 10);
+  const horarioSelecionado = dataAgendada.slice(11, 16);
+
+  function alterarData(data) {
+    setDataAgendada((atual) => {
+      if (!data) return "";
+
+      const horario = atual.slice(11, 16) || "09:00";
+
+      return `${data}T${horario}`;
+    });
+
+    setErro("");
+  }
+
+  function alterarHorario(horario) {
+    setDataAgendada((atual) => {
+      if (!dataSelecionada) return "";
+
+      return `${dataSelecionada}T${horario}`;
+    });
+
+    setErro("");
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#EEF5F9] px-4 py-6 font-sans text-[#0B1756] sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute -left-40 top-64 h-96 w-96 rounded-full bg-[#D9EAF8]/70" />
@@ -190,35 +590,38 @@ export default function GestaoExamesPage() {
       <div className="pointer-events-none absolute right-[12%] top-[1050px] h-56 w-56 rounded-full border-[42px] border-white/80" />
 
       <div className="relative z-10 mx-auto max-w-[1500px] space-y-5">
-        
-<header className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
-  <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
 
-  <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+        {/* CABEÇALHO */}
 
-  <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
+        <header className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+          <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
 
-  <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-    <div className="max-w-3xl">
-      <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
-        ADMINISTRAÇÃO · GESTÃO DE EXAMES
-      </div>
+          <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
 
-      <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
-        Análise de prontuários e exames
-      </h1>
+          <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
 
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
-        Consulte os pedidos de exames registrados, confira as informações disponíveis e organize o agendamento.
-      </p>
-    </div>
-  </div>
-</header>
+          <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
+                ADMINISTRAÇÃO · GESTÃO DE EXAMES
+              </div>
 
+              <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+                Análise de prontuários e exames
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
+                Consulte os pedidos de exames registrados, confira as informações disponíveis e organize o agendamento.
+              </p>
+            </div>
+          </div>
+        </header>
 
         <div className="rounded-2xl border border-blue-200 bg-blue-50/90 px-4 py-3 text-sm font-normal leading-6 text-[#0B1756]">
           <strong className="font-semibold">Importante:</strong> esta tela exibe os pedidos registrados no sistema. Os dados clínicos completos do prontuário não são retornados pela API administrativa de exames; a decisão clínica deve permanecer sob responsabilidade do profissional habilitado.
         </div>
+
+        {/* INDICADORES */}
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Pedidos aguardando agendamento" value={indicadores.pendentes} />
@@ -227,121 +630,295 @@ export default function GestaoExamesPage() {
           <MetricCard label="Concluídos" value={indicadores.concluidos} />
         </section>
 
+        {/* ABAS */}
+
         <section className="overflow-hidden rounded-[22px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
           <div className="grid grid-cols-2 gap-2 p-2 sm:p-3">
-            <TabButton active={aba === "pendentes"} onClick={() => setAba("pendentes")}>
+            <TabButton
+              active={aba === "pendentes"}
+              onClick={() => setAba("pendentes")}
+            >
               Pedidos aguardando agendamento ({indicadores.pendentes})
             </TabButton>
-            <TabButton active={aba === "todos"} onClick={() => setAba("todos")}>
+
+            <TabButton
+              active={aba === "todos"}
+              onClick={() => setAba("todos")}
+            >
               Todos os exames ({exames.length})
             </TabButton>
           </div>
         </section>
 
+        {/* AVISOS */}
+
         {aviso && (
           <div className="flex items-start justify-between gap-4 rounded-2xl border border-[#C9DDF0] bg-[#EAF3F7] px-4 py-3 text-sm text-[#0B1756]">
             <p className="flex-1">{aviso}</p>
-            <button type="button" onClick={() => setAviso("")} className="rounded-lg px-2 py-1 text-xs font-semibold text-[#3563A7] hover:bg-white">Fechar</button>
+
+            <button
+              type="button"
+              onClick={() => setAviso("")}
+              className="rounded-lg px-2 py-1 text-xs font-semibold text-[#3563A7] hover:bg-white"
+            >
+              Fechar
+            </button>
           </div>
         )}
 
         {erro && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{erro}</div>
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {erro}
+          </div>
         )}
+
+        {/* LISTAGEM DE EXAMES */}
 
         <section className="overflow-hidden rounded-[22px] border border-[#DCE8F3] bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4 sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-xl font-bold sm:text-2xl">{aba === "pendentes" ? "Pedidos de exames recebidos" : "Exames registrados"}</h2>
-                <p className="mt-1 text-sm font-normal text-slate-500">Selecione um registro para consultar os dados e, quando permitido, agendar.</p>
+                <h2 className="text-xl font-bold sm:text-2xl">
+                  {aba === "pendentes"
+                    ? "Pedidos de exames recebidos"
+                    : "Exames registrados"}
+                </h2>
+
+                <p className="mt-1 text-sm font-normal text-slate-500">
+                  Selecione um registro para consultar os dados e, quando permitido, agendar.
+                </p>
               </div>
+
               <div className="flex w-full gap-2 lg:max-w-[520px]">
-                <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar paciente, CPF, exame ou unidade" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-[#3563A7]" />
-                <button type="button" onClick={carregarExames} disabled={carregando} className="rounded-xl border border-slate-200 px-4 text-xs font-semibold text-[#3563A7] hover:bg-[#EAF3F7] disabled:opacity-50">{carregando ? "Atualizando" : "Atualizar"}</button>
+                <input
+                  value={busca}
+                  onChange={(event) => setBusca(event.target.value)}
+                  placeholder="Buscar paciente, CPF, exame ou unidade"
+                  className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-[#3563A7]"
+                />
+
+                <button
+                  type="button"
+                  onClick={carregarExames}
+                  disabled={carregando}
+                  className="rounded-xl border border-slate-200 px-4 text-xs font-semibold text-[#3563A7] hover:bg-[#EAF3F7] disabled:opacity-50"
+                >
+                  {carregando ? "Atualizando" : "Atualizar"}
+                </button>
               </div>
             </div>
           </div>
 
           {carregando ? (
-            <div className="p-8 text-center text-sm text-slate-500">Carregando registros do sistema...</div>
+            <div className="p-8 text-center text-sm text-slate-500">
+              Carregando registros do sistema...
+            </div>
           ) : filtrados.length === 0 ? (
-            <div className="p-4"><EmptyState title="Nenhum pedido encontrado" description={aba === "pendentes" ? "Não há exames aguardando agendamento no momento." : "Não existem exames registrados ou a busca não encontrou resultados."} /></div>
+            <div className="p-4">
+              <EmptyState
+                title="Nenhum pedido encontrado"
+                description={
+                  aba === "pendentes"
+                    ? "Não há exames aguardando agendamento no momento."
+                    : "Não existem exames registrados ou a busca não encontrou resultados."
+                }
+              />
+            </div>
           ) : (
             <>
               <div className="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-2 xl:grid-cols-4">
                 {filtrados.map((item) => (
-                  <button key={item.id} type="button" onClick={() => setSelecionadoId(item.id)} className={`min-h-[118px] rounded-xl border p-3 text-left transition ${Number(selecionadoId) === Number(item.id) ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10" : "border-slate-100 bg-white hover:border-[#3563A7] hover:bg-[#F8FBFD]"}`}>
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelecionadoId(item.id)}
+                    className={`min-h-[118px] rounded-xl border p-3 text-left transition ${
+                      Number(selecionadoId) === Number(item.id)
+                        ? "border-[#3563A7] bg-[#EAF3F7] ring-2 ring-[#3563A7]/10"
+                        : "border-slate-100 bg-white hover:border-[#3563A7] hover:bg-[#F8FBFD]"
+                    }`}
+                  >
                     <div className="flex items-start gap-2.5">
                       <Avatar name={item.paciente || "Paciente"} />
+
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold leading-5">{item.paciente || `Paciente #${item.paciente_id}`}</span>
-                        <span className="mt-1 block text-xs text-slate-500">Pedido #{item.id}</span>
+                        <span className="block text-sm font-semibold leading-5">
+                          {item.paciente || `Paciente #${item.paciente_id}`}
+                        </span>
+
+                        <span className="mt-1 block text-xs text-slate-500">
+                          Pedido #{item.id}
+                        </span>
                       </span>
                     </div>
+
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge status={item.status} />
                     </div>
-                    <span className="mt-2 block line-clamp-2 text-xs leading-5 text-slate-600">{item.tipo_exame}</span>
+
+                    <span className="mt-2 block line-clamp-2 text-xs leading-5 text-slate-600">
+                      {item.tipo_exame}
+                    </span>
                   </button>
                 ))}
               </div>
-              <div className="bg-[#EEF5F9] px-4 py-3 text-xs text-slate-500">{filtrados.length} registro(s) exibido(s) · Dados carregados do banco de dados</div>
+
+              <div className="bg-[#EEF5F9] px-4 py-3 text-xs text-slate-500">
+                {filtrados.length} registro(s) exibido(s) · Dados carregados do banco de dados
+              </div>
             </>
           )}
         </section>
 
+        {/* DETALHES E AGENDAMENTO */}
+
         {selecionado && (
           <section className="overflow-hidden rounded-[22px] border border-[#DCE8F3] bg-white shadow-sm">
+
+            {/* IDENTIFICAÇÃO DO PACIENTE */}
+
             <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar name={selecionado.paciente || "Paciente"} large />
+
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold sm:text-xl">{selecionado.paciente || `Paciente #${selecionado.paciente_id}`}</h2>
-                  <p className="mt-1 text-xs text-slate-500">Pedido de exame #{selecionado.id} · Paciente ID {selecionado.paciente_id}</p>
-                  <p className="mt-1 text-xs text-slate-500">Solicitante: {selecionado.medico || "Não informado"}</p>
+                  <h2 className="text-lg font-bold sm:text-xl">
+                    {selecionado.paciente || `Paciente #${selecionado.paciente_id}`}
+                  </h2>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Pedido de exame #{selecionado.id} · Paciente ID {selecionado.paciente_id}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Solicitante: {selecionado.medico || "Não informado"}
+                  </p>
                 </div>
               </div>
+
               <StatusBadge status={selecionado.status} />
             </div>
 
+            {/* INFORMAÇÕES DO EXAME */}
+
             <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
-              <InfoBlock title="Exame solicitado">{selecionado.tipo_exame || "Não informado"}</InfoBlock>
-              <InfoBlock title="Unidade responsável">{selecionado.unidade || "Não informada"}</InfoBlock>
-              <InfoBlock title="Observações do pedido">{selecionado.observacoes || "Nenhuma observação registrada no pedido."}</InfoBlock>
-              <InfoBlock title="Consulta vinculada">{selecionado.consulta_id ? `Consulta #${selecionado.consulta_id}` : "Nenhuma consulta vinculada"}</InfoBlock>
-              <InfoBlock title="Data da solicitação">{formatarDataHora(selecionado.criado_em)}</InfoBlock>
-              <InfoBlock title="Data agendada">{formatarDataHora(selecionado.data_agendada)}</InfoBlock>
+              <InfoBlock title="Exame solicitado">
+                {selecionado.tipo_exame || "Não informado"}
+              </InfoBlock>
+
+              <InfoBlock title="Unidade responsável">
+                {selecionado.unidade || "Não informada"}
+              </InfoBlock>
+
+              <InfoBlock title="Observações do pedido">
+                {selecionado.observacoes || "Nenhuma observação registrada no pedido."}
+              </InfoBlock>
+
+              <InfoBlock title="Consulta vinculada">
+                {selecionado.consulta_id
+                  ? `Consulta #${selecionado.consulta_id}`
+                  : "Nenhuma consulta vinculada"}
+              </InfoBlock>
+
+              <InfoBlock title="Data da solicitação">
+                {formatarDataHora(selecionado.criado_em)}
+              </InfoBlock>
+
+              <InfoBlock title="Data agendada">
+                {formatarDataHora(selecionado.data_agendada)}
+              </InfoBlock>
+
               {selecionado.resultado && (
-                <div className="sm:col-span-2"><InfoBlock title="Resultado registrado">{selecionado.resultado}</InfoBlock></div>
+                <div className="sm:col-span-2">
+                  <InfoBlock title="Resultado registrado">
+                    {selecionado.resultado}
+                  </InfoBlock>
+                </div>
               )}
             </div>
 
-            <form onSubmit={salvarAgendamento} className="border-t border-slate-100 p-4 sm:p-5">
+            {/* FORMULÁRIO DE AGENDAMENTO */}
+
+            <form
+              onSubmit={salvarAgendamento}
+              className="border-t border-slate-100 p-4 sm:p-5"
+            >
               <div>
-                <h2 className="text-xl font-bold sm:text-2xl">Agendamento do exame</h2>
-                <p className="mt-1 text-sm leading-5 text-slate-500">Registre a data e o horário confirmados pela unidade responsável.</p>
+                <h2 className="text-xl font-bold sm:text-2xl">
+                  Agendamento do exame
+                </h2>
+
+                <p className="mt-1 text-sm leading-5 text-slate-500">
+                  Registre a data e o horário confirmados pela unidade responsável.
+                </p>
               </div>
 
               {["solicitado", "agendado"].includes(selecionado.status) ? (
                 <>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
+
+                    {/* DATA E HORÁRIO */}
+
                     <div>
-                      <label className="mb-2 block text-xs font-semibold">Data e horário <span className="text-red-500">*</span></label>
-                      <input type="datetime-local" required min={new Date(Date.now() + 60000).toISOString().slice(0, 16)} value={dataAgendada} onChange={(event) => setDataAgendada(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#3563A7]" />
+                      <label className="mb-2 block text-xs font-semibold">
+                        Data e horário <span className="text-red-500">*</span>
+                      </label>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_135px]">
+
+                        {/* CALENDÁRIO */}
+
+                        <DatePicker
+                          valor={dataSelecionada}
+                          onChange={alterarData}
+                        />
+
+                        {/* HORÁRIO */}
+
+                        <div className="relative">
+                          <input
+                            type="time"
+                            required
+                            value={horarioSelecionado}
+                            onChange={(event) =>
+                              alterarHorario(event.target.value)
+                            }
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-[#0B1756] outline-none transition focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
+                            aria-label="Horário do exame"
+                          />
+                        </div>
+                      </div>
                     </div>
+
+                    {/* INFORMAÇÃO DA UNIDADE */}
+
                     <div className="flex items-end">
-                      <p className="w-full rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-xs leading-5 text-slate-600">A unidade já está vinculada ao pedido original. A API atual não oferece alteração administrativa da unidade nem registro de prioridade.</p>
+                      <p className="w-full rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-xs leading-5 text-slate-600">
+                        A unidade já está vinculada ao pedido original. A API atual não oferece alteração administrativa da unidade nem registro de prioridade.
+                      </p>
                     </div>
                   </div>
+
+                  {/* BOTÃO DE CONFIRMAÇÃO */}
+
                   <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
-                    <button type="submit" disabled={salvando} className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-60">
-                      {salvando ? "Salvando..." : selecionado.status === "agendado" ? "Atualizar agendamento" : "Confirmar agendamento"}
+                    <button
+                      type="submit"
+                      disabled={salvando}
+                      className="rounded-xl bg-[#023E8A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {salvando
+                        ? "Salvando..."
+                        : selecionado.status === "agendado"
+                          ? "Atualizar agendamento"
+                          : "Confirmar agendamento"}
                     </button>
                   </div>
                 </>
               ) : (
-                <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">Este exame está com status “{statusLabel(selecionado.status)}” e não pode ser agendado ou alterado por esta tela.</p>
+                <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  Este exame está com status “{statusLabel(selecionado.status)}” e não pode ser agendado ou alterado por esta tela.
+                </p>
               )}
             </form>
           </section>
