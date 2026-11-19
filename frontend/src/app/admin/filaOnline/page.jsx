@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { Building2 } from "lucide-react";
 
 const ITENS_POR_PAGINA = 6;
 
@@ -347,7 +348,7 @@ export default function FilaOnlineAdminPage() {
 
       <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/50" />
 
-      <main className="relative z-10 mx-auto w-full max-w-[1480px] space-y-6 px-4 pb-12 pt-8 sm:px-6 xl:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-[1600px] space-y-6 px-4 pb-12 pt-8 sm:px-6 2xl:px-10">
         {(erro || mensagem) && (
           <div className={`rounded-xl border px-4 py-3 text-sm ${erro ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
             <div className="flex items-center justify-between gap-3"><span>{erro || mensagem}</span><button type="button" onClick={() => { setErro(""); setMensagem(""); }} className="font-semibold">Fechar</button></div>
@@ -360,24 +361,35 @@ export default function FilaOnlineAdminPage() {
         ================================================== */}
 
         <div className="relative mb-14">
-          <div className="relative min-h-[230px] overflow-hidden rounded-[30px] bg-gradient-to-br from-[#023E8A] via-[#084B9A] to-[#0B1756] px-7 py-10 shadow-[0_22px_60px_rgba(2,62,138,0.18)] sm:px-10 sm:py-12">
+          <div className="relative min-h-[230px] overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
 
             <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-white/10" />
             <div className="pointer-events-none absolute -bottom-28 right-[30%] h-64 w-64 rounded-full border-[45px] border-white/[0.04]" />
 
-            <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-[40px]">
-                  Fila Online
-                </h1>
+            <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+  <div className="max-w-3xl">
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
+    <Building2 size={14} />
+    ADMINISTRAÇÃO · FILA ONLINE
+  </div>
+    <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+      Fila Online
+    </h1>
 
-                <p className="mt-3 max-w-3xl text-sm font-normal leading-6 text-white/85 sm:text-base">
-                  Acompanhe a demanda, os indicadores e o funcionamento das
-                  unidades de saúde.
-                </p>
-                <button type="button" onClick={carregarDados} className="mt-5 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Atualizar dados</button>
-              </div>
-            </div>
+    <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
+      Acompanhe a demanda, os indicadores e o funcionamento das
+      unidades de saúde.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    onClick={carregarDados}
+    className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-[#123B80] shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+  >
+    Atualizar dados
+  </button>
+</div>
           </div>
 
           {/* CARDS DE NAVEGAÇÃO */}
