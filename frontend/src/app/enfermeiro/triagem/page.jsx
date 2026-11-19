@@ -1420,17 +1420,10 @@ function HeroInfo({ icon, titulo, texto }) {
   );
 }
 
-function MetricCard({ icon, label, value, tone }) {
-  const styles = {
-    blue: "bg-[#EAF1F8] text-[#174693]",
-    green: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-700",
-    red: "bg-red-50 text-red-700",
-  };
-
+function MetricCard({ icon, label, value }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-[#DCE8F3] bg-white p-5 shadow-[0_8px_24px_rgba(2,62,138,0.04)]">
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${styles[tone]}`}>
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#174693]/20 bg-[#174693]/[0.08] text-[#174693] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
         {icon}
       </span>
       <span>
