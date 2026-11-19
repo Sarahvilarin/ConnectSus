@@ -27,7 +27,11 @@ app.use(helmet());
 const origensPermitidas = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
-  "http://conectasus.10.189.87.231.sslip.io"
+  "https://localhost:3000",
+  "http://conectasus.10.189.87.231.sslip.io",
+  "https://conectasus.10.189.87.231.sslip.io",
+  "http://connectasus.10.189.87.231.sslip.io",
+  "https://connectasus.10.189.87.231.sslip.io",
 ].filter(Boolean);
 
 app.use(cors({
@@ -37,8 +41,17 @@ app.use(cors({
 // Permite receber JSON
 app.use(express.json());
 
+// Normaliza requisições com /api duplicado (ex: /api/api/...)
+app.use((req, res, next) => {
+  // if (req.url.startsWith("/api/api/")) {
+  req.url = req.url.replace(/^\/api\/api\//, "/api/");
+  // }
+  next();
+});
+
 // Rotas da API
 app.use("/api/health", healthRoutes);
+app.use("/api/unidades", unidadeRoutes);
 app.use("/api/unidades", unidadeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/especialidades", especialidadeRoutes);

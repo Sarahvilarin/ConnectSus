@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 import {
   AlertCircle,
   Activity,
@@ -146,16 +147,7 @@ export default function TriagemEnfermagemPage() {
     async function carregarTriagens() {
       try {
         setCarregandoTriagens(true);
-        const token = localStorage.getItem("unesus_token");
-        const resposta = await fetch("http://localhost:8080/api/triagens", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const dados = await resposta.json();
-
-        if (!resposta.ok) {
-          throw new Error(dados.mensagem || "Não foi possível carregar as triagens.");
-        }
-
+        const dados = await api("/api/triagens");
         const lista = Array.isArray(dados) ? dados : dados.triagens || [];
         setTriagens(lista.map(formatarTriagemApi));
       } catch (error) {
@@ -185,23 +177,12 @@ export default function TriagemEnfermagemPage() {
         setCarregandoPacientes(true);
         setErroBuscaPaciente("");
 
-        const token = localStorage.getItem("unesus_token");
-
-        const resposta = await fetch(
-          `http://localhost:8080/api/pacientes/busca?termo=${encodeURIComponent(termo)}`,
+        const dados = await api(
+          `/api/pacientes/busca?termo=${encodeURIComponent(termo)}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
             signal: controller.signal,
           }
         );
-
-        const dados = await resposta.json();
-
-        if (!resposta.ok) {
-          throw new Error(dados.mensagem || "Erro ao buscar pacientes.");
-        }
 
         const pacientes = (dados.pacientes || []).map((item) => {
           const nascimento = item.data_nascimento
@@ -383,22 +364,10 @@ export default function TriagemEnfermagemPage() {
       setSalvandoTriagem(true);
       setErro("");
 
-      const token = localStorage.getItem("unesus_token");
-
-      const resposta = await fetch("http://localhost:8080/api/triagens", {
+      const dados = await api("/api/triagens", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(payload),
       });
-
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(dados.mensagem || "Não foi possível registrar a triagem.");
-      }
 
       const registro = {
         id: dados.triagem.id,
@@ -445,19 +414,7 @@ export default function TriagemEnfermagemPage() {
     setErroDetalhe("");
 
     try {
-      const token = localStorage.getItem("unesus_token");
-      const resposta = await fetch(
-        `http://localhost:8080/api/triagens/${item.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(dados.mensagem || "Não foi possível carregar os detalhes da triagem.");
-      }
+      const dados = await api(`/api/triagens/${item.id}`);
 
       const classificacoes = {
         azul: "Não urgente",

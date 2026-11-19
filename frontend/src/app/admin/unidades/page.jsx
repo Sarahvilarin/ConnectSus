@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import {
   Activity,
   Building2,
@@ -26,7 +27,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 
 const TIPOS_UNIDADE = [
   { id: 1, nome: "UBS" },
@@ -52,48 +52,11 @@ const FORM_INICIAL = {
 const inputClass =
   "w-full rounded-xl border border-[#D8E4F1] bg-white px-4 py-3 text-sm text-[#14245B] outline-none transition placeholder:text-slate-400 focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10";
 
-function obterToken() {
-  if (typeof window === "undefined") return null;
-
-  return (
-    localStorage.getItem("unesus_token") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("jwt")
-  );
-}
-
 async function requisicaoApi(caminho, opcoes = {}) {
-  const token = obterToken();
-  const headers = { ...(opcoes.headers || {}) };
-  if (opcoes.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const resposta = await fetch(`${API_URL}${caminho}`, {
-    ...opcoes,
-    headers,
+  return api(caminho, {
     cache: "no-store",
+    ...opcoes,
   });
-
-  const texto = await resposta.text();
-  let dados = {};
-  try {
-    dados = texto ? JSON.parse(texto) : {};
-  } catch {
-    dados = { mensagem: texto };
-  }
-
-  if (!resposta.ok) {
-    throw new Error(
-      dados?.mensagem ||
-      dados?.message ||
-      (resposta.status === 401 || resposta.status === 403
-        ? "Acesso não autorizado. Entre novamente com uma conta administradora."
-        : `Não foi possível concluir a operação (erro ${resposta.status}).`),
-    );
-  }
-  return dados;
 }
 
 function normalizarUnidades(resposta) {
