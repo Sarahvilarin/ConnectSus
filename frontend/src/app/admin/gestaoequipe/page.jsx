@@ -219,14 +219,23 @@ export default function GestaoEquipe() {
           </section>
 
           <section className="overflow-hidden rounded-[22px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
-            <div className="grid grid-cols-1 gap-2 p-2 sm:grid-cols-3 sm:p-3">
-              {[["geral","Visão geral","Indicadores e panorama"],["profissionais","Profissionais","Cadastro e situação"]].map(([id,titulo,sub]) => (
-                <button key={id} type="button" onClick={() => setAba(id)} className={`flex min-h-11 flex-col items-center justify-center rounded-xl px-3 py-3 text-center transition ${aba===id ? "bg-[#023E8A] text-white shadow-sm" : "text-[#3563A7] hover:bg-[#EAF3F7]"}`}>
-                  <span className="text-sm font-semibold">{titulo}</span><span className={`mt-0.5 text-xs ${aba===id ? "text-blue-100" : "text-slate-400"}`}>{sub}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+              <div className="grid grid-cols-1 gap-2 p-2 sm:grid-cols-2 sm:p-3">
+                {[["geral", "Visão geral"], ["profissionais", "Profissionais"]].map(([id, titulo]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setAba(id)}
+                    className={`flex h-11 items-center justify-center rounded-xl px-3 text-center text-sm font-semibold transition ${
+                      aba === id
+                        ? "bg-[#163B85] text-white shadow-sm"
+                        : "text-[#3563A7] hover:bg-[#EAF3F7]"
+                    }`}
+                  >
+                    {titulo}
+                  </button>
+                ))}
+              </div>
+            </section>
 
           {erro && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{erro}</div>}
           {aviso && <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-[#0B1756]">{aviso}</div>}

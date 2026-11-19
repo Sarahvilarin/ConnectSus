@@ -183,10 +183,7 @@ export default function GestaoExamePage() {
                   Registre exames indicados pela equipe assistencial durante um atendimento de urgência ou emergência.
                 </p>
               </div>
-              <div className="grid w-full max-w-[420px] grid-cols-2 gap-3">
-                <HeroInfo icon={<ShieldCheck size={18} />} title="Acesso seguro" text="Área médica" />
-                <HeroInfo icon={<HeartPulse size={18} />} title="Uso emergencial" text="Prioridade clínica" />
-              </div>
+              
             </div>
           </div>
           <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
