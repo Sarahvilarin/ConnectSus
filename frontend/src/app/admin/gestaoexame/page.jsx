@@ -198,8 +198,11 @@ function usePopup() {
 
 /* Componente do calendário */
 
+
 function DatePicker({ valor, onChange }) {
   const { aberto, setAberto, pos, ref, alternar } = usePopup();
+
+  const hojeIso = dataAtualISO();
 
   const [visao, setVisao] = useState(() => {
     const hoje = new Date();
@@ -209,8 +212,6 @@ function DatePicker({ valor, onChange }) {
       mes: hoje.getMonth(),
     };
   });
-
-  const hojeIso = dataAtualISO();
 
   function abrir() {
     alternar(380, 300, () => {
@@ -227,17 +228,17 @@ function DatePicker({ valor, onChange }) {
 
   function mudarMes(delta) {
     setVisao(({ ano, mes }) => {
-      const d = new Date(ano, mes + delta, 1);
+      const novaData = new Date(ano, mes + delta, 1);
 
       return {
-        ano: d.getFullYear(),
-        mes: d.getMonth(),
+        ano: novaData.getFullYear(),
+        mes: novaData.getMonth(),
       };
     });
   }
 
-  function escolher(iso) {
-    onChange(iso);
+  function escolher(data) {
+    onChange(data);
     setAberto(false);
   }
 
@@ -258,32 +259,30 @@ function DatePicker({ valor, onChange }) {
     ...Array.from({ length: totalDias }, (_, i) => i + 1),
   ];
 
-  const setaCls =
-    "flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20";
-
   return (
-    <div
-      ref={ref}
-      className="relative w-full"
-      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
-    >
+    <div ref={ref} className="relative w-full">
+      {/* CAMPO DE DATA */}
+
       <button
         type="button"
-        aria-label="Selecionar data do exame"
+        onClick={abrir}
         aria-haspopup="dialog"
         aria-expanded={aberto}
-        onClick={abrir}
-        className="flex h-11 w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 text-left text-sm text-[#0B1756] outline-none transition hover:bg-[#F8FAFC] focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10"
+        className="flex h-11 w-full items-center justify-between rounded-xl border border-[#D5E2F1] bg-white px-4 text-sm text-[#0B1756] shadow-[0_0_0_4px_rgba(53,99,167,0.06)] transition hover:border-[#3563A7]"
       >
         <span className={valor ? "text-[#0B1756]" : "text-slate-400"}>
-          {valor ? formatarDataCalendario(valor) : "dd/mm/aaaa"}
+          {valor
+            ? formatarDataCalendario(valor)
+            : "dd/mm/aaaa"}
         </span>
 
         <CalendarDays
           size={16}
-          className="shrink-0 text-[#023E8A]"
+          className="text-[#023E8A]"
         />
       </button>
+
+      {/* CALENDÁRIO */}
 
       {aberto && (
         <>
@@ -297,62 +296,61 @@ function DatePicker({ valor, onChange }) {
           <div
             data-popup
             role="dialog"
-            aria-label="Selecionar data"
             style={{
               top: pos.top,
               left: pos.left,
             }}
-            className="fixed z-20 w-[300px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[#D5E2F1] bg-white p-4 shadow-[0_16px_40px_rgba(11,23,86,0.20)]"
+            className="fixed z-20 w-[300px] max-w-[calc(100vw-24px)] rounded-2xl border border-[#DCE6F2] bg-white p-4 shadow-[0_16px_35px_rgba(15,35,75,0.20)]"
           >
-            {/* CABEÇALHO */}
+            {/* CABEÇALHO AZUL */}
 
-            <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[#023E8A] px-3 py-2.5">
-              <p className="text-sm font-bold text-white">
+            <div className="mb-3 flex h-[52px] items-center justify-between rounded-xl bg-[#1D438F] px-3">
+              <span className="text-sm font-bold text-white">
                 {nomesMeses[visao.mes]} {visao.ano}
-              </p>
+              </span>
 
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  aria-label="Mês anterior"
                   onClick={() => mudarMes(-1)}
-                  className={setaCls}
+                  aria-label="Mês anterior"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={17} />
                 </button>
 
                 <button
                   type="button"
-                  aria-label="Próximo mês"
                   onClick={() => mudarMes(1)}
-                  className={setaCls}
+                  aria-label="Próximo mês"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={17} />
                 </button>
               </div>
             </div>
 
             {/* DIAS DA SEMANA */}
 
-            <div className="mb-1 grid grid-cols-7 text-center">
+            <div className="mb-1 grid grid-cols-7">
               {nomesSemana.map((dia) => (
-                <span
+                <div
                   key={dia}
-                  className="py-1 text-xs font-semibold text-[#023E8A]"
+                  className="flex h-7 items-center justify-center text-xs font-semibold text-[#24477F]"
                 >
                   {dia}
-                </span>
+                </div>
               ))}
             </div>
 
             {/* DIAS DO MÊS */}
 
-            <div className="grid grid-cols-7 gap-1">
-              {celulas.map((dia, i) => {
+            <div className="grid grid-cols-7 gap-y-1">
+              {celulas.map((dia, index) => {
                 if (!dia) {
                   return (
-                    <span
-                      key={`vazio-${i}`}
+                    <div
+                      key={`vazio-${index}`}
                       className="h-8"
                     />
                   );
@@ -364,33 +362,40 @@ function DatePicker({ valor, onChange }) {
                   dia
                 );
 
+                const selecionado = iso === valor;
+                const hoje = iso === hojeIso;
+
                 return (
-                  <button
+                  <div
                     key={iso}
-                    type="button"
-                    aria-pressed={iso === valor}
-                    onClick={() => escolher(iso)}
-                    className={`h-8 rounded-lg text-xs font-medium transition ${
-                      iso === valor
-                        ? "bg-[#023E8A] font-bold text-white shadow-md"
-                        : iso === hojeIso
-                          ? "border-2 border-[#023E8A] bg-[#EAF3F7] font-extrabold text-[#023E8A]"
-                          : "bg-white text-[#0B1756] hover:bg-[#EAF3F7] hover:text-[#023E8A]"
-                    }`}
+                    className="flex h-8 items-center justify-center"
                   >
-                    {dia}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => escolher(iso)}
+                      aria-pressed={selecionado}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs transition ${
+                        selecionado
+                          ? "border-2 border-[#1D438F] bg-[#EAF2FC] font-semibold text-[#1D438F]"
+                          : hoje
+                            ? "font-bold text-[#1D438F]"
+                            : "font-medium text-[#101C4A] hover:bg-[#EEF4FA]"
+                      }`}
+                    >
+                      {dia}
+                    </button>
+                  </div>
                 );
               })}
             </div>
 
             {/* RODAPÉ */}
 
-            <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs font-semibold">
+            <div className="mt-4 flex items-center justify-between border-t border-[#DCE5EF] pt-3">
               <button
                 type="button"
                 onClick={() => escolher("")}
-                className="text-slate-500 transition hover:text-red-600"
+                className="text-xs font-semibold text-slate-500 transition hover:text-red-600"
               >
                 Limpar data
               </button>
@@ -398,7 +403,7 @@ function DatePicker({ valor, onChange }) {
               <button
                 type="button"
                 onClick={() => escolher(hojeIso)}
-                className="rounded-lg border border-[#023E8A] bg-white px-3 py-2 text-[#023E8A] transition hover:bg-[#EAF3F7]"
+                className="rounded-lg border border-[#1D438F] bg-white px-3 py-2 text-xs font-semibold text-[#1D438F] transition hover:bg-[#EEF4FA]"
               >
                 Hoje
               </button>
@@ -409,6 +414,7 @@ function DatePicker({ valor, onChange }) {
     </div>
   );
 }
+
 
 /* =========================
    PÁGINA PRINCIPAL
