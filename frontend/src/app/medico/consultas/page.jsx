@@ -947,25 +947,26 @@ export default function MinhasConsultas() {
       <div className="pointer-events-none fixed -right-36 -top-36 h-96 w-96 rounded-full border-[64px] border-[#D9E8FA]/60" />
       <div className="pointer-events-none fixed -bottom-40 -left-32 h-96 w-96 rounded-full bg-white/70" />
 
-      <main className="relative z-10 mx-auto max-w-[1400px] space-y-7 px-4 py-7 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-[1600px] space-y-7 px-4 py-7 sm:px-6 xl:px-6 2xl:px-10">
         {carregando && <Info tipo="azul">Carregando consultas do servidor...</Info>}
         {erroApi && <Info tipo="neutro">{erroApi} <button type="button" className="ml-2 font-bold underline" onClick={() => window.location.reload()}>Tentar novamente</button></Info>}
         {/* CABEÇALHO E NAVEGAÇÃO */}
         <section className="relative pb-0">
-          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-20 pt-7 shadow-sm sm:px-10 sm:pt-9 sm:pb-22">
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-16 pt-5 shadow-sm sm:px-10 sm:pt-6 sm:pb-20">
             <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
             <div className="pointer-events-none absolute right-[25%] top-20 h-72 w-72 rounded-full border-[45px] border-white/[0.05]" />
 
             <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
               <div className="max-w-3xl">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+  <Hospital size={15} className="text-white" />
+  Área médica · Gestão de consultas
+</span>
                 <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">Minhas consultas</h1>
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base lg:text-lg">
                   Acompanhe seus atendimentos, registre o prontuário de cada consulta e consulte sua agenda.
                 </p>
-                <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-white/80">
-                  <Hospital size={16} className="shrink-0" />
-                  {profissional?.nome_completo || "Médico"} · {detalhe?.unidade || "Consultas da sua agenda"}
-                </p>
+               
               </div>
 
               <button
