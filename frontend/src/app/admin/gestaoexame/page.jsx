@@ -190,16 +190,31 @@ export default function GestaoExamesPage() {
       <div className="pointer-events-none absolute right-[12%] top-[1050px] h-56 w-56 rounded-full border-[42px] border-white/80" />
 
       <div className="relative z-10 mx-auto max-w-[1500px] space-y-5">
-        <header className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#3563A7] via-[#023E8A] to-[#0B1756] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
-          <div className="pointer-events-none absolute -right-16 -top-32 h-80 w-80 rounded-full bg-white/10" />
-          <div className="pointer-events-none absolute left-[42%] top-10 h-56 w-56 rounded-full border-[36px] border-white/[0.05]" />
-          <div className="relative z-10 max-w-3xl">
-            <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-[42px]">Análise de prontuários e exames</h1>
-            <p className="mt-3 max-w-2xl text-sm font-normal leading-6 text-blue-100 sm:text-base">
-              Consulte os pedidos de exames registrados, confira as informações disponíveis e organize o agendamento.
-            </p>
-          </div>
-        </header>
+        
+<header className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+  <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
+
+  <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+
+  <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
+
+  <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+    <div className="max-w-3xl">
+      <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
+        ADMINISTRAÇÃO · GESTÃO DE EXAMES
+      </div>
+
+      <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+        Análise de prontuários e exames
+      </h1>
+
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
+        Consulte os pedidos de exames registrados, confira as informações disponíveis e organize o agendamento.
+      </p>
+    </div>
+  </div>
+</header>
+
 
         <div className="rounded-2xl border border-blue-200 bg-blue-50/90 px-4 py-3 text-sm font-normal leading-6 text-[#0B1756]">
           <strong className="font-semibold">Importante:</strong> esta tela exibe os pedidos registrados no sistema. Os dados clínicos completos do prontuário não são retornados pela API administrativa de exames; a decisão clínica deve permanecer sob responsabilidade do profissional habilitado.
