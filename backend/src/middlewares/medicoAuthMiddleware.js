@@ -51,10 +51,16 @@ export async function autenticarMedico(req, res, next) {
 
     // Verificar se o médico continua ativo
     const [medicos] = await pool.query(
-      `SELECT id, nome_completo, crm, uf_crm
-       FROM medicos
-       WHERE id = ? AND ativo = TRUE
-       LIMIT 1`,
+      `SELECT
+    id,
+    nome_completo,
+    email,
+    telefone,
+    crm,
+    uf_crm
+   FROM medicos
+   WHERE id = ? AND ativo = TRUE
+   LIMIT 1`,
       [dados.sub]
     );
 

@@ -24,8 +24,14 @@ export async function api(endpoint, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    const detalhes = Array.isArray(data.erros)
+      ? data.erros.join("\n")
+      : "";
+
     throw new Error(
-      data.mensagem || "Não foi possível realizar a solicitação."
+      detalhes
+        ? `${data.mensagem}\n${detalhes}`
+        : data.mensagem || "Não foi possível realizar a solicitação."
     );
   }
 

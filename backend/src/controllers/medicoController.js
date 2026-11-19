@@ -582,4 +582,52 @@ export async function meuPerfilMedico(req, res, next) {
   }
 }
 
+// ATUALIZAR PERFIL DO MÉDICO AUTENTICADO
+export async function atualizarMeuPerfilMedico(req, res, next) {
+  try {
+    const medicoId = req.medico.id;
+    const { nome_completo, telefone, email } = req.body;
 
+    if (!nome_completo?.trim()) {
+      return res.status(400).json({
+        mensagem: "Informe seu nome completo."
+      });
+    }
+
+    if (
+      !email?.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    ) {
+      return res.status(400).json({
+        mensagem: "Informe um e-mail válido."
+      });
+    }
+
+    await pool.query(
+      `UPDATE medicos
+       SET nome_completo = ?,
+           telefone = ?,
+           email = ?
+       WHERE id = ? AND ativo = TRUE`,
+      [
+        nome_completo.trim(),
+        telefone?.trim() || null,
+        email.trim(),
+        medicoId
+      ]
+    );
+
+    return res.status(200).json({
+      mensagem: "Perfil atualizado com sucesso!"
+    });
+
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        mensagem: "Este e-mail já está cadastrado."
+      });
+    }
+
+    next(error);
+  }
+}

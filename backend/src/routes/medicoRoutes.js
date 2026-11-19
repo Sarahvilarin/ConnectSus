@@ -8,7 +8,8 @@ import {
   atualizarMedico,
   excluirMedico,
   reativarMedico,
-  meuPerfilMedico
+  meuPerfilMedico,
+  atualizarMeuPerfilMedico
 } from "../controllers/medicoController.js";
 
 import { autenticarAdmin } from "../middlewares/authMiddleware.js";
@@ -28,5 +29,6 @@ router.post("/", criarMedico);
 router.put("/:id", atualizarMedico);
 router.delete("/:id", excluirMedico);
 router.patch("/:id/reativar", reativarMedico);
+router.put("/me", autenticarMedico, atualizarMeuPerfilMedico);
 
 export default router;
