@@ -14,10 +14,10 @@ async function iniciarServidor() {
     const conectado = await checkDatabaseConnection();
 
     if (!conectado) {
-      throw new Error("Falha na verificação do banco.");
+      console.warn("Aviso: Falha na conexão inicial com o banco de dados. Verifique se o MySQL está ativo e as variáveis de ambiente no .env.");
+    } else {
+      console.log("Conexão com MySQL estabelecida!");
     }
-
-    console.log("Conexão com MySQL estabelecida!");
 
     app.listen(PORT, () => {
       console.log(

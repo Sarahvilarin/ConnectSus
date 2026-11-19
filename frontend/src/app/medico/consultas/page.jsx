@@ -693,7 +693,7 @@ export default function MinhasConsultas() {
     async function carregar() {
       setCarregando(true); setErroApi("");
       try {
-        const [resposta, perfil] = await Promise.all([api("/api/consultas/medico/me"), api("/medicos/me").catch(() => null)]);
+        const [resposta, perfil] = await Promise.all([api("/api/consultas/medico/me"), api("/api/medicos/me").catch(() => null)]);
         const base = Array.isArray(resposta) ? resposta : (resposta.consultas || []);
         const lista = await Promise.all(base.map(async (item) => {
           const c = mapearConsulta(item);

@@ -1,5 +1,6 @@
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const BASE_URL = RAW_API_URL.replace(/\/+$/, "").replace(/\/api$/, "");
 
 export async function api(endpoint, options = {}) {
   const token =
@@ -16,7 +17,13 @@ export async function api(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const path = cleanEndpoint.startsWith("/api/") ? cleanEndpoint : `/api${cleanEndpoint}`;
+  const url = endpoint.startsWith("http://") || endpoint.startsWith("https://")
+    ? endpoint
+    : `${BASE_URL}${path}`;
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
