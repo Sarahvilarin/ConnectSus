@@ -270,18 +270,14 @@ function Campo({ label, children, className = "" }) {
 
 function Indicador({ titulo, valor, detalhe, icone: Icone }) {
   return (
-    <article className="rounded-2xl border border-[#DFEAF5] bg-white p-5 shadow-[0_5px_18px_rgba(20,55,100,0.04)] sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500">{titulo}</p>
-          <p className="mt-3 text-3xl font-extrabold tracking-tight text-[#10245C]">
-            {valor}
-          </p>
-          <p className="mt-2 text-xs text-slate-400">{detalhe}</p>
-        </div>
-       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
-        <Icone size={21} />
-      </span>
+    <article className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7]/60 text-[#0B1756]">
+        <Icone size={26} strokeWidth={2} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-tight text-[#0B1756]">{titulo}</p>
+        <p className="mt-1 text-2xl font-extrabold leading-none tracking-tight text-[#0B1756]">{valor}</p>
+        <p className="mt-1.5 text-xs leading-snug text-slate-500">{detalhe}</p>
       </div>
     </article>
   );
