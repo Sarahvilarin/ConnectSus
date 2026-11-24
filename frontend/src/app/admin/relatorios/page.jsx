@@ -30,8 +30,8 @@ function PainelCard({ titulo, children, className = "" }) {
 
 function IndicadorCard({ titulo, valor, Icone, descricao }) {
   return (
-    <article className="flex items-center gap-4 rounded-3xl border border-white/70 bg-gradient-to-b from-white/90 to-white/50 p-5 shadow-[0_8px_24px_rgba(2,62,138,0.06)] backdrop-blur-md sm:p-6">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7]/80 text-[#0B1756]">
+    <article className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7]/60 text-[#0B1756]">
         <Icone size={26} strokeWidth={2} />
       </div>
       <div className="min-w-0">
