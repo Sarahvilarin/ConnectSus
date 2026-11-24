@@ -165,21 +165,27 @@ export default function MinhasVisitasPage() {
       <main className={`relative z-10 py-8 ${CONTAINER}`}>
         <section className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#DCE9FB] px-3 py-1.5 text-xs font-bold text-[#0B1756]">Visita domiciliar</span>
+            <span className="inline-flex items-center rounded-full border border-[#B8D0EF] bg-[#DCE9FB] px-4 py-2 text-xs font-bold tracking-wide text-[#17418E]">
+  Visita domiciliar
+</span>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px]">Minhas visitas</h1>
             <p className="mt-3 text-base leading-7 text-slate-600">Solicite uma visita da equipe de saúde em casa e acompanhe o andamento por aqui.</p>
           </div>
-          <button type="button" onClick={() => { setErro(""); setForm((atual) => ({ ...atual, ...enderecoDoPaciente(paciente) })); setModal({ tipo: "nova" }); }} disabled={!paciente} className="rounded-2xl bg-[#023E8A] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-50">+ Solicitar visita</button>
+          <button type="button" onClick={() => { setErro(""); setForm((atual) => ({ ...atual, ...enderecoDoPaciente(paciente) })); setModal({ tipo: "nova" }); }} disabled={!paciente} className="rounded-xl bg-gradient-to-r from-[#023E8A] to-[#174E9E] px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#023E8A]/20 transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50">+ Solicitar visita</button>
         </section>
 
         {erro && !modal && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{erro}</div>}
 
         <div className="space-y-6">
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F7]">♙</span><h2 className="text-lg font-bold">Suas informações</h2></div>
+          <section className="relative overflow-hidden rounded-2xl border border-[#C8D8EC] bg-white p-6 shadow-sm">
+  <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#023E8A] via-[#3563A7] to-[#9CC4EF]" />
+            <div className="mb-1">
+  <h2 className="text-xl font-bold text-[#0B1756]">Suas informações</h2>
+  <p className="mt-1 text-sm text-slate-500">Confira seus dados cadastrados no sistema.</p>
+</div>
             {carregando ? <p className="mt-4 text-sm text-slate-500">Carregando seus dados...</p> : paciente ? (
               <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                {[["Paciente", paciente.nome_social || paciente.nome_completo || "Não informado"], ["CNS", paciente.cns || "Não informado"], ["Telefone", paciente.telefone || "Não informado"], ["Endereço", [paciente.rua, paciente.numero, paciente.bairro].filter(Boolean).join(", ") || "Endereço não cadastrado"]].map(([k, v]) => <div key={k} className="rounded-xl bg-[#F4F8FC] px-4 py-3"><dt className="text-xs font-semibold text-slate-500">{k}</dt><dd className="mt-1 break-words font-medium">{v}</dd></div>)}
+                {[["Paciente", paciente.nome_social || paciente.nome_completo || "Não informado"], ["CNS", paciente.cns || "Não informado"], ["Telefone", paciente.telefone || "Não informado"], ["Endereço", [paciente.rua, paciente.numero, paciente.bairro].filter(Boolean).join(", ") || "Endereço não cadastrado"]].map(([k, v]) => <div key={k} className="rounded-xl border border-[#DCE9FB] bg-[#F1F6FC] px-4 py-4 transition hover:border-[#8FB3E0] hover:bg-[#EAF3FF]"><dt className="text-xs font-semibold text-slate-500">{k}</dt><dd className="mt-1 break-words font-medium">{v}</dd></div>)}
               </dl>
             ) : <p className="mt-4 text-sm text-rose-600">Não foi possível carregar o perfil do paciente.</p>}
           </section>
