@@ -175,8 +175,8 @@ function Metrica({ titulo, numero, legenda, Icone: IconeMetrica, onClick }) {
       onClick={onClick}
       className="flex min-h-[112px] items-center gap-4 rounded-[24px] border border-[#DFEAF5] bg-white p-5 text-left shadow-[0_5px_18px_rgba(20,55,100,0.04)] transition hover:-translate-y-0.5 hover:shadow-lg"
     >
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#0B1756]">
-        <IconeMetrica size={22} strokeWidth={1.8} />
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
+        <IconeMetrica size={26} strokeWidth={2} />
       </span>
       <span className="min-w-0">
         <span className="block text-[12px] font-semibold text-[#0B1756]">{titulo}</span>
