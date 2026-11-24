@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import {
   AlertCircle,
@@ -12,13 +11,13 @@ import {
   ClipboardList,
   Clock3,
   FileText,
-  Filter,
   HeartPulse,
   Info,
   ListChecks,
   Plus,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Stethoscope,
   Thermometer,
   UserRound,
@@ -101,6 +100,18 @@ function formatarTriagemApi(item) {
   };
 }
 
+const OPCOES_DOR = [
+  { value: "Sem dor", label: "Sem dor", icon: CheckCircle2 },
+  { value: "Leve", label: "Leve", icon: Thermometer },
+  { value: "Moderada", label: "Moderada", icon: Activity },
+  { value: "Intensa", label: "Intensa", icon: AlertCircle },
+];
+
+const OPCOES_STATUS = [
+  { value: "Todos", label: "Todos", icon: SlidersHorizontal },
+  { value: "Aguardando atendimento médico", label: "Aguardando atendimento médico", icon: Clock3 },
+  { value: "Encaminhada ao médico", label: "Encaminhada ao médico", icon: CheckCircle2 },
+];
 
 export default function TriagemEnfermagemPage() {
   const [salvandoTriagem, setSalvandoTriagem] = useState(false);
@@ -783,7 +794,7 @@ export default function TriagemEnfermagemPage() {
                       />
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="relative z-40 grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-semibold text-[#0B1756]">
                           Início dos sintomas
@@ -800,17 +811,13 @@ export default function TriagemEnfermagemPage() {
                         <label className="mb-2 block text-sm font-semibold text-[#0B1756]">
                           Intensidade da dor
                         </label>
-                        <select
+                        <FilterSelect
+                          ariaLabel="Intensidade da dor"
                           value={dor}
-                          onChange={(event) => setDor(event.target.value)}
-                          className="h-12 w-full rounded-xl border border-slate-200 bg-[#F8FAFD] px-4 text-sm outline-none focus:border-[#3563A7] focus:bg-white"
-                        >
-                          <option value="">Selecione</option>
-                          <option>Sem dor</option>
-                          <option>Leve</option>
-                          <option>Moderada</option>
-                          <option>Intensa</option>
-                        </select>
+                          onChange={setDor}
+                          options={OPCOES_DOR}
+                          placeholder="Selecione"
+                        />
                       </div>
                     </div>
 
@@ -1043,7 +1050,7 @@ export default function TriagemEnfermagemPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_250px] sm:p-6">
+            <div className="relative z-30 grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-6">
               <div className="relative">
                 <Search
                   size={18}
@@ -1057,29 +1064,12 @@ export default function TriagemEnfermagemPage() {
                 />
               </div>
 
-              <div className="relative">
-                <Filter
-                  size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <select
-                  value={filtroStatus}
-                  onChange={(event) => setFiltroStatus(event.target.value)}
-                  className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-[#F8FAFD] pl-10 pr-9 text-sm text-[#0B1756] outline-none focus:border-[#3563A7]"
-                >
-                  {[
-                    "Todos",
-                    "Aguardando atendimento médico",
-                    "Encaminhada ao médico",
-                  ].map((status) => (
-                    <option key={status}>{status}</option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={15}
-                  className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-              </div>
+              <FilterSelect
+                ariaLabel="Filtrar por situação"
+                value={filtroStatus}
+                onChange={setFiltroStatus}
+                options={OPCOES_STATUS}
+              />
             </div>
 
             <div className="flex flex-wrap gap-2 px-5 pb-5 sm:px-6">
@@ -1337,6 +1327,81 @@ export default function TriagemEnfermagemPage() {
         </Modal>
       )}
     </main>
+  );
+}
+
+/* Filtro/seleção no mesmo padrão da página de exames:
+   botão com ícone em caixinha e menu arredondado com item selecionado em #29478F. */
+function FilterSelect({ value, onChange, options, ariaLabel, placeholder = "Selecione" }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+  const selected = options.find((option) => option.value === value);
+  const TriggerIcon = selected?.icon || SlidersHorizontal;
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!containerRef.current?.contains(event.target)) setOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={`flex h-12 w-full items-center gap-3 rounded-xl border bg-white px-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/20 ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.10)]" : "border-slate-200 hover:border-[#9BB5D2]"}`}
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EAF1F8] text-[#174693]">
+          <TriggerIcon size={16} />
+        </span>
+        <span className={`min-w-0 flex-1 truncate text-sm ${selected ? "font-bold text-[#0B1756]" : "text-slate-400"}`}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+9px)] z-[90] rounded-[22px] border border-[#E1EAF3] bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
+          <div role="menu" aria-label={ariaLabel} className="space-y-1">
+            {options.map((option) => {
+              const active = option.value === value;
+              const OptionIcon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={active}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition ${active ? "bg-[#29478F] font-semibold text-white shadow-sm" : "text-[#0B1756] hover:bg-[#F2F6FB]"}`}
+                >
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-white/15 text-white" : "bg-[#EAF1F8] text-[#174693]"}`}>
+                    <OptionIcon size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">{option.label}</span>
+                  {active && <Check size={16} className="shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
