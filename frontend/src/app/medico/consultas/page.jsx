@@ -952,7 +952,7 @@ export default function MinhasConsultas() {
         {erroApi && <Info tipo="neutro">{erroApi} <button type="button" className="ml-2 font-bold underline" onClick={() => window.location.reload()}>Tentar novamente</button></Info>}
         {/* CABEÇALHO E NAVEGAÇÃO */}
         <section className="relative pb-0">
-          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-16 pt-5 shadow-sm sm:px-10 sm:pt-6 sm:pb-20">
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 py-8 shadow-sm sm:px-10 sm:py-10">
             <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
             <div className="pointer-events-none absolute right-[25%] top-20 h-72 w-72 rounded-full border-[45px] border-white/[0.05]" />
 
@@ -979,7 +979,7 @@ export default function MinhasConsultas() {
             </div>
           </div>
 
-          <nav className="relative z-20 -mt-[72px] grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6" aria-label="Seções das consultas">
+          <nav className="relative z-20 mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Seções das consultas">
             {abas.map((a) => (
               <button
                 key={a.id}
