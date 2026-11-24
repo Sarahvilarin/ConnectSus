@@ -1,8 +1,6 @@
 "use client";
 
-
-
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -11,21 +9,10 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 
 import {
-
-  AlertCircle, ArrowLeft, BadgeCheck, CalendarDays, Check, ChevronDown,
-
-  ClipboardCheck, Clock3, Download, FileCheck2, FileText, HeartPulse,
-
-  Hospital, Loader2, LockKeyhole, Plus, Pill, RefreshCcw, ShieldCheck,
-
-  Stethoscope, Trash2, UserRound, X,
-
+  AlertCircle, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
+  ClipboardCheck, Download, FileCheck2, FileText, Loader2, LockKeyhole,
+  Plus, Pill, RefreshCcw, ShieldCheck, Stethoscope, Trash2, UserRound,
 } from "lucide-react";
-
-
-
-
-const C = { azul: "#023E8A", escuro: "#0B1756", medio: "#3563A7", claro: "#EAF3F7" };
 
 const CARD = "rounded-[26px] border border-white/80 bg-white p-5 shadow-[0_12px_36px_rgba(2,62,138,0.07)] sm:p-6";
 
@@ -42,34 +29,234 @@ const hojeISO = () => {
 };
 
 const dataBR = (s) => {
+
   if (!s) return "—";
 
   const data = String(s).slice(0, 10);
+
   const [ano, mes, dia] = data.split("-");
 
   if (!ano || !mes || !dia) return "—";
 
   return `${dia}/${mes}/${ano}`;
+
 };
 
 const curto = (s) => String(s || "").trim();
 
 const maskCPF = (s) => { const n = String(s || "").replace(/\D/g, ""); return n.length === 11 ? `***.${n.slice(3, 6)}.${n.slice(6, 9)}-**` : "Não informado"; };
 
+const MESES_CALENDARIO = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
 
+const DIAS_CALENDARIO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function Campo({ label, value, onChange, placeholder, type = "text", required = false, className = "" }) {
-
-  return <label className={`block text-xs font-bold text-[#0B1756] ${className}`}>
-
-    {label}{required && <span className="text-[#023E8A]"> *</span>}
-
-    <input className={INPUT} value={value} onChange={(e) => onChange(e.target.value)} type={type} placeholder={placeholder} required={required} />
-
-  </label>;
-
+function isoLocal(date) {
+  const ano = date.getFullYear();
+  const mes = String(date.getMonth() + 1).padStart(2, "0");
+  const dia = String(date.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
 }
 
+function dataDoCalendario(value) {
+  if (!value) return null;
+  const [ano, mes, dia] = String(value).slice(0, 10).split("-").map(Number);
+  if (!ano || !mes || !dia) return null;
+  return new Date(ano, mes - 1, dia, 12);
+}
+
+function CalendarioUnesus({ value, onChange, placeholder = "Selecione a data", label = "Selecionar data", required = false }) {
+  const [aberto, setAberto] = useState(false);
+  const selecionada = dataDoCalendario(value);
+  const [mesVisivel, setMesVisivel] = useState(() => {
+    const inicial = selecionada || new Date();
+    return new Date(inicial.getFullYear(), inicial.getMonth(), 1);
+  });
+  const containerRef = useRef(null);
+  useEffect(() => {
+    if (!aberto) return;
+    function fecharAoClicarFora(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setAberto(false);
+      }
+    }
+    function fecharComEscape(event) {
+      if (event.key === "Escape") setAberto(false);
+    }
+    document.addEventListener("pointerdown", fecharAoClicarFora);
+    document.addEventListener("keydown", fecharComEscape);
+    return () => {
+      document.removeEventListener("pointerdown", fecharAoClicarFora);
+      document.removeEventListener("keydown", fecharComEscape);
+    };
+  }, [aberto]);
+  function navegarMes(direcao) {
+    setMesVisivel((atual) => new Date(atual.getFullYear(), atual.getMonth() + direcao, 1));
+  }
+  function escolherData(date) {
+    onChange(isoLocal(date));
+    setAberto(false);
+  }
+  function escolherHoje() {
+    const hoje = new Date();
+    setMesVisivel(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+    escolherData(hoje);
+  }
+  const ano = mesVisivel.getFullYear();
+  const mes = mesVisivel.getMonth();
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const totalDias = new Date(ano, mes + 1, 0).getDate();
+  const dias = [
+    ...Array(primeiroDia).fill(null),
+    ...Array.from({ length: totalDias }, (_, indice) => indice + 1),
+  ];
+  while (dias.length % 7 !== 0) dias.push(null);
+  const hojeISO = isoLocal(new Date());
+  return (
+    <div ref={containerRef} className="relative mt-2 w-full">
+      <button
+        type="button"
+        aria-label={label}
+        aria-haspopup="dialog"
+        aria-expanded={aberto}
+        aria-required={required}
+        onClick={() => {
+          if (!aberto) {
+            const base = selecionada || new Date();
+            setMesVisivel(new Date(base.getFullYear(), base.getMonth(), 1));
+          }
+          setAberto((atual) => !atual);
+        }}
+        className={`${INPUT} mt-0 flex min-h-[46px] items-center justify-between gap-3 text-left ${
+          value ? "text-[#0B1756]" : "text-[#3563A7]/65"
+        }`}
+      >
+        <span>{selecionada ? selecionada.toLocaleDateString("pt-BR") : placeholder}</span>
+        <CalendarDays size={18} strokeWidth={1.9} className="shrink-0 text-[#1D408F]" />
+      </button>
+      {aberto && (
+        <div
+          role="dialog"
+          aria-label="Calendário para selecionar a data"
+          className="absolute left-0 top-[calc(100%+8px)] z-[90] w-[min(300px,calc(100vw-48px))] rounded-2xl border border-[#D6E2F2] bg-white p-4 shadow-[0_12px_30px_rgba(11,23,86,0.18)]"
+        >
+          <div className="flex h-[52px] items-center justify-between rounded-xl bg-[#1D408F] px-3 text-white">
+            <span className="text-sm font-bold">
+              {MESES_CALENDARIO[mes]} {ano}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => navegarMes(-1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => navegarMes(1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-7">
+            {DIAS_CALENDARIO.map((dia) => (
+              <span
+                key={dia}
+                className="flex h-8 items-center justify-center text-[11px] font-bold text-[#1D408F]"
+              >
+                {dia}
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-y-1">
+            {dias.map((dia, indice) => {
+              if (!dia) return <span key={`vazio-${indice}`} className="h-9" />;
+              const data = new Date(ano, mes, dia, 12);
+              const iso = isoLocal(data);
+              const estaSelecionada = iso === value;
+              const ehHoje = iso === hojeISO;
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  aria-label={`${dia} de ${MESES_CALENDARIO[mes]} de ${ano}`}
+                  aria-pressed={estaSelecionada}
+                  onClick={() => escolherData(data)}
+                  className={`mx-auto flex h-8 w-8 items-center justify-center rounded-lg text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D408F] ${
+                    estaSelecionada
+                      ? "border-2 border-[#1D408F] bg-[#EAF3F7] font-bold text-[#1D408F]"
+                      : ehHoje
+                        ? "font-bold text-[#1D408F] hover:bg-[#EAF3F7]"
+                        : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                  }`}
+                >
+                  {dia}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex justify-end border-t border-[#DCE6F2] pt-3">
+            <button
+              type="button"
+              onClick={escolherHoje}
+              className="rounded-lg border border-[#1D408F] px-3 py-1.5 text-xs font-semibold text-[#1D408F] transition hover:bg-[#EAF3F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D408F]"
+            >
+              Hoje
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Campo({ label, value, onChange, placeholder, type = "text", required = false, className = "" }) {
+  const titulo = <span>{label}{required && <span className="text-[#023E8A]"> *</span>}</span>;
+  if (type === "date") {
+    return (
+      <div className={`block text-xs font-bold text-[#0B1756] ${className}`}>
+        {titulo}
+        <CalendarioUnesus
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder || "Selecione a data"}
+          label={label}
+          required={required}
+        />
+      </div>
+    );
+  }
+  return (
+    <label className={`block text-xs font-bold text-[#0B1756] ${className}`}>
+      {titulo}
+      <input
+        className={INPUT}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        type={type}
+        placeholder={placeholder}
+        required={required}
+      />
+    </label>
+  );
+}
 function Texto({ label, value, onChange, placeholder, rows = 3, className = "" }) {
 
   return <label className={`block text-xs font-bold text-[#0B1756] ${className}`}>
@@ -106,15 +293,13 @@ function PerfilLinha({ titulo, valor }) {
 
 function Tag({ children }) { return <span className="inline-flex items-center rounded-full bg-[#EAF3F7] px-3 py-1.5 text-[11px] font-semibold text-[#023E8A]">{children}</span>; }
 
-
-
 async function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade }) {
 
   const { jsPDF } = await import("jspdf");
 
   const doc = new jsPDF({ format: "a4", unit: "mm", orientation: "portrait" });
 
-  const W = 210, H = 297, M = 19, content = W - M * 2;
+  const W = 210, M = 19, content = W - M * 2;
 
   const azul = [2, 62, 138], escuro = [11, 23, 86], medio = [53, 99, 167], claro = [234, 243, 247];
 
@@ -282,11 +467,9 @@ async function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, 
 
   footer();
 
-  doc.save(`UneSUS\_${tipo === "receita" ? "prescricao" : "atestado"}\_RASCUNHO\_${data}.pdf`);
+  doc.save(`UneSUS_${tipo === "receita" ? "prescricao" : "atestado"}_RASCUNHO_${data}.pdf`);
 
 }
-
-
 
 function Tela() {
 
@@ -326,67 +509,98 @@ function Tela() {
 
   const [mostrarPreview, setMostrarPreview] = useState(true);
 
-
-
-
   async function carregarMedico(signal) {
+
     setEstadoMedico("carregando");
+
     setErroPerfil("");
+
     setMedico(null);
 
     try {
+
       const resposta = await api("/api/medicos/me", { signal });
+
       const item = resposta.medico || resposta;
 
       const especialidades = resposta.especialidades || [];
+
       const vinculos = resposta.vinculos || [];
 
       const dado = {
+
         id: item.id,
+
         nome: item.nome_completo || item.nome || "",
+
         crm: item.crm || "",
+
         uf: (item.uf_crm || item.uf || "").toUpperCase(),
+
         especialidade: especialidades.map(e => e.nome).join(", "),
+
         unidade: [...new Set(vinculos.map(v => v.unidade))].join(", "),
+
         cidade: ""
+
       };
 
       if (!dado.nome || !dado.crm || !/^[A-Z]{2}$/.test(dado.uf)) {
+
         throw new Error("Cadastro médico incompleto.");
+
       }
 
       setMedico(dado);
-      setEstadoMedico("pronto");
-    } catch (error) {
-      if (error.name !== "AbortError") {
-        setErroPerfil(error.message || "Erro ao consultar perfil.");
-        setEstadoMedico("erro");
-      }
-    }
-  }
 
+      setEstadoMedico("pronto");
+
+    } catch (error) {
+
+      if (error.name !== "AbortError") {
+
+        setErroPerfil(error.message || "Erro ao consultar perfil.");
+
+        setEstadoMedico("erro");
+
+      }
+
+    }
+
+  }
 
   useEffect(() => { const c = new AbortController(); carregarMedico(c.signal); return () => c.abort(); }, []);
 
-
   useEffect(() => {
+
     if (!pacienteId) {
+
       setEstadoPaciente("sem-id");
+
       setPaciente(null);
+
       return;
+
     }
 
     const c = new AbortController();
 
     async function carregar() {
+
       setEstadoPaciente("carregando");
+
       setErroPaciente("");
+
       setPaciente(null);
 
       try {
+
         const resposta = await api(
+
           `/api/pacientes/${encodeURIComponent(pacienteId)}/atendimento`,
+
           { signal: c.signal }
+
         );
 
         const p = resposta.paciente || resposta;
@@ -394,34 +608,48 @@ function Tela() {
         const nome = p.nome_social || p.nome_completo;
 
         if (!nome) {
+
           throw new Error("O cadastro do paciente não possui nome.");
+
         }
 
         setPaciente({
+
           id: p.id || pacienteId,
+
           nome,
+
           cpf: p.cpf || "",
+
           nascimento: p.data_nascimento || "",
+
         });
 
         setEstadoPaciente("pronto");
+
       } catch (error) {
+
         if (error.name !== "AbortError") {
+
           setErroPaciente(
+
             error.message || "Erro ao carregar paciente."
+
           );
+
           setEstadoPaciente("erro");
+
         }
+
       }
+
     }
 
     carregar();
 
     return () => c.abort();
+
   }, [pacienteId]);
-
-
-
 
   const prontoDocumento = useMemo(() => {
 
@@ -457,9 +685,7 @@ function Tela() {
 
   }
 
-
-
-  return <main className="relative min-h-screen overflow-hidden bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
+  return <main className="relative min-h-screen overflow-x-clip bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
 
     <div className="pointer-events-none absolute -left-40 top-64 h-96 w-96 rounded-full bg-[#D9EAF8]/70" />
 
@@ -470,23 +696,36 @@ function Tela() {
     <div className="relative z-10 mx-auto max-w-[1500px] space-y-6">
 
       <section className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+
         <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
+
         <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+
         <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
+
         <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+
           <div className="max-w-[760px]">
+
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold"><Stethoscope size={15} /> Área médica · Documentos do paciente</span>
+
             <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Prescrição e Atestados</h1>
+
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">Prepare documentos do paciente, confira os dados profissionais e revise a prévia antes de exportar o PDF.</p>
+
           </div>
+
           <div className="grid w-full max-w-[390px] grid-cols-2 gap-3">
+
             <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><ShieldCheck size={19} /></span><div><p className="text-xs font-bold">Perfil autenticado</p><p className="mt-0.5 text-[11px] text-white/80">Dados do sistema</p></div></div>
+
             <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><Download size={19} /></span><div><p className="text-xs font-bold">PDF profissional</p><p className="mt-0.5 text-[11px] text-white/80">Prévia e download</p></div></div>
+
           </div>
+
         </div>
+
       </section>
-
-
 
       <section className={CARD}>
 
@@ -513,8 +752,6 @@ function Tela() {
         </div>
 
       </section>
-
-
 
       <section className={CARD}>
 
@@ -579,8 +816,6 @@ function Tela() {
         </div>}
 
       </section>
-
-
 
       <section className={CARD}>
 

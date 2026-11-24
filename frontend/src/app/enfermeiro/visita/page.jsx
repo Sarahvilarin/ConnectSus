@@ -258,14 +258,6 @@ export default function MinhasVisitasPage() {
                 Consulte os atendimentos atribuídos a você, acesse as informações do paciente e registre o andamento de cada visita.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => carregarVisitas(true)}
-              disabled={atualizando || carregando}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-60"
-            >
-              <RefreshCw size={16} className={atualizando ? "animate-spin" : ""} /> Atualizar
-            </button>
           </div>
         </section>
 
@@ -276,7 +268,9 @@ export default function MinhasVisitasPage() {
             { titulo: "Concluídas", valor: visitasConcluidas.length, legenda: "Registros finalizados", Icone: CheckCircle2 },
           ].map(({ titulo, valor, legenda, Icone }) => (
             <Card key={titulo} className="flex items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#0B1756]"><Icone size={22} /></span>
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
+                <Icone size={26} strokeWidth={2} />
+              </div>
               <div>
                 <p className="text-xs font-semibold text-[#0B1756]">{titulo}</p>
                 <p className="text-2xl font-extrabold leading-tight text-[#0B1756]">{String(valor).padStart(2, "0")}</p>

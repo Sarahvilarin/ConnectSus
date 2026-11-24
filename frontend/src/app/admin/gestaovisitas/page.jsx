@@ -984,24 +984,7 @@ export default function GestaoVisitasPage() {
             </div>
 
             <div className="flex w-full shrink-0 flex-col gap-3 sm:flex-row lg:w-auto lg:flex-col xl:flex-row">
-              <button
-                type="button"
-                onClick={() => carregarDados(true)}
-                disabled={atualizando || carregando}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw size={16} className={atualizando ? "animate-spin" : ""} />
-                Atualizar dados
-              </button>
-              <button
-                type="button"
-                onClick={exportarCSV}
-                disabled={!visitasFiltradas.length}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Download size={16} />
-                Exportar CSV
-              </button>
+              
             </div>
           </div>
         </section>

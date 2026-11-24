@@ -1,40 +1,44 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+
 import Link from "next/link";
+
 import { useSearchParams } from "next/navigation";
+
+import { api } from "@/lib/api";
+
 import {
-  ArrowLeft,
-  AlertCircle,
-  CalendarDays,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  FilePlus2,
-  FileText,
-  Pill,
-  Plus,
-  ShieldCheck,
-  Stethoscope,
-  Trash2,
+  AlertCircle, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
+  ClipboardCheck, Download, FileCheck2, FileText,
+  Loader2, LockKeyhole, Plus, Pill, RefreshCcw, ShieldCheck,
+  Stethoscope, Trash2, UserRound, X,
 } from "lucide-react";
 
-const NOMES = {
-  "TRI-0841": "Mariana Silva Costa",
-  "TRI-0839": "João Pedro Alves",
-  "TRI-0835": "Carlos Eduardo Lima",
-  "TRI-0828": "Ana Clara Oliveira",
-  "TRI-0806": "Lucas Henrique Santos",
-  "TRI-0798": "Fernanda Martins Souza",
-  "TRI-0782": "Roberto Almeida Santos",
-  "TRI-0775": "Beatriz Nascimento Lima",
+const CARD = "rounded-[26px] border border-white/80 bg-white p-5 shadow-[0_12px_36px_rgba(2,62,138,0.07)] sm:p-6";
+
+const INPUT = "mt-2 w-full rounded-xl border border-[#3563A7]/20 bg-[#EAF3F7]/40 px-3.5 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-[#3563A7]/55 focus:border-[#023E8A] focus:bg-white focus:ring-4 focus:ring-[#3563A7]/10";
+
+const novoMedicamento = () => ({ id: `${Date.now()}-${Math.random()}`, nome: "", concentracao: "", forma: "", dose: "", via: "", frequencia: "", duracao: "", quantidade: "", instrucoes: "" });
+
+const hojeISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const CAMPO =
-  "w-full rounded-xl border border-[#EAF3F7] bg-[#EAF3F7] px-4 py-3 text-sm text-[#0B1756] outline-none transition focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]";
+const dataBR = (s) => {
+  if (!s) return "—";
+  const data = String(s).slice(0, 10);
+  const [ano, mes, dia] = data.split("-");
+  if (!ano || !mes || !dia) return "—";
+  return `${dia}/${mes}/${ano}`;
+};
 
-const MESES = [
+const curto = (s) => String(s || "").trim();
+
+const maskCPF = (s) => { const n = String(s || "").replace(/\D/g, ""); return n.length === 11 ? `***.${n.slice(3, 6)}.${n.slice(6, 9)}-**` : "Não informado"; };
+
+const MESES_CALENDARIO = [
   "Janeiro",
   "Fevereiro",
   "Março",
@@ -49,143 +53,106 @@ const MESES = [
   "Dezembro",
 ];
 
-const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const DIAS_CALENDARIO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function dataLocalISO(date = new Date()) {
+function isoLocal(date) {
   const ano = date.getFullYear();
   const mes = String(date.getMonth() + 1).padStart(2, "0");
   const dia = String(date.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
 }
 
-function converterISOParaData(value) {
+function dataDoCalendario(value) {
   if (!value) return null;
-  const [ano, mes, dia] = value.split("-").map(Number);
+  const [ano, mes, dia] = String(value).slice(0, 10).split("-").map(Number);
   if (!ano || !mes || !dia) return null;
   return new Date(ano, mes - 1, dia, 12);
 }
 
-function formatarData(value) {
-  if (!value) return "";
-  const date = converterISOParaData(value);
-  if (!date) return "";
-  return date.toLocaleDateString("pt-BR");
-}
-
-/**
- * Seletor de data padronizado com o calendário do UneSUS:
- * cabeçalho azul, navegação entre meses, grade semanal e botão Hoje.
- */
-function DatePicker({ value, onChange, label = "Selecionar data" }) {
-  const hoje = new Date();
-  const dataSelecionada = converterISOParaData(value);
+function CalendarioUnesus({ value, onChange, placeholder = "Selecione a data", label = "Selecionar data", required = false }) {
   const [aberto, setAberto] = useState(false);
+  const selecionada = dataDoCalendario(value);
   const [mesVisivel, setMesVisivel] = useState(() => {
-    const inicial = dataSelecionada || hoje;
+    const inicial = selecionada || new Date();
     return new Date(inicial.getFullYear(), inicial.getMonth(), 1);
   });
   const containerRef = useRef(null);
-
   useEffect(() => {
     if (!aberto) return;
-
     function fecharAoClicarFora(event) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
         setAberto(false);
       }
     }
-
     function fecharComEscape(event) {
       if (event.key === "Escape") setAberto(false);
     }
-
     document.addEventListener("pointerdown", fecharAoClicarFora);
     document.addEventListener("keydown", fecharComEscape);
-
     return () => {
       document.removeEventListener("pointerdown", fecharAoClicarFora);
       document.removeEventListener("keydown", fecharComEscape);
     };
   }, [aberto]);
-
-  function mudarMes(diferenca) {
-    setMesVisivel(
-      (atual) =>
-        new Date(atual.getFullYear(), atual.getMonth() + diferenca, 1)
-    );
+  function navegarMes(direcao) {
+    setMesVisivel((atual) => new Date(atual.getFullYear(), atual.getMonth() + direcao, 1));
   }
-
-  function selecionarData(date) {
-    onChange(dataLocalISO(date));
+  function escolherData(date) {
+    onChange(isoLocal(date));
     setAberto(false);
   }
-
-  function selecionarHoje() {
-    const agora = new Date();
-    setMesVisivel(new Date(agora.getFullYear(), agora.getMonth(), 1));
-    selecionarData(agora);
+  function escolherHoje() {
+    const hoje = new Date();
+    setMesVisivel(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+    escolherData(hoje);
   }
-
   const ano = mesVisivel.getFullYear();
   const mes = mesVisivel.getMonth();
   const primeiroDia = new Date(ano, mes, 1).getDay();
-  const quantidadeDias = new Date(ano, mes + 1, 0).getDate();
-  const celulas = [
+  const totalDias = new Date(ano, mes + 1, 0).getDate();
+  const dias = [
     ...Array(primeiroDia).fill(null),
-    ...Array.from({ length: quantidadeDias }, (_, index) => index + 1),
+    ...Array.from({ length: totalDias }, (_, indice) => indice + 1),
   ];
-
-  while (celulas.length % 7 !== 0) celulas.push(null);
-
-  const hojeISO = dataLocalISO(hoje);
-
+  while (dias.length % 7 !== 0) dias.push(null);
+  const hojeISO = isoLocal(new Date());
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative mt-2 w-full">
       <button
         type="button"
         aria-label={label}
         aria-haspopup="dialog"
         aria-expanded={aberto}
+        aria-required={required}
         onClick={() => {
           if (!aberto) {
-            const base = dataSelecionada || new Date();
-            setMesVisivel(
-              new Date(base.getFullYear(), base.getMonth(), 1)
-            );
+            const base = selecionada || new Date();
+            setMesVisivel(new Date(base.getFullYear(), base.getMonth(), 1));
           }
           setAberto((atual) => !atual);
         }}
-        className={`${CAMPO} flex items-center justify-between gap-3 text-left ${
-          value ? "text-[#0B1756]" : "text-slate-400"
+        className={`${INPUT} mt-0 flex min-h-[46px] items-center justify-between gap-3 text-left ${
+          value ? "text-[#0B1756]" : "text-[#3563A7]/65"
         }`}
       >
-        <span>{value ? formatarData(value) : "Selecione a data"}</span>
-        <CalendarDays
-          size={18}
-          strokeWidth={1.9}
-          className="shrink-0 text-[#1D408F]"
-        />
+        <span>{selecionada ? selecionada.toLocaleDateString("pt-BR") : placeholder}</span>
+        <CalendarDays size={18} strokeWidth={1.9} className="shrink-0 text-[#1D408F]" />
       </button>
-
       {aberto && (
         <div
           role="dialog"
           aria-label="Calendário para selecionar a data"
-          className="absolute left-0 top-[calc(100%+8px)] z-[80] w-[min(300px,calc(100vw-48px))] rounded-2xl border border-[#D6E2F2] bg-white p-4 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+          className="absolute left-0 top-[calc(100%+8px)] z-[90] w-[min(300px,calc(100vw-48px))] rounded-2xl border border-[#D6E2F2] bg-white p-4 shadow-[0_12px_30px_rgba(11,23,86,0.18)]"
         >
           <div className="flex h-[52px] items-center justify-between rounded-xl bg-[#1D408F] px-3 text-white">
             <span className="text-sm font-bold">
-              {MESES[mes]} {ano}
+              {MESES_CALENDARIO[mes]} {ano}
             </span>
-
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 aria-label="Mês anterior"
-                onClick={() => mudarMes(-1)}
+                onClick={() => navegarMes(-1)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <ChevronLeft size={18} />
@@ -193,16 +160,15 @@ function DatePicker({ value, onChange, label = "Selecionar data" }) {
               <button
                 type="button"
                 aria-label="Próximo mês"
-                onClick={() => mudarMes(1)}
+                onClick={() => navegarMes(1)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <ChevronRight size={18} />
               </button>
             </div>
           </div>
-
           <div className="mt-3 grid grid-cols-7">
-            {DIAS_SEMANA.map((dia) => (
+            {DIAS_CALENDARIO.map((dia) => (
               <span
                 key={dia}
                 className="flex h-8 items-center justify-center text-[11px] font-bold text-[#1D408F]"
@@ -211,27 +177,22 @@ function DatePicker({ value, onChange, label = "Selecionar data" }) {
               </span>
             ))}
           </div>
-
           <div className="grid grid-cols-7 gap-y-1">
-            {celulas.map((dia, index) => {
-              if (!dia) {
-                return <span key={`vazio-${index}`} className="h-9" />;
-              }
-
-              const dataCelula = new Date(ano, mes, dia, 12);
-              const iso = dataLocalISO(dataCelula);
-              const selecionado = iso === value;
+            {dias.map((dia, indice) => {
+              if (!dia) return <span key={`vazio-${indice}`} className="h-9" />;
+              const data = new Date(ano, mes, dia, 12);
+              const iso = isoLocal(data);
+              const estaSelecionada = iso === value;
               const ehHoje = iso === hojeISO;
-
               return (
                 <button
                   key={iso}
                   type="button"
-                  aria-label={`${dia} de ${MESES[mes]} de ${ano}`}
-                  aria-pressed={selecionado}
-                  onClick={() => selecionarData(dataCelula)}
+                  aria-label={`${dia} de ${MESES_CALENDARIO[mes]} de ${ano}`}
+                  aria-pressed={estaSelecionada}
+                  onClick={() => escolherData(data)}
                   className={`mx-auto flex h-8 w-8 items-center justify-center rounded-lg text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D408F] ${
-                    selecionado
+                    estaSelecionada
                       ? "border-2 border-[#1D408F] bg-[#EAF3F7] font-bold text-[#1D408F]"
                       : ehHoje
                         ? "font-bold text-[#1D408F] hover:bg-[#EAF3F7]"
@@ -243,11 +204,10 @@ function DatePicker({ value, onChange, label = "Selecionar data" }) {
               );
             })}
           </div>
-
           <div className="mt-3 flex justify-end border-t border-[#DCE6F2] pt-3">
             <button
               type="button"
-              onClick={selecionarHoje}
+              onClick={escolherHoje}
               className="rounded-lg border border-[#1D408F] px-3 py-1.5 text-xs font-semibold text-[#1D408F] transition hover:bg-[#EAF3F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D408F]"
             >
               Hoje
@@ -259,446 +219,343 @@ function DatePicker({ value, onChange, label = "Selecionar data" }) {
   );
 }
 
-function PrescricaoContent() {
-  const searchParams = useSearchParams();
-  const pacienteId = searchParams.get("paciente") || "";
-  const paciente = NOMES[pacienteId] || "Paciente não identificado";
-  const tipoInicial =
-    searchParams.get("tipo") === "atestado" ? "atestado" : "medicamento";
-
-  const [tipo, setTipo] = useState(tipoInicial);
-  const [itens, setItens] = useState([
-    {
-      id: 1,
-      medicamento: "",
-      apresentacao: "",
-      dose: "",
-      via: "",
-      frequencia: "",
-      duracao: "",
-      orientacoes: "",
-    },
-  ]);
-  const [textoAtestado, setTextoAtestado] = useState("");
-  const [dias, setDias] = useState("");
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
-  const [observacoes, setObservacoes] = useState("");
-  const [mensagem, setMensagem] = useState("");
-
-  const incompleto = useMemo(
-    () =>
-      tipo === "medicamento"
-        ? itens.some(
-            (item) =>
-              !item.medicamento.trim() ||
-              !item.dose.trim() ||
-              !item.via.trim() ||
-              !item.frequencia.trim()
-          )
-        : !textoAtestado.trim() || !data,
-    [itens, tipo, textoAtestado, data]
-  );
-
-  function alterarItem(id, chave, valor) {
-    setItens((atuais) =>
-      atuais.map((item) =>
-        item.id === id ? { ...item, [chave]: valor } : item
-      )
-    );
-    setMensagem("");
-  }
-
-  function adicionarItem() {
-    setItens((atuais) => [
-      ...atuais,
-      {
-        id: Math.max(0, ...atuais.map((item) => item.id)) + 1,
-        medicamento: "",
-        apresentacao: "",
-        dose: "",
-        via: "",
-        frequencia: "",
-        duracao: "",
-        orientacoes: "",
-      },
-    ]);
-  }
-
-  function gerarRascunho() {
-    if (incompleto) return;
-
-    setMensagem(
-      "Rascunho preparado nesta tela. Nenhuma receita ou atestado foi emitido, assinado ou enviado. Para emissão válida, conecte autenticação profissional, assinatura eletrônica, validações e backend."
-    );
-  }
-
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-[#EAF3F7] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute -left-[170px] top-28 h-[420px] w-[420px] rounded-full bg-[#EAF3F7]/70" />
-      <div className="pointer-events-none absolute -right-44 top-[340px] h-[470px] w-[470px] rounded-full bg-[#EAF3F7]/70" />
-      <div className="pointer-events-none absolute left-[8%] top-[940px] h-52 w-52 rounded-full border-[38px] border-[#EAF3F7]/75" />
-
-      <div className="relative z-10 mx-auto max-w-[1120px] space-y-5">
-        <section className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#023E8A] via-[#023E8A] to-[#0B1756] px-6 py-8 text-[#023E8A] shadow-[0_20px_60px_rgba(2,62,138,0.12)] sm:px-9">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-[#EAF3F7]/10" />
-
-          <div className="relative">
-            <Link
-              href="/medico/pacientes"
-              className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#EAF3F7]/20 bg-[#EAF3F7]/10 px-3 py-1.5 text-xs font-semibold hover:bg-[#EAF3F7]/20"
-            >
-              <ArrowLeft size={15} />
-              Voltar para pacientes
-            </Link>
-
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#EAF3F7]/10 px-3 py-1 text-xs font-semibold">
-                  <Stethoscope size={14} />
-                  Gestão clínica
-                </span>
-                <h1 className="mt-4 text-3xl font-bold sm:text-4xl">
-                  Prescrições e atestados
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-[#023E8A]">
-                  Elabore um rascunho para o paciente, com revisão clínica antes
-                  da emissão oficial.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-[#EAF3F7]/15 bg-[#EAF3F7]/10 px-4 py-3">
-                <ShieldCheck size={20} />
-                <div>
-                  <p className="text-xs font-bold">Ambiente demonstrativo</p>
-                  <p className="text-[11px] text-[#023E8A]">
-                    Não emite documentos válidos
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="flex items-start gap-3 rounded-2xl border border-[#3563A7] bg-[#EAF3F7] p-4">
-          <AlertCircle
-            size={21}
-            className="mt-0.5 shrink-0 text-[#023E8A]"
-          />
-          <div>
-            <p className="text-sm font-bold text-[#023E8A]">
-              Confirme o prontuário e os dados do paciente antes de prescrever
-            </p>
-            <p className="mt-1 text-xs leading-5 text-[#023E8A]">
-              Medicamentos, duração de uso e atestados dependem de avaliação
-              profissional. Esta interface prepara apenas rascunhos; não há
-              assinatura, validação de CRM, impressão oficial nem armazenamento.
-            </p>
-          </div>
-        </section>
-
-        <section className="rounded-[26px] bg-[#EAF3F7] p-5 shadow-[0_12px_36px_rgba(2,62,138,0.12)] sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#3563A7]">
-                Paciente selecionado
-              </p>
-              <h2 className="mt-1 text-lg font-bold text-[#0B1756]">
-                {paciente}
-              </h2>
-              <p className="mt-1 text-xs text-[#3563A7]">
-                Protocolo: {pacienteId || "Não informado"}
-              </p>
-            </div>
-            <Link
-              href="/medico/pacientes"
-              className="rounded-xl border border-[#EAF3F7] bg-[#EAF3F7] px-4 py-2.5 text-xs font-semibold text-[#023E8A] hover:bg-[#EAF3F7]"
-            >
-              Trocar paciente
-            </Link>
-          </div>
-        </section>
-
-        <section className="overflow-visible rounded-[26px] bg-[#EAF3F7] shadow-[0_12px_36px_rgba(2,62,138,0.12)]">
-          <div className="border-b border-[#EAF3F7] p-5 sm:p-6">
-            <h2 className="text-base font-bold text-[#0B1756]">
-              Tipo de documento
-            </h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setTipo("medicamento");
-                  setMensagem("");
-                }}
-                className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${
-                  tipo === "medicamento"
-                    ? "border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]"
-                    : "border-[#EAF3F7] bg-white text-[#3563A7] hover:border-[#BBD0E8]"
-                }`}
-              >
-                <Pill size={22} />
-                <span className="font-bold">Prescrição de medicamento</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setTipo("atestado");
-                  setMensagem("");
-                }}
-                className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${
-                  tipo === "atestado"
-                    ? "border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]"
-                    : "border-[#EAF3F7] bg-white text-[#3563A7] hover:border-[#BBD0E8]"
-                }`}
-              >
-                <FilePlus2 size={22} />
-                <span className="font-bold">Atestado médico</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-5 p-5 sm:p-6">
-            {tipo === "medicamento" ? (
-              <>
-                <div>
-                  <h3 className="flex items-center gap-2 text-base font-bold text-[#0B1756]">
-                    <ClipboardList size={19} />
-                    Medicamentos
-                  </h3>
-                  <p className="mt-1 text-xs text-[#3563A7]">
-                    Registre as informações conforme a decisão clínica. Nenhuma
-                    sugestão terapêutica é gerada automaticamente.
-                  </p>
-                </div>
-
-                {itens.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-[#EAF3F7] bg-[#EAF3F7] p-4"
-                  >
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <p className="text-sm font-bold text-[#0B1756]">
-                        Medicamento {index + 1}
-                      </p>
-                      {itens.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setItens((atuais) =>
-                              atuais.filter((i) => i.id !== item.id)
-                            )
-                          }
-                          className="flex items-center gap-1 text-xs font-bold text-[#023E8A]"
-                        >
-                          <Trash2 size={14} />
-                          Remover
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Campo
-                        label="Nome do medicamento *"
-                        value={item.medicamento}
-                        onChange={(value) =>
-                          alterarItem(item.id, "medicamento", value)
-                        }
-                        placeholder="Nome informado pelo profissional"
-                      />
-                      <Campo
-                        label="Apresentação / concentração"
-                        value={item.apresentacao}
-                        onChange={(value) =>
-                          alterarItem(item.id, "apresentacao", value)
-                        }
-                        placeholder="Forma farmacêutica e concentração"
-                      />
-                      <Campo
-                        label="Dose *"
-                        value={item.dose}
-                        onChange={(value) =>
-                          alterarItem(item.id, "dose", value)
-                        }
-                        placeholder="Dose prescrita"
-                      />
-                      <Campo
-                        label="Via de administração *"
-                        value={item.via}
-                        onChange={(value) =>
-                          alterarItem(item.id, "via", value)
-                        }
-                        placeholder="Via prescrita"
-                      />
-                      <Campo
-                        label="Frequência *"
-                        value={item.frequencia}
-                        onChange={(value) =>
-                          alterarItem(item.id, "frequencia", value)
-                        }
-                        placeholder="Intervalo ou horários"
-                      />
-                      <Campo
-                        label="Duração do tratamento"
-                        value={item.duracao}
-                        onChange={(value) =>
-                          alterarItem(item.id, "duracao", value)
-                        }
-                        placeholder="Duração determinada"
-                      />
-                    </div>
-
-                    <label className="mt-4 block text-xs font-bold text-[#0B1756]">
-                      Orientações adicionais
-                      <textarea
-                        rows={2}
-                        value={item.orientacoes}
-                        onChange={(event) =>
-                          alterarItem(
-                            item.id,
-                            "orientacoes",
-                            event.target.value
-                          )
-                        }
-                        className={`${CAMPO} mt-2 resize-y`}
-                        placeholder="Instruções definidas pelo profissional"
-                      />
-                    </label>
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={adicionarItem}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#EAF3F7] bg-[#EAF3F7] px-4 py-3 text-xs font-bold text-[#023E8A]"
-                >
-                  <Plus size={16} />
-                  Adicionar medicamento
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 className="flex items-center gap-2 text-base font-bold text-[#0B1756]">
-                  <FileText size={19} />
-                  Dados do atestado
-                </h3>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="block text-xs font-bold text-[#0B1756]">
-                    <span>Data *</span>
-                    <div className="mt-2">
-                      <DatePicker
-                        value={data}
-                        onChange={(value) => {
-                          setData(value);
-                          setMensagem("");
-                        }}
-                        label="Selecionar data do atestado"
-                      />
-                    </div>
-                  </div>
-
-                  <label className="block text-xs font-bold text-[#0B1756]">
-                    Dias de afastamento (se aplicável)
-                    <input
-                      type="number"
-                      min="0"
-                      max="365"
-                      value={dias}
-                      onChange={(event) => setDias(event.target.value)}
-                      className={`${CAMPO} mt-2`}
-                      placeholder="Quantidade de dias"
-                    />
-                  </label>
-                </div>
-
-                <label className="block text-xs font-bold text-[#0B1756]">
-                  Texto do atestado *
-                  <textarea
-                    rows={7}
-                    value={textoAtestado}
-                    onChange={(event) => {
-                      setTextoAtestado(event.target.value);
-                      setMensagem("");
-                    }}
-                    className={`${CAMPO} mt-2 resize-y`}
-                    placeholder="Redija o texto do atestado com base no atendimento realizado. Evite incluir informações sensíveis desnecessárias."
-                  />
-                </label>
-              </>
-            )}
-
-            <label className="block text-xs font-bold text-[#0B1756]">
-              Observações internas (não integram o documento)
-              <textarea
-                rows={3}
-                value={observacoes}
-                onChange={(event) => setObservacoes(event.target.value)}
-                className={`${CAMPO} mt-2 resize-y`}
-                placeholder="Anotações para revisão do profissional"
-              />
-            </label>
-
-            {mensagem && (
-              <div
-                role="status"
-                className="flex items-start gap-2 rounded-2xl border border-[#3563A7] bg-[#EAF3F7] p-4 text-xs leading-5 text-[#023E8A]"
-              >
-                <Check className="shrink-0" size={18} />
-                {mensagem}
-              </div>
-            )}
-
-            <div className="flex flex-wrap justify-between gap-3 border-t border-[#EAF3F7] pt-5">
-              <Link
-                href="/medico/pacientes"
-                className="inline-flex items-center gap-2 rounded-xl border border-[#EAF3F7] px-4 py-3 text-xs font-bold text-[#3563A7]"
-              >
-                <ArrowLeft size={16} />
-                Voltar à lista
-              </Link>
-
-              <button
-                type="button"
-                disabled={incompleto}
-                onClick={gerarRascunho}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#023E8A] px-5 py-3 text-xs font-bold text-[#023E8A] transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:bg-[#EAF3F7]"
-              >
-                <Check size={17} />
-                Preparar rascunho para revisão
-              </button>
-            </div>
-          </div>
-        </section>
+function Campo({ label, value, onChange, placeholder, type = "text", required = false, className = "" }) {
+  const titulo = <span>{label}{required && <span className="text-[#023E8A]"> *</span>}</span>;
+  if (type === "date") {
+    return (
+      <div className={`block text-xs font-bold text-[#0B1756] ${className}`}>
+        {titulo}
+        <CalendarioUnesus
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder || "Selecione a data"}
+          label={label}
+          required={required}
+        />
       </div>
-    </main>
-  );
-}
-
-function Campo({ label, value, onChange, placeholder }) {
+    );
+  }
   return (
-    <label className="block text-xs font-bold text-[#0B1756]">
-      {label}
+    <label className={`block text-xs font-bold text-[#0B1756] ${className}`}>
+      {titulo}
       <input
+        className={INPUT}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(e) => onChange(e.target.value)}
+        type={type}
         placeholder={placeholder}
-        className={`${CAMPO} mt-2`}
+        required={required}
       />
     </label>
   );
 }
 
-export default function PrescricaoMedicoPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-[#EAF3F7] p-8 text-[#0B1756]">
-          Carregando formulário...
-        </main>
-      }
-    >
-      <PrescricaoContent />
-    </Suspense>
-  );
+function Texto({ label, value, onChange, placeholder, rows = 3, className = "" }) {
+  return <label className={`block text-xs font-bold text-[#0B1756] ${className}`}>
+    {label}
+    <textarea className={`${INPUT} resize-y leading-6`} rows={rows} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+  </label>;
 }
+
+function CabecalhoSecao({ numero, icon: Icon, titulo, descricao, right }) {
+  return <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <div className="flex items-start gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A]"><Icon size={21} /></div>
+      <div><p className="text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#3563A7]">Etapa {numero}</p><h2 className="mt-0.5 text-base font-extrabold text-[#0B1756]">{titulo}</h2><p className="mt-0.5 text-xs leading-5 text-[#3563A7]">{descricao}</p></div>
+    </div>{right}
+  </div>;
+}
+
+function PerfilLinha({ titulo, valor }) {
+  return <div className="min-w-0 rounded-xl border border-[#EAF3F7] bg-white px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-[#3563A7]">{titulo}</p><p className="mt-1 break-words text-sm font-bold text-[#0B1756]">{valor || "Não informado"}</p></div>;
+}
+
+function Tag({ children }) { return <span className="inline-flex items-center rounded-full bg-[#EAF3F7] px-3 py-1.5 text-[11px] font-semibold text-[#023E8A]">{children}</span>; }
+
+async function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade }) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ format: "a4", unit: "mm", orientation: "portrait" });
+  const W = 210, M = 19, content = W - M * 2;
+  const azul = [2, 62, 138], escuro = [11, 23, 86], medio = [53, 99, 167], claro = [234, 243, 247];
+  let y = 46, pagina = 1;
+  const txt = (s) => String(s ?? "").trim() || "—";
+  function footer() {
+    doc.setDrawColor(...claro); doc.line(M, 275, W - M, 275);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7.6); doc.setTextColor(...medio);
+    doc.text("RASCUNHO NÃO ASSINADO — NÃO VÁLIDO PARA USO OFICIAL", M, 282);
+    doc.setFont("helvetica", "normal"); doc.text(`UneSUS  •  Página ${pagina}`, W - M, 282, { align: "right" });
+  }
+  function header() {
+    doc.setFillColor(...azul); doc.rect(0, 0, W, 35, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(255, 255, 255);
+    doc.text("UneSUS", M, 16);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text("Documento clínico • via para conferência", M, 23);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.text("RASCUNHO", W - M, 16, { align: "right" });
+    y = 46;
+  }
+  function space(mm = 10) { if (y + mm > 268) { footer(); doc.addPage(); pagina++; header(); } }
+  function section(title) {
+    space(18);
+    doc.setFillColor(...claro); doc.roundedRect(M, y - 5, content, 12, 2, 2, "F");
+    doc.setTextColor(...escuro); doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text(title, M + 4, y + 2.5); y += 18;
+  }
+  function paragraph(value, size = 10, lineHeight = 5.6) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(...escuro);
+    const lines = doc.splitTextToSize(txt(value), content);
+    for (const line of lines) { space(7); doc.text(line, M, y); y += lineHeight; }
+    y += 2;
+  }
+  function field(label, value) {
+    if (!curto(value)) return;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...escuro);
+    const l = `${label}: `; const lw = doc.getTextWidth(l);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(txt(value), content - lw - 3);
+    space(Math.max(7, lines.length * 5 + 2)); doc.setFont("helvetica", "bold"); doc.text(l, M, y);
+    doc.setFont("helvetica", "normal"); doc.text(lines, M + lw, y); y += Math.max(7, lines.length * 5 + 2);
+  }
+  header();
+  doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(...escuro);
+  doc.text(tipo === "receita" ? "PRESCRIÇÃO DE MEDICAMENTOS" : "ATESTADO MÉDICO", M, y); y += 11;
+  section("IDENTIFICAÇÃO DO PACIENTE");
+  field("Nome", paciente.nome);
+  field("CPF", maskCPF(paciente.cpf));
+  field("Nascimento", paciente.nascimento ? dataBR(paciente.nascimento) : "");
+  section("PROFISSIONAL RESPONSÁVEL");
+  field("Médico(a)", medico.nome);
+  field("CRM / UF", `${medico.crm} / ${medico.uf}`);
+  field("Especialidade", medico.especialidade);
+  field("Unidade", medico.unidade);
+  field("Local e data", `${curto(cidade || medico.cidade || medico.unidade) || "Local não informado"}, ${dataBR(data)}`);
+  if (tipo === "receita") {
+    section("PRESCRIÇÃO");
+    medicamentos.forEach((m, i) => {
+      space(30);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...azul);
+      const medName = `${i + 1}. ${txt(m.nome)}`;
+      const nLines = doc.splitTextToSize(medName, content); nLines.forEach((l) => { space(7); doc.text(l, M, y); y += 6; });
+      field("Apresentação", [m.concentracao, m.forma].filter(Boolean).join(" • "));
+      field("Dose e via", [m.dose, m.via].filter(Boolean).join(" / "));
+      field("Frequência", m.frequencia);
+      field("Duração", m.duracao);
+      field("Quantidade", m.quantidade);
+      field("Orientações", m.instrucoes);
+      y += 5;
+    });
+    if (curto(observacoes)) { section("ORIENTAÇÕES COMPLEMENTARES"); paragraph(observacoes); }
+  } else {
+    section("DECLARAÇÃO CLÍNICA");
+    paragraph(atestado.texto);
+    if (curto(atestado.dias)) field("Período de afastamento (dias)", atestado.dias);
+    if (atestado.inicio) field("A partir de", dataBR(atestado.inicio));
+  }
+  space(45); y += 8;
+  doc.setDrawColor(...medio); doc.line(M, y + 12, M + 105, y + 12);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...escuro);
+  doc.text(txt(medico.nome), M, y + 19);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+  doc.text(`CRM ${medico.crm}/${medico.uf} • assinatura pendente`, M, y + 24);
+  footer();
+  doc.save(`UneSUS_${tipo === "receita" ? "prescricao" : "atestado"}_RASCUNHO_${data}.pdf`);
+}
+
+function Tela() {
+  const params = useSearchParams();
+  const pacienteId = params.get("paciente") || "";
+  const [tipo, setTipo] = useState(params.get("tipo") === "atestado" ? "atestado" : "receita");
+  const [medico, setMedico] = useState(null);
+  const [estadoMedico, setEstadoMedico] = useState("carregando");
+  const [erroPerfil, setErroPerfil] = useState("");
+  const [paciente, setPaciente] = useState(null);
+  const [estadoPaciente, setEstadoPaciente] = useState(pacienteId ? "carregando" : "sem-id");
+  const [erroPaciente, setErroPaciente] = useState("");
+  const [data, setData] = useState(hojeISO);
+  const [cidade, setCidade] = useState("");
+  const [medicamentos, setMedicamentos] = useState([novoMedicamento()]);
+  const [observacoes, setObservacoes] = useState("");
+  const [atestado, setAtestado] = useState({ texto: "", dias: "", inicio: hojeISO() });
+  const [confirmei, setConfirmei] = useState(false);
+  const [gerando, setGerando] = useState(false);
+  const [erroPDF, setErroPDF] = useState("");
+  const [mostrarPreview, setMostrarPreview] = useState(true);
+  async function carregarMedico(signal) {
+    setEstadoMedico("carregando");
+    setErroPerfil("");
+    setMedico(null);
+    try {
+      const resposta = await api("/api/medicos/me", { signal });
+      const item = resposta.medico || resposta;
+      const especialidades = resposta.especialidades || [];
+      const vinculos = resposta.vinculos || [];
+      const dado = {
+        id: item.id,
+        nome: item.nome_completo || item.nome || "",
+        crm: item.crm || "",
+        uf: (item.uf_crm || item.uf || "").toUpperCase(),
+        especialidade: especialidades.map(e => e.nome).join(", "),
+        unidade: [...new Set(vinculos.map(v => v.unidade))].join(", "),
+        cidade: ""
+      };
+      if (!dado.nome || !dado.crm || !/^[A-Z]{2}$/.test(dado.uf)) {
+        throw new Error("Cadastro médico incompleto.");
+      }
+      setMedico(dado);
+      setEstadoMedico("pronto");
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        setErroPerfil(error.message || "Erro ao consultar perfil.");
+        setEstadoMedico("erro");
+      }
+    }
+  }
+  useEffect(() => { const c = new AbortController(); carregarMedico(c.signal); return () => c.abort(); }, []);
+  useEffect(() => {
+    if (!pacienteId) {
+      setEstadoPaciente("sem-id");
+      setPaciente(null);
+      return;
+    }
+    const c = new AbortController();
+    async function carregar() {
+      setEstadoPaciente("carregando");
+      setErroPaciente("");
+      setPaciente(null);
+      try {
+        const resposta = await api(
+          `/api/pacientes/${encodeURIComponent(pacienteId)}/atendimento`,
+          { signal: c.signal }
+        );
+        const p = resposta.paciente || resposta;
+        const nome = p.nome_social || p.nome_completo;
+        if (!nome) {
+          throw new Error("O cadastro do paciente não possui nome.");
+        }
+        setPaciente({
+          id: p.id || pacienteId,
+          nome,
+          cpf: p.cpf || "",
+          nascimento: p.data_nascimento || "",
+        });
+        setEstadoPaciente("pronto");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setErroPaciente(
+            error.message || "Erro ao carregar paciente."
+          );
+          setEstadoPaciente("erro");
+        }
+      }
+    }
+    carregar();
+    return () => c.abort();
+  }, [pacienteId]);
+  const prontoDocumento = useMemo(() => {
+    if (!medico || !paciente || !data) return false;
+    if (tipo === "atestado") return curto(atestado.texto).length >= 20 && (!atestado.dias || (Number(atestado.dias) > 0 && Number.isInteger(Number(atestado.dias))));
+    return medicamentos.length > 0 && medicamentos.every((m) => curto(m.nome) && curto(m.dose) && curto(m.via) && curto(m.frequencia) && curto(m.duracao));
+  }, [medico, paciente, data, tipo, atestado, medicamentos]);
+  const podeGerar = prontoDocumento && confirmei && !gerando;
+  function alterarMedicamento(id, chave, valor) {
+    setMedicamentos((prev) => prev.map((m) => m.id === id ? { ...m, [chave]: valor } : m)); setConfirmei(false);
+  }
+  function alterarAtestado(chave, valor) { setAtestado((p) => ({ ...p, [chave]: valor })); setConfirmei(false); }
+  async function download() {
+    if (!podeGerar) return;
+    setGerando(true); setErroPDF("");
+    try { await gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade }); }
+    catch (e) { console.error(e); setErroPDF("Falha ao gerar o PDF. Instale a dependência com npm install jspdf e tente novamente."); }
+    finally { setGerando(false); }
+  }
+  return <main className="relative min-h-screen overflow-hidden bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
+    <div className="pointer-events-none absolute -left-40 top-64 h-96 w-96 rounded-full bg-[#D9EAF8]/70" />
+    <div className="pointer-events-none absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-[#D3E5F7]/70" />
+    <div className="pointer-events-none absolute right-[12%] top-[1050px] h-56 w-56 rounded-full border-[42px] border-white/80" />
+    <div className="relative z-10 mx-auto max-w-[1500px] space-y-6">
+      <section className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+        <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
+        <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+        <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-[760px]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold"><Stethoscope size={15} /> Área médica · Documentos do paciente</span>
+            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Prescrição e Atestados</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">Prepare documentos do paciente, confira os dados profissionais e revise a prévia antes de exportar o PDF.</p>
+          </div>
+          <div className="grid w-full max-w-[390px] grid-cols-2 gap-3">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><ShieldCheck size={19} /></span><div><p className="text-xs font-bold">Perfil autenticado</p><p className="mt-0.5 text-[11px] text-white/80">Dados do sistema</p></div></div>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><Download size={19} /></span><div><p className="text-xs font-bold">PDF profissional</p><p className="mt-0.5 text-[11px] text-white/80">Prévia e download</p></div></div>
+          </div>
+        </div>
+      </section>
+      <section className={CARD}>
+        <CabecalhoSecao numero="01" icon={UserRound} titulo="Identificação segura" descricao="Dados recuperados da sessão médica e do cadastro do paciente." right={<Tag><LockKeyhole size={13} className="mr-1" /> Dados protegidos</Tag>} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[22px] border border-[#3563A7]/15 bg-[#EAF3F7]/45 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-sm font-extrabold text-[#0B1756]"><Stethoscope size={17} className="text-[#023E8A]" /> Médico responsável</p><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-[#023E8A]">Somente leitura</span></div>
+            {estadoMedico === "carregando" ? <p className="flex items-center gap-2 py-5 text-sm text-[#3563A7]"><Loader2 size={17} className="animate-spin" /> Carregando médico autenticado...</p> : estadoMedico === "erro" ? <div role="alert" className="space-y-3 rounded-xl bg-white p-4"><p className="text-sm font-semibold text-[#0B1756]">{erroPerfil}</p><button type="button" onClick={() => carregarMedico()} className="inline-flex items-center gap-2 text-xs font-bold text-[#023E8A]"><RefreshCcw size={14} /> Tentar novamente</button></div> : <div className="grid gap-3 sm:grid-cols-2"><PerfilLinha titulo="Nome completo" valor={medico.nome} /><PerfilLinha titulo="Registro profissional" valor={`CRM ${medico.crm}/${medico.uf}`} /><PerfilLinha titulo="Especialidade" valor={medico.especialidade} /><PerfilLinha titulo="Unidade de atendimento" valor={medico.unidade} /></div>}
+          </div>
+          <div className="rounded-[22px] border border-[#3563A7]/15 bg-[#EAF3F7]/45 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-sm font-extrabold text-[#0B1756]"><UserRound size={17} className="text-[#023E8A]" /> Paciente</p><Link href="/medico/pacientes" className="text-xs font-bold text-[#023E8A] hover:underline">Voltar à lista</Link></div>
+            {estadoPaciente === "carregando" ? <p className="flex items-center gap-2 py-5 text-sm text-[#3563A7]"><Loader2 size={17} className="animate-spin" /> Buscando cadastro do paciente...</p> : estadoPaciente !== "pronto" ? <div role="alert" className="rounded-xl bg-white p-4 text-sm text-[#0B1756]">{estadoPaciente === "sem-id" ? "Abra esta página pela ficha do paciente para carregar seus dados." : erroPaciente}</div> : <div className="grid gap-3 sm:grid-cols-2"><PerfilLinha titulo="Nome completo" valor={paciente.nome} /><PerfilLinha titulo="CPF" valor={maskCPF(paciente.cpf)} /><PerfilLinha titulo="Nascimento" valor={paciente.nascimento ? dataBR(paciente.nascimento) : "Não informado"} /><PerfilLinha titulo="Identificador" valor={paciente.id} /></div>}
+          </div>
+        </div>
+      </section>
+      <section className={CARD}>
+        <CabecalhoSecao numero="02" icon={FileText} titulo="Preparar documento" descricao="Selecione o modelo e preencha o conteúdo de acordo com a avaliação clínica." />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[["receita", "Prescrição de medicamentos", "Posologia, duração e orientações", Pill], ["atestado", "Atestado médico", "Declaração e afastamento", FileCheck2]].map(([id, nome, desc, Icon]) => <button key={id} type="button" onClick={() => { setTipo(id); setConfirmei(false); }} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${tipo === id ? "border-[#023E8A] bg-[#EAF3F7] shadow-[0_6px_20px_rgba(2,62,138,0.08)]" : "border-[#3563A7]/20 bg-white hover:bg-[#EAF3F7]/50"}`}><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tipo === id ? "bg-[#023E8A] text-white" : "bg-[#EAF3F7] text-[#023E8A]"}`}><Icon size={20} /></span><span className="flex-1"><b className="block text-sm text-[#0B1756]">{nome}</b><small className="mt-1 block text-xs text-[#3563A7]">{desc}</small></span>{tipo === id && <Check size={17} className="text-[#023E8A]" />}</button>)}
+        </div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Campo label="Data do documento" type="date" value={data} onChange={(v) => { setData(v); setConfirmei(false); }} required />
+          <Campo label="Cidade (opcional)" value={cidade} onChange={(v) => { setCidade(v); setConfirmei(false); }} placeholder={medico?.cidade || "Cidade da emissão"} />
+        </div>
+        {tipo === "receita" ? <div className="mt-5 space-y-4">
+          {medicamentos.map((m, idx) => <div key={m.id} className="rounded-[22px] border border-[#3563A7]/15 bg-white p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-bold text-[#0B1756]"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">{idx + 1}</span> Medicamento {idx + 1}</h3>{medicamentos.length > 1 && <button type="button" onClick={() => { setMedicamentos((p) => p.filter((x) => x.id !== m.id)); setConfirmei(false); }} className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold text-[#3563A7] hover:bg-[#EAF3F7]"><Trash2 size={14} /> Remover</button>}</div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Campo label="Nome do medicamento" required value={m.nome} onChange={(v) => alterarMedicamento(m.id, "nome", v)} placeholder="Nome do medicamento" />
+              <Campo label="Concentração" value={m.concentracao} onChange={(v) => alterarMedicamento(m.id, "concentracao", v)} placeholder="Ex.: apresentação prescrita" />
+              <Campo label="Forma farmacêutica" value={m.forma} onChange={(v) => alterarMedicamento(m.id, "forma", v)} placeholder="Comprimido, solução..." />
+              <Campo label="Dose" required value={m.dose} onChange={(v) => alterarMedicamento(m.id, "dose", v)} placeholder="Dose definida na consulta" />
+              <Campo label="Via de administração" required value={m.via} onChange={(v) => alterarMedicamento(m.id, "via", v)} placeholder="Via prescrita" />
+              <Campo label="Frequência" required value={m.frequencia} onChange={(v) => alterarMedicamento(m.id, "frequencia", v)} placeholder="Frequência definida" />
+              <Campo label="Duração" required value={m.duracao} onChange={(v) => alterarMedicamento(m.id, "duracao", v)} placeholder="Duração do tratamento" />
+              <Campo label="Quantidade" value={m.quantidade} onChange={(v) => alterarMedicamento(m.id, "quantidade", v)} placeholder="Quantidade total" />
+              <Texto label="Orientações" className="sm:col-span-2 lg:col-span-1" value={m.instrucoes} onChange={(v) => alterarMedicamento(m.id, "instrucoes", v)} placeholder="Recomendações ao paciente" rows={2} />
+            </div>
+          </div>)}
+          <button type="button" onClick={() => { setMedicamentos((p) => [...p, novoMedicamento()]); setConfirmei(false); }} className="inline-flex items-center gap-2 rounded-xl border border-[#3563A7]/25 bg-[#EAF3F7] px-4 py-3 text-xs font-bold text-[#023E8A] hover:bg-white"><Plus size={16} /> Adicionar medicamento</button>
+          <Texto label="Orientações gerais (opcional)" value={observacoes} onChange={(v) => { setObservacoes(v); setConfirmei(false); }} placeholder="Observações complementares definidas pelo profissional" />
+        </div> : <div className="mt-5 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2"><Campo label="Dias de afastamento" type="number" value={atestado.dias} onChange={(v) => alterarAtestado("dias", v)} placeholder="Número de dias, se aplicável" /><Campo label="A partir de" type="date" value={atestado.inicio} onChange={(v) => alterarAtestado("inicio", v)} /></div>
+          <Texto label="Texto do atestado (mínimo de 20 caracteres)" rows={7} value={atestado.texto} onChange={(v) => alterarAtestado("texto", v)} placeholder="Redija o conteúdo após a avaliação médica. Inclua somente informações necessárias e autorizadas para o documento." />
+          <p className="rounded-xl bg-[#EAF3F7] p-3 text-xs leading-5 text-[#3563A7]">O CID e detalhes sensíveis não devem ser inseridos automaticamente no atestado. A inclusão deve respeitar o consentimento do paciente e as regras aplicáveis.</p>
+        </div>}
+      </section>
+      <section className={CARD}>
+        <CabecalhoSecao numero="03" icon={ClipboardCheck} titulo="Conferir documento profissional" descricao="Visualize a estrutura do documento A4 antes de exportar o rascunho em PDF." right={<button type="button" onClick={() => setMostrarPreview((v) => !v)} className="inline-flex items-center gap-2 rounded-xl bg-[#EAF3F7] px-3 py-2 text-xs font-bold text-[#023E8A]"><ChevronDown size={15} className={mostrarPreview ? "rotate-180 transition" : "transition"} />{mostrarPreview ? "Ocultar prévia" : "Mostrar prévia"}</button>} />
+        {mostrarPreview && <div className="mx-auto w-full max-w-[690px] rounded-[8px] border border-[#3563A7]/20 bg-white shadow-[0_12px_34px_rgba(2,62,138,0.10)]">
+          <div className="flex items-center justify-between gap-3 bg-[#023E8A] px-6 py-5 text-white sm:px-9"><div><p className="text-xl font-extrabold">UneSUS</p><p className="text-[10px] text-white/80">Documento clínico • via para conferência</p></div><span className="rounded-md border border-white/40 px-3 py-1.5 text-[10px] font-bold tracking-widest">RASCUNHO</span></div>
+          <div className="min-h-[390px] space-y-5 px-6 py-7 text-[#0B1756] sm:px-9">
+            <h3 className="border-b border-[#EAF3F7] pb-4 text-center text-base font-extrabold uppercase tracking-wide">{tipo === "receita" ? "Prescrição de medicamentos" : "Atestado médico"}</h3>
+            <div className="grid gap-3 text-sm sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-wide text-[#3563A7]">Paciente</p><p className="mt-1 font-semibold">{paciente?.nome || "Aguardando paciente..."}</p><p className="mt-1 text-xs text-[#3563A7]">CPF: {maskCPF(paciente?.cpf)}</p></div><div><p className="text-[10px] font-bold uppercase tracking-wide text-[#3563A7]">Médico responsável</p><p className="mt-1 font-semibold">{medico?.nome || "Aguardando perfil..."}</p><p className="mt-1 text-xs text-[#3563A7]">{medico ? `CRM ${medico.crm}/${medico.uf}` : "Registro não carregado"}</p></div></div>
+            <div className="rounded-xl bg-[#EAF3F7]/60 p-4"><p className="text-xs font-bold uppercase text-[#023E8A]">{tipo === "receita" ? "Medicamentos prescritos" : "Declaração"}</p>{tipo === "receita" ? <div className="mt-3 space-y-3">{medicamentos.map((m, i) => <div key={m.id} className="border-b border-[#3563A7]/15 pb-2 last:border-0"><p className="break-words text-sm font-bold">{i + 1}. {m.nome || "Medicamento não preenchido"}</p><p className="mt-1 text-xs leading-5 text-[#3563A7]">{[m.concentracao, m.forma, m.dose, m.via, m.frequencia, m.duracao].filter(Boolean).join(" • ") || "Posologia pendente"}</p></div>)}</div> : <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{atestado.texto || "O texto do atestado aparecerá aqui conforme você preencher o formulário."}</p>}</div>
+            <p className="text-xs text-[#3563A7]">{cidade || medico?.cidade || medico?.unidade || "Local"}, {dataBR(data)}</p>
+            <div className="pt-5"><div className="w-56 border-t border-[#3563A7] pt-2 text-xs font-semibold">{medico?.nome || "Médico responsável"}<p className="mt-1 font-normal text-[#3563A7]">{medico ? `CRM ${medico.crm}/${medico.uf}` : "Assinatura pendente"}</p></div></div>
+          </div>
+          <div className="border-t border-[#EAF3F7] px-6 py-4 text-center text-[10px] font-bold tracking-wide text-[#3563A7] sm:px-9">RASCUNHO NÃO ASSINADO • SEM VALIDADE PARA USO OFICIAL</div>
+        </div>}
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#3563A7]/20 bg-[#EAF3F7]/60 p-4"><AlertCircle size={19} className="mt-0.5 shrink-0 text-[#023E8A]" /><p className="text-xs leading-5 text-[#0B1756]"><strong>Documento profissional não significa documento assinado.</strong> O PDF terá identificação médica carregada do sistema e layout A4, mas será marcado como rascunho. Emissão oficial requer assinatura eletrônica, registro e validação no servidor.</p></div>
+        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-[#3563A7]/20 bg-white p-4 text-sm text-[#0B1756]"><input type="checkbox" checked={confirmei} onChange={(e) => setConfirmei(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#023E8A]" /><span>Revisei as informações do paciente, o perfil médico autenticado e o conteúdo clínico do documento.</span></label>
+        {!prontoDocumento && <p className="mt-3 text-xs text-[#3563A7]">Para gerar o PDF, carregue os dados do médico e do paciente e preencha os campos obrigatórios do documento.</p>}
+        {erroPDF && <p role="alert" className="mt-3 text-sm font-bold text-[#0B1756]">{erroPDF}</p>}
+        <div className="mt-5 flex flex-col justify-between gap-3 border-t border-[#EAF3F7] pt-5 sm:flex-row sm:items-center"><Link href="/medico/pacientes" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#3563A7]/20 px-5 py-3 text-sm font-bold text-[#023E8A] hover:bg-[#EAF3F7]"><ArrowLeft size={17} /> Voltar aos pacientes</Link><button type="button" onClick={download} disabled={!podeGerar} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-40">{gerando ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} {gerando ? "Gerando PDF..." : "Gerar e baixar PDF A4"}</button></div>
+      </section>
+    </div>
+  </main>;
+}
+
+export default function PrescricaoPage() { return <Suspense fallback={<main className="min-h-screen bg-[#EAF3F7] p-8 text-[#0B1756]">Carregando...</main>}><Tela /></Suspense>; }

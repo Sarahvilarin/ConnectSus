@@ -71,33 +71,33 @@ const Icon = ({ name, className = "h-6 w-6" }) => {
 
 const servicos = [
   {
-  titulo: "Triagem",
-  descricao: "Receba orientações para direcionar seu atendimento.",
-  icon: "users",
-  href: "/cliente/triagem",
-},
-
-  {
     titulo: "Fila de atendimento",
     descricao:
       "Acompanhe sua posição na fila e consulte atualizações do atendimento.",
     icon: "clock",
-    href: "/cliente/fila",
+    href: "/paciente/filaOnline",
+  },
+  {
+    titulo: "Visita domiciliar",
+    descricao:
+      "Solicite e acompanhe atendimentos de saúde realizados em sua residência.",
+    icon: "heart",
+    href: "/paciente/visitadomiciliar",
   },
   {
     titulo: "Exames e resultados",
     descricao:
       "Consulte informações sobre seus exames e os resultados disponíveis.",
     icon: "file",
-    href: "/cliente/exames",
+    href: "/paciente/exames",
   },
   {
     titulo: "Minhas consultas",
     descricao:
       "Consulte seus agendamentos e acompanhe seus próximos atendimentos.",
     icon: "calendar",
-    href: "/cliente/consultas",
-  }
+    href: "/paciente/consultas",
+  },
 ];
 
 const etapas = [
@@ -211,7 +211,7 @@ export default function DashboardCliente() {
         {/* RESUMO DA SAÚDE */}
         <section className="mt-4 grid gap-5 sm:grid-cols-2 sm:gap-6">
           <a
-            href="/cliente/consultas"
+            href="/paciente/consultas"
             className="group flex items-center gap-5 rounded-[24px] border border-[#3563A7]/15 bg-white/80 p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md sm:p-6"
           >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A]">
@@ -235,7 +235,7 @@ export default function DashboardCliente() {
           </a>
 
           <a
-            href="/cliente/exames"
+            href="/paciente/exames"
             className="group flex items-center gap-5 rounded-[24px] border border-[#3563A7]/15 bg-white/80 p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md sm:p-6"
           >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#023E8A]">
