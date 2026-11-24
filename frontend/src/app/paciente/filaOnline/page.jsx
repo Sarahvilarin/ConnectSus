@@ -935,26 +935,46 @@ function FilaOnlineConteudo() {
       <main className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-12 pt-8 sm:px-6 2xl:px-10">
         {/* TÍTULO */}
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-[#123C7D] sm:text-[40px]">
-                Fila Online
-              </h1>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#496A91] sm:text-lg">
-                Acompanhe sua posição em tempo real e tenha mais praticidade no seu atendimento.
-              </p>
-            </div>
-          </div>
-          {unidadeAtual && (
-            <button
-              onClick={sairDaFila}
-              className="inline-flex shrink-0 items-center justify-center self-start rounded-full bg-[#14539B] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0E4383] sm:self-center sm:px-8"
-            >
-              Sair da fila
-            </button>
-          )}
-        </div>
+        
+{/* TÍTULO */}
+<div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+  <div className="max-w-3xl">
+    <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#DCE8F5] px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#023E8A]">
+      <UsersRound size={14} />
+      Área do paciente · Atendimento
+    </span>
+
+    <h1 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px]">
+      Fila Online
+    </h1>
+
+    <p className="mt-2 max-w-2xl text-base leading-7 text-[#344968] sm:text-lg">
+      Acompanhe sua posição em tempo real e tenha mais praticidade no seu atendimento.
+    </p>
+  </div>
+
+  {unidadeAtual && (
+    <div className="flex max-w-[440px] items-center justify-between gap-4 rounded-xl border border-[#B8CDEB] bg-[#EAF2FC] px-4 py-4 shadow-sm">
+      <div className="min-w-0">
+        <p className="font-bold text-[#17366F]">
+          Deseja sair da fila?
+        </p>
+        <p className="mt-1 text-sm leading-5 text-[#496A91]">
+          Você poderá entrar novamente quando precisar.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={sairDaFila}
+        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#14539B] bg-[#14539B] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0E4383] hover:border-[#0E4383]"
+      >
+        Sair da fila
+      </button>
+    </div>
+  )}
+</div>
+
 
         {/* POSIÇÃO NA FILA / DETALHES COMPLETOS QUANDO SELECIONADO */}
 
