@@ -151,9 +151,7 @@ export default function RelatoriosPage() {
               <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">Relatórios</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">Dados e estatísticas dos atendimentos.</p>
             </div>
-            <button type="button" onClick={carregarRelatorios} disabled={carregando} className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-60 sm:self-auto">
-              <RefreshCw size={16} className={carregando ? "animate-spin" : ""} /> Atualizar
-            </button>
+            
           </div>
         </section>
       </div>

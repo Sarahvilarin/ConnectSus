@@ -439,13 +439,7 @@ export default function FilaOnlineAdminPage() {
     </p>
   </div>
 
-  <button
-    type="button"
-    onClick={carregarDados}
-    className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-[#123B80] shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
-  >
-    Atualizar dados
-  </button>
+
 </div>
           </div>
 

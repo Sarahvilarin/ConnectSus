@@ -2111,21 +2111,7 @@ export default function GestaoEquipe() {
 
 
 
-              <button
-
-                type="button"
-
-                onClick={abrirNovo}
-
-                className="rounded-2xl bg-white px-5 py-3.5 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7]"
-
-              >
-
-                <UserPlus size={16} className="mr-2 inline-block" />
-
-                Novo profissional
-
-              </button>
+              
 
             </div>
 
