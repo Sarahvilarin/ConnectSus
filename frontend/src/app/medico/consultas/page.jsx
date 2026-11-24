@@ -951,50 +951,26 @@ export default function MinhasConsultas() {
         {carregando && <Info tipo="azul">Carregando consultas do servidor...</Info>}
         {erroApi && <Info tipo="neutro">{erroApi} <button type="button" className="ml-2 font-bold underline" onClick={() => window.location.reload()}>Tentar novamente</button></Info>}
         {/* CABEÇALHO E NAVEGAÇÃO */}
-        <section className="relative pb-0">
-          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#023E8A] via-[#3563A7] to-[#0B1756] px-7 pb-16 pt-5 shadow-sm sm:px-10 sm:pt-6 sm:pb-20">
-            <div className="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[0.06]" />
-            <div className="pointer-events-none absolute right-[25%] top-20 h-72 w-72 rounded-full border-[45px] border-white/[0.05]" />
+        <section className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
+  <div className="pointer-events-none absolute -right-16 -top-36 h-96 w-96 rounded-full border-[48px] border-white/[0.07]" />
+  <div className="pointer-events-none absolute right-[28%] top-10 h-52 w-52 rounded-full border-[30px] border-white/[0.05]" />
+  <div className="pointer-events-none absolute -bottom-32 left-[38%] h-64 w-64 rounded-full bg-[#78A9E6]/10 blur-2xl" />
 
-            <div className="relative z-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
-              <div className="max-w-3xl">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-  <Hospital size={15} className="text-white" />
-  Área médica · Gestão de consultas
-</span>
-                <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[42px]">Minhas consultas</h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-white/85 sm:text-base lg:text-lg">
-                  Acompanhe seus atendimentos, registre o prontuário de cada consulta e consulte sua agenda.
-                </p>
-               
-              </div>
+  <div className="relative z-10">
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">
+      <Calendar size={15} />
+      Área médica · Gestão de consultas
+    </span>
 
-              <button
-                type="button"
-                onClick={() => setAba("agenda")}
-                className="shrink-0 rounded-2xl bg-white px-5 py-3.5 text-sm font-semibold text-[#0B1756] shadow-sm transition hover:bg-[#EAF3F7]"
-              >
-                Ver agenda do mês
-              </button>
-            </div>
-          </div>
+    <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+      Minhas consultas
+    </h1>
 
-          <nav className="relative z-20 -mt-[72px] grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6" aria-label="Seções das consultas">
-            {abas.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setAba(a.id)}
-                className={`flex min-h-[90px] flex-col justify-center rounded-[24px] border bg-white px-5 py-3 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md ${
-                  aba === a.id ? "border-[#3563A7] ring-1 ring-[#3563A7]/20" : "border-[#EAF3F7] hover:border-[#3563A7]/40"
-                }`}
-              >
-                <span className="text-base font-bold text-[#0B1756]">{a.titulo}</span>
-                <span className="mt-1 text-sm text-[#3563A7]">{a.sub}</span>
-              </button>
-            ))}
-          </nav>
-        </section>
+    <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">
+      Gerencie seus atendimentos, acompanhe a agenda e consulte os registros dos pacientes.
+    </p>
+  </div>
+</section>
 
         {/* HOJE */}
         {aba === "hoje" && (
