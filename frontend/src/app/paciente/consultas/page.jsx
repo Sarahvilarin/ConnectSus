@@ -811,20 +811,7 @@ export default function Consultas() {
                         </p>
                       </div>
                     </section>
-                    <section className={`${cardBase} p-5 sm:p-6`}>
-                      <h3 className="mb-4 text-lg font-bold">Próximos passos</h3>
-                      <div className="space-y-4">
-                        {PASSOS.map(([titulo, descricao], i) => (
-                          <div key={titulo} className="flex items-start gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/15 text-sm font-bold">{i + 1}</div>
-                            <div>
-                              <h4 className="text-sm font-bold">{titulo}</h4>
-                              <p className="mt-0.5 text-xs leading-5 sm:text-sm">{descricao}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
+                    
                   </aside>
                 </div>
                 {erro && <Alerta className="mt-5" comIcone>{erro}</Alerta>}
