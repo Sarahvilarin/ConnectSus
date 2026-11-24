@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { Building2, Check, ChevronDown } from "lucide-react";
+import { Building2, Check, ChevronDown, Pencil, Search, Stethoscope } from "lucide-react";
 
 const ITENS_POR_PAGINA = 6;
 
@@ -1038,83 +1038,77 @@ export default function FilaOnlineAdminPage() {
         {aba === "especialidades" && (
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_5px_20px_rgba(31,65,119,0.04)]">
 
-            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <SecaoTitulo
-                  titulo="Especialidades"
-                  descricao="Gerencie os tipos de atendimento disponíveis nas unidades."
-                />
+            {/* TÍTULO, PESQUISA E NOVA ESPECIALIDADE */}
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setModal({ tipo: "especialidade", item: null })
-                  }
-                  className="rounded-xl bg-[#3563A7] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A]"
-                >
-                  + Nova especialidade
-                </button>
+            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#0B1756]">Especialidades</h2>
+                  <p className="mt-1 text-base text-slate-400">
+                    Gerencie os tipos de atendimento disponíveis nas unidades.
+                  </p>
+                </div>
+
+                <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+                  <div className="relative w-full sm:w-72">
+                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#3563A7]" />
+                    <input
+                      value={buscaEspecialidade}
+                      onChange={(e) => setBuscaEspecialidade(e.target.value)}
+                      placeholder="Pesquisar especialidade..."
+                      className="w-full rounded-xl border border-[#C8D9EB] bg-white py-3 pl-10 pr-4 text-sm font-normal text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#3563A7] focus:ring-2 focus:ring-[#3563A7]/10"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setModal({ tipo: "especialidade", item: null })
+                    }
+                    className="shrink-0 rounded-xl bg-[#3563A7] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#023E8A]"
+                  >
+                    + Nova especialidade
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* PESQUISA */}
+            {/* CARDS */}
 
-            <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
-              <input
-                value={buscaEspecialidade}
-                onChange={(e) => setBuscaEspecialidade(e.target.value)}
-                placeholder="Pesquisar especialidade..."
-                className="w-full max-w-md rounded-xl border border-[#C8D9EB] bg-white px-4 py-3 text-sm font-normal text-[#0B1756] outline-none transition placeholder:text-slate-400 focus:border-[#3563A7] focus:ring-2 focus:ring-[#3563A7]/10"
-              />
-            </div>
+            <div className="p-5 sm:p-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                {especialidadesFiltradas.map((item) => (
+                  <article
+                    key={item.id}
+                    className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl border border-[#C8D9EB]/70 bg-gradient-to-br from-white to-[#F4F9FD] p-4 shadow-[0_5px_20px_rgba(31,65,119,0.04)] transition hover:-translate-y-0.5 hover:border-[#3563A7] hover:shadow-[0_10px_28px_rgba(2,62,138,0.12)]"
+                  >
+                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#3563A7]/10 transition group-hover:bg-[#3563A7]/15" />
 
-            {/* TABELA */}
+                    <div className="relative z-10 flex min-w-0 items-center gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">
+                        <Stethoscope size={21} />
+                      </span>
+                      <span className="truncate text-base font-semibold text-[#0B1756]" title={item.nome}>
+                        {item.nome}
+                      </span>
+                    </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[420px] border-collapse text-left text-sm">
-                <thead className="bg-[#EAF3F7] text-xs uppercase text-slate-600">
-                  <tr>
-                    <th className="px-5 py-4 font-semibold">Especialidade</th>
-                    <th className="px-5 py-4 text-right font-semibold">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {especialidadesFiltradas.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-slate-100 last:border-0"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setModal({
+                          tipo: "especialidade",
+                          item,
+                        })
+                      }
+                      className="relative z-10 inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#C8D9EB] bg-white px-3.5 py-2 text-sm font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7]"
                     >
-                      <td className="px-5 py-4">
-                        <span className="text-base font-semibold text-[#0B1756]">
-                          {item.nome}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setModal({
-                                tipo: "especialidade",
-                                item,
-                              })
-                            }
-                            className="rounded-lg border border-[#C8D9EB] px-4 py-2.5 text-sm font-semibold text-[#3563A7] transition hover:bg-[#EAF3F7]"
-                          >
-                            Editar
-                          </button>
-
-
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      <Pencil size={14} />
+                      Editar
+                    </button>
+                  </article>
+                ))}
+              </div>
 
               {especialidadesFiltradas.length === 0 && (
                 <div className="py-12 text-center">
@@ -1142,7 +1136,3 @@ export default function FilaOnlineAdminPage() {
     </div>
   );
 }
-
-
-
-
