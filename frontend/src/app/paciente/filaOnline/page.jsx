@@ -937,7 +937,7 @@ function FilaOnlineConteudo() {
 
         
 {/* TÍTULO */}
-<div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+<div className="mb-10 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
   <div className="max-w-3xl">
     <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#DCE8F5] px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#023E8A]">
       <UsersRound size={14} />
