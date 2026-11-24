@@ -611,7 +611,7 @@ export default function Consultas() {
       <div className="pointer-events-none absolute -left-40 top-10 z-0 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/60" />
       <div className="pointer-events-none absolute -bottom-36 -left-24 z-0 h-[350px] w-[350px] rounded-full bg-white/50" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 z-0 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
-      <div className="relative z-10 mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-10">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 py-7 sm:px-6 sm:py-9 lg:px-6 lg:py-10 2xl:px-10">
         <section className="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div>
             <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#3563A7]/15 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[#0B1756]">
@@ -621,7 +621,7 @@ export default function Consultas() {
             <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-[42px]">{titulo}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 sm:text-base">{subtitulo}</p>
           </div>
-          <div className="flex max-w-md items-start gap-3 rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-4">
+          <div className="mt-2 flex max-w-md items-start gap-3 rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-4 lg:mt-4">
             <Info className="mt-0.5 shrink-0 text-[#023E8A]" size={23} />
             <p className="text-sm leading-6">Chegue com 15 minutos de antecedência nas consultas presenciais e leve um documento com foto.</p>
           </div>

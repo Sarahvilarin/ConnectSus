@@ -1038,7 +1038,7 @@ export default function TriagemEnfermagemPage() {
           </form>
         ) : (
 
-          <section className="mt-5 overflow-hidden rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
+          <section className="mt-5 rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
             <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-[#0B1756]">
@@ -1332,21 +1332,36 @@ export default function TriagemEnfermagemPage() {
 
 /* Filtro/seleção no mesmo padrão da página de exames:
    botão com ícone em caixinha e menu arredondado com item selecionado em #29478F. */
-function FilterSelect({ value, onChange, options, ariaLabel, placeholder = "Selecione" }) {
+function FilterSelect({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+  placeholder = "Selecione",
+}) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
-  const selected = options.find((option) => option.value === value);
-  const TriggerIcon = selected?.icon || SlidersHorizontal;
+
+  const selected = options.find(
+    (option) => option.value === value
+  );
 
   useEffect(() => {
     function handlePointerDown(event) {
-      if (!containerRef.current?.contains(event.target)) setOpen(false);
+      if (!containerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
     }
+
     function handleKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
     }
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
@@ -1358,43 +1373,65 @@ function FilterSelect({ value, onChange, options, ariaLabel, placeholder = "Sele
       <button
         type="button"
         aria-label={ariaLabel}
-        aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-12 w-full items-center gap-3 rounded-xl border bg-white px-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/20 ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.10)]" : "border-slate-200 hover:border-[#9BB5D2]"}`}
+        className={`flex h-12 w-full items-center justify-between gap-3
+          rounded-2xl border bg-white px-4 text-left text-sm
+          font-normal text-[#0B1756] outline-none transition-all
+          focus-visible:ring-4 focus-visible:ring-[#023E8A]/10
+          ${
+            open
+              ? "border-[#CBD6E8] ring-4 ring-[#023E8A]/5"
+              : "border-[#DCE3ED] hover:border-[#023E8A]/30"
+          }`}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EAF1F8] text-[#174693]">
-          <TriggerIcon size={16} />
-        </span>
-        <span className={`min-w-0 flex-1 truncate text-sm ${selected ? "font-bold text-[#0B1756]" : "text-slate-400"}`}>
+        <span className="min-w-0 flex-1 truncate">
           {selected ? selected.label : placeholder}
         </span>
-        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#023E8A] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+9px)] z-[90] rounded-[22px] border border-[#E1EAF3] bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
-          <div role="menu" aria-label={ariaLabel} className="space-y-1">
+        <div
+          className="absolute left-0 right-0 top-full z-[90] mt-2
+          rounded-[18px] border border-[#DCE3ED] bg-white p-1.5
+          shadow-[0_12px_28px_rgba(11,23,86,0.14)]"
+        >
+          <div className="space-y-1">
             {options.map((option) => {
               const active = option.value === value;
-              const OptionIcon = option.icon;
+
               return (
                 <button
                   key={option.value}
                   type="button"
-                  role="menuitemradio"
-                  aria-checked={active}
+                  aria-pressed={active}
                   onClick={() => {
                     onChange(option.value);
                     setOpen(false);
                   }}
-                  className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition ${active ? "bg-[#29478F] font-semibold text-white shadow-sm" : "text-[#0B1756] hover:bg-[#F2F6FB]"}`}
+                  className={`flex min-h-10 w-full items-center
+                    justify-between gap-3 rounded-xl px-3.5 py-2.5
+                    text-left text-sm transition-colors
+                    ${
+                      active
+                        ? "bg-[#023E8A] font-semibold text-white"
+                        : "font-normal text-[#0B1756] hover:bg-[#F1F6FB]"
+                    }`}
                 >
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-white/15 text-white" : "bg-[#EAF1F8] text-[#174693]"}`}>
-                    <OptionIcon size={16} />
+                  <span className="min-w-0 flex-1">
+                    {option.label}
                   </span>
-                  <span className="min-w-0 flex-1">{option.label}</span>
-                  {active && <Check size={16} className="shrink-0" />}
+
+                  {active && (
+                    <Check size={16} className="shrink-0" />
+                  )}
                 </button>
               );
             })}
@@ -1404,7 +1441,6 @@ function FilterSelect({ value, onChange, options, ariaLabel, placeholder = "Sele
     </div>
   );
 }
-
 function HeroInfo({ icon, titulo, texto }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3">
@@ -1588,16 +1624,20 @@ function StatusPill({ status, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${active
-        ? "border-[#174693] bg-[#174693] text-white"
-        : "border-slate-200 bg-white text-slate-600 hover:border-[#B8CEE4]"
+      className={`flex items-center gap-2 rounded-xl border
+        px-3.5 py-2 text-xs font-semibold transition-all
+        ${
+          active
+            ? "border-[#023E8A] bg-[#023E8A] text-white"
+            : "border-[#DCE3ED] bg-white text-[#0B1756] hover:bg-[#F1F6FB]"
         }`}
     >
       {status}
+
+      {active && <Check size={13} />}
     </button>
   );
 }
-
 function EmptyState({ icon, title, description }) {
   return (
     <div className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6E3F0] bg-[#F8FAFD] px-4 py-7 text-center">

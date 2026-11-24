@@ -825,14 +825,7 @@ export default function GestaoConsultas() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                disabled
-                title="Cadastro administrativo será conectado na próxima etapa"
-                className="shrink-0 cursor-not-allowed rounded-2xl bg-white/80 px-5 py-3.5 text-sm font-semibold text-[#023E8A] opacity-70"
-              >
-                + Nova consulta
-              </button>
+            
             </div>
           </div>
         </section>
