@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import {
   AlertCircle,
@@ -812,17 +812,18 @@ export default function TriagemEnfermagemPage() {
                         <label className="mb-2 block text-sm font-semibold text-[#0B1756]">
                           Intensidade da dor
                         </label>
-                        <select
-                          value={dor}
-                          onChange={(event) => setDor(event.target.value)}
-                          className="h-12 w-full rounded-xl border border-slate-200 bg-[#F8FAFD] px-4 text-sm outline-none focus:border-[#3563A7] focus:bg-white"
-                        >
-                          <option value="">Selecione</option>
-                          <option>Sem dor</option>
-                          <option>Leve</option>
-                          <option>Moderada</option>
-                          <option>Intensa</option>
-                        </select>
+                        <Dropdown
+                          rotulo="Intensidade da dor"
+                          valor={dor}
+                          opcoes={[
+                            "Sem dor",
+                            "Leve",
+                            "Moderada",
+                            "Intensa",
+                          ]}
+                          onChange={setDor}
+                          placeholder="Selecione"
+                        />
                       </div>
                     </div>
 
@@ -1488,17 +1489,20 @@ function ChecklistItem({ done, title, description }) {
   return (
     <div className="flex items-start gap-3">
       <span
-        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${done
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-slate-100 text-slate-400"
-          }`}
+        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+          done
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-slate-100 text-slate-400"
+        }`}
       >
         {done ? <Check size={14} /> : <Clock3 size={13} />}
       </span>
+
       <span>
         <span className="block text-sm font-semibold text-[#0B1756]">
           {title}
         </span>
+
         <span className="mt-0.5 block text-xs text-slate-500">
           {description}
         </span>
@@ -1548,6 +1552,111 @@ function StatusPill({ status, active, onClick }) {
         ? "border-[#174693] bg-[#174693] text-white"
         : "border-slate-200 bg-white text-slate-600 hover:border-[#B8CEE4]"
         }`}
+    >
+      {status}
+    </button>
+  );
+}
+
+function EmptyState({ icon, title, description }) {
+  return (
+    <div className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6E3F0] bg-[#F8FAFD] px-4 py-7 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#9CB3CB] shadow-sm">
+        {icon}
+      </span>
+      <p className="mt-3 text-sm font-bold text-[#174693]">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{description}</p>
+    </div>
+  );
+}
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#06194E]/55 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[24px] bg-white p-5 shadow-2xl sm:p-7">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-bold text-[#0B1756]">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          >
+            <X size={19} />
+          </button>
+        </div>
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+    <div className="flex items-start gap-3">
+      <span
+        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${done
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-slate-100 text-slate-400"
+          }`}
+      >
+        {done ? <Check size={14} /> : <Clock3 size={13} />}
+      </span>
+      <span>
+        <span className="block text-sm font-semibold text-[#0B1756]">
+          {title}
+        </span>
+        <span className="mt-0.5 block text-xs text-slate-500">
+          {description}
+        </span>
+      </span>
+    </div>
+
+function RiskBadge({ classificacao }) {
+  const styles = {
+    "Não urgente": "border-blue-100 bg-blue-50 text-blue-700",
+    "Pouco urgente": "border-emerald-100 bg-emerald-50 text-emerald-700",
+    Urgente: "border-amber-100 bg-amber-50 text-amber-700",
+    "Muito urgente": "border-red-100 bg-red-50 text-red-700",
+    Emergência: "border-red-200 bg-red-100 text-red-800",
+  };
+
+  return (
+    <span
+      className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${styles[classificacao] || "border-slate-200 bg-slate-50 text-slate-600"
+        }`}
+    >
+      {classificacao}
+    </span>
+  );
+}
+
+function StatusBadge({ status }) {
+  const style =
+    status === "Encaminhada ao médico"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+      : "bg-amber-50 text-amber-700 border-amber-100";
+
+  return (
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold ${style}`}>
+      {status}
+    </span>
+  );
+}
+
+function StatusPill({ status, active, onClick }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+        active
+          ? "border-[#023E8A] bg-[#023E8A] text-white shadow-sm"
+          : "border-[#023E8A]/30 bg-white text-[#023E8A] hover:border-[#023E8A] hover:bg-[#EAF3F7]"
+      }`}
     >
       {status}
     </button>
