@@ -11,7 +11,7 @@ import { api } from "@/lib/api";
 import {
   AlertCircle, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardCheck, Download, FileCheck2, FileText, Loader2, LockKeyhole,
-  Plus, Pill, RefreshCcw, ShieldCheck, Stethoscope, Trash2, UserRound,
+  Plus, Pill, Printer, RefreshCcw, ShieldCheck, Stethoscope, Trash2, UserRound,
 } from "lucide-react";
 
 const CARD = "rounded-[26px] border border-white/80 bg-white p-5 shadow-[0_12px_36px_rgba(2,62,138,0.07)] sm:p-6";
@@ -467,7 +467,7 @@ async function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, 
 
   footer();
 
-  doc.save(`UneSUS_${tipo === "receita" ? "prescricao" : "atestado"}_RASCUNHO_${data}.pdf`);
+  return doc.output("blob");
 
 }
 
@@ -671,18 +671,64 @@ function Tela() {
 
   function alterarAtestado(chave, valor) { setAtestado((p) => ({ ...p, [chave]: valor })); setConfirmei(false); }
 
-  async function download() {
+  function nomeArquivoPDF() {
+    return `UneSUS_${tipo === "receita" ? "prescricao" : "atestado"}_RASCUNHO_${data}.pdf`;
+  }
 
+  async function download() {
     if (!podeGerar) return;
 
-    setGerando(true); setErroPDF("");
+    setGerando(true);
+    setErroPDF("");
 
-    try { await gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade }); }
+    try {
+      const blob = await gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nomeArquivoPDF();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      console.error("Erro ao baixar PDF:", error);
+      setErroPDF(error?.message || "Não foi possível gerar o PDF. Verifique se a dependência jspdf está instalada.");
+    } finally {
+      setGerando(false);
+    }
+  }
 
-    catch (e) { console.error(e); setErroPDF("Falha ao gerar o PDF. Instale a dependência com npm install jspdf e tente novamente."); }
+  async function imprimirPDF() {
+    if (!podeGerar) return;
 
-    finally { setGerando(false); }
+    // Abre a aba durante o clique do usuário para evitar bloqueio de pop-up.
+    const janela = window.open("about:blank", "_blank");
+    if (!janela) {
+      setErroPDF("O navegador bloqueou a janela de impressão. Permita pop-ups para este site e tente novamente.");
+      return;
+    }
 
+    janela.opener = null;
+    janela.document.title = "Preparando PDF UneSUS";
+    janela.document.body.innerHTML = "<p style='font-family:Arial,sans-serif;padding:24px;color:#0B1756'>Preparando documento para impressão...</p>";
+
+    setGerando(true);
+    setErroPDF("");
+
+    try {
+      const blob = await gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade });
+      const url = URL.createObjectURL(blob);
+      janela.location.href = url;
+      // Mantém o endereço do Blob disponível enquanto o visualizador abre o PDF.
+      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch (error) {
+      console.error("Erro ao preparar impressão do PDF:", error);
+      janela.close();
+      setErroPDF(error?.message || "Não foi possível preparar o PDF para impressão.");
+    } finally {
+      setGerando(false);
+    }
   }
 
   return <main className="relative min-h-screen overflow-x-clip bg-[#F1F6FB] px-4 py-6 text-[#0B1756] sm:px-6 lg:px-8">
@@ -851,7 +897,17 @@ function Tela() {
 
         {erroPDF && <p role="alert" className="mt-3 text-sm font-bold text-[#0B1756]">{erroPDF}</p>}
 
-        <div className="mt-5 flex flex-col justify-between gap-3 border-t border-[#EAF3F7] pt-5 sm:flex-row sm:items-center"><Link href="/medico/pacientes" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#3563A7]/20 px-5 py-3 text-sm font-bold text-[#023E8A] hover:bg-[#EAF3F7]"><ArrowLeft size={17} /> Voltar aos pacientes</Link><button type="button" onClick={download} disabled={!podeGerar} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-40">{gerando ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} {gerando ? "Gerando PDF..." : "Gerar e baixar PDF A4"}</button></div>
+        <div className="mt-5 flex flex-col justify-between gap-3 border-t border-[#EAF3F7] pt-5 sm:flex-row sm:items-center">
+          <Link href="/medico/pacientes" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#3563A7]/20 px-5 py-3 text-sm font-bold text-[#023E8A] hover:bg-[#EAF3F7]"><ArrowLeft size={17} /> Voltar aos pacientes</Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button type="button" onClick={imprimirPDF} disabled={!podeGerar} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#023E8A] bg-white px-5 py-3.5 text-sm font-bold text-[#023E8A] transition hover:bg-[#EAF3F7] disabled:cursor-not-allowed disabled:opacity-40">
+              {gerando ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />} Abrir para imprimir
+            </button>
+            <button type="button" onClick={download} disabled={!podeGerar} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#023E8A] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#0B1756] disabled:cursor-not-allowed disabled:opacity-40">
+              {gerando ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} {gerando ? "Gerando PDF..." : "Baixar PDF A4"}
+            </button>
+          </div>
+        </div>
 
       </section>
 
