@@ -932,7 +932,7 @@ function FilaOnlineConteudo() {
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-[430px] w-[430px] rounded-full border-[70px] border-[#C5DFFF]/50" />
 
       {/* Conteúdo Principal */}
-      <main className="relative z-10 mx-auto max-w-[1520px] px-5 pb-12 pt-8 sm:px-8 lg:px-10">
+      <main className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-12 pt-8 sm:px-6 2xl:px-10">
         {/* TÍTULO */}
 
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
