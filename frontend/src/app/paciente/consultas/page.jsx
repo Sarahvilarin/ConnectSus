@@ -618,7 +618,9 @@ export default function Consultas() {
               <CalendarDays size={15} />
               Consultas
             </span>
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-[42px]">{titulo}</h1>
+            <h1 className="font-sans text-4xl font-bold leading-tight tracking-tight text-[#0B1756] sm:text-[42px]">
+              {titulo}
+            </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 sm:text-base">{subtitulo}</p>
           </div>
           <div className="mt-2 flex max-w-md items-start gap-3 rounded-xl border border-[#3563A7]/40 bg-[#3563A7]/10 p-4 lg:mt-4">
