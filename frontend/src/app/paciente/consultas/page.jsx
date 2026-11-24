@@ -160,14 +160,14 @@ function SelectBusca({ rotulo, valor, opcoes, onChange, placeholder = "Selecione
         disabled={desabilitado}
         onClick={alternar}
         className={`flex min-h-[50px] w-full items-center justify-between gap-3 rounded-lg border bg-white px-4 py-2 text-left text-sm font-semibold text-[#0B1756] transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30 disabled:cursor-not-allowed disabled:opacity-60 ${
-          aberto ? "border-[#023E8A] ring-2 ring-[#3563A7]/30" : "border-[#3563A7]/40 hover:border-[#3563A7]"
-        }`}
+          aberto || valor ? "border-[#023E8A] bg-[#3563A7]/10 font-bold text-[#023E8A]" : "border-[#3563A7]/40 hover:border-[#3563A7]"
+        } ${aberto ? "ring-2 ring-[#3563A7]/30" : ""}`}
       >
         <span className={`min-w-0 truncate ${valor ? "" : "font-normal opacity-60"}`}>{valor || placeholder}</span>
-        <ChevronDown size={18} className={`shrink-0 text-[#3563A7] transition ${aberto ? "rotate-180" : ""}`} />
+        <ChevronDown size={18} className={`shrink-0 text-[#023E8A] transition ${aberto ? "rotate-180" : ""}`} />
       </button>
       {aberto && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-blue-100 bg-white p-2 shadow-xl">
+        <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-xl">
           <div className="relative mb-2">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#3563A7]" />
             <input
@@ -192,9 +192,9 @@ function SelectBusca({ rotulo, valor, opcoes, onChange, placeholder = "Selecione
                   ref={(el) => { if (i === destaque) el?.scrollIntoView({ block: "nearest" }); }}
                   onMouseEnter={() => setDestaque(i)}
                   onClick={() => escolher(opcao)}
-                  className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm ${
-                    i === destaque ? "bg-[#3563A7]/10" : ""
-                  } ${sel ? "font-bold text-[#023E8A]" : "font-medium"}`}
+                  className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm transition ${
+                    sel ? "bg-[#023E8A] font-bold text-white" : i === destaque ? "bg-[#3563A7]/10 font-medium" : "font-medium"
+                  }`}
                 >
                   {opcao}
                   {sel && <Check size={16} className="shrink-0" />}
