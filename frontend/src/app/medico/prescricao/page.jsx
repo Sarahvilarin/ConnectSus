@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "@/lib/api";
+import { jsPDF } from "jspdf";
 
 import {
   AlertCircle, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
@@ -293,9 +294,7 @@ function PerfilLinha({ titulo, valor }) {
 
 function Tag({ children }) { return <span className="inline-flex items-center rounded-full bg-[#EAF3F7] px-3 py-1.5 text-[11px] font-semibold text-[#023E8A]">{children}</span>; }
 
-async function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade }) {
-
-  const { jsPDF } = await import("jspdf");
+function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade }) {
 
   const doc = new jsPDF({ format: "a4", unit: "mm", orientation: "portrait" });
 
@@ -467,7 +466,7 @@ async function gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, 
 
   footer();
 
-  return doc.output("blob");
+  return doc;
 
 }
 
@@ -675,25 +674,20 @@ function Tela() {
     return `UneSUS_${tipo === "receita" ? "prescricao" : "atestado"}_RASCUNHO_${data}.pdf`;
   }
 
-  async function download() {
+  function download() {
     if (!podeGerar) return;
 
     setGerando(true);
     setErroPDF("");
 
     try {
-      const blob = await gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = nomeArquivoPDF();
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      // O jsPDF salva diretamente durante o clique do usuário. Isso evita
+      // que o navegador bloqueie o download após uma operação assíncrona.
+      const doc = gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade });
+      doc.save(nomeArquivoPDF());
     } catch (error) {
       console.error("Erro ao baixar PDF:", error);
-      setErroPDF(error?.message || "Não foi possível gerar o PDF. Verifique se a dependência jspdf está instalada.");
+      setErroPDF(error?.message || "Não foi possível baixar o PDF. Verifique se a dependência jspdf está instalada.");
     } finally {
       setGerando(false);
     }
@@ -717,7 +711,8 @@ function Tela() {
     setErroPDF("");
 
     try {
-      const blob = await gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade });
+      const doc = gerarPDF({ tipo, medico, paciente, data, medicamentos, atestado, observacoes, cidade });
+      const blob = doc.output("blob");
       const url = URL.createObjectURL(blob);
       janela.location.href = url;
       // Mantém o endereço do Blob disponível enquanto o visualizador abre o PDF.
