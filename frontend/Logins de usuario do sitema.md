@@ -11,7 +11,7 @@ João Pedro              joao.pedro@email.com | Paciente@123
 
 
 Médico	E-mail
-TODOS MEDICOS A SENHA É: Medico@123456
+TODOS MEDICOS A SENHA É: Medico@123
 
 Mariana Oliveira Santos	9000002-SP
 Camila Rodrigues Costa	9000003-SP
