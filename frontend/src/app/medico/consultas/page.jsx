@@ -979,18 +979,27 @@ export default function MinhasConsultas() {
             </div>
           </div>
 
-          <nav className="relative z-20 -mt-[72px] grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6" aria-label="Seções das consultas">
+          <nav
+            className="relative z-20 -mt-[72px] grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:px-6"
+            aria-label="Seções das consultas"
+          >
             {abas.map((a) => (
               <button
                 key={a.id}
                 type="button"
                 onClick={() => setAba(a.id)}
                 className={`flex min-h-[90px] flex-col justify-center rounded-[24px] border bg-white px-5 py-3 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md ${
-                  aba === a.id ? "border-[#3563A7] ring-1 ring-[#3563A7]/20" : "border-[#EAF3F7] hover:border-[#3563A7]/40"
+                  aba === a.id
+                    ? "border-[#3563A7] ring-1 ring-[#3563A7]/20"
+                    : "border-[#EAF3F7] hover:border-[#3563A7]/40"
                 }`}
               >
-                <span className="text-base font-bold text-[#0B1756]">{a.titulo}</span>
-                <span className="mt-1 text-sm text-[#3563A7]">{a.sub}</span>
+                <span className="text-base font-bold text-[#0B1756]">
+                  {a.titulo}
+                </span>
+                <span className="mt-1 text-sm text-[#3563A7]">
+                  {a.sub}
+                </span>
               </button>
             ))}
           </nav>

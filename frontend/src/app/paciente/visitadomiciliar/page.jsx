@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import { api } from "../../../lib/api";
 
 const CONTAINER = "mx-auto w-full max-w-[1600px] px-4 sm:px-6 2xl:px-10";
@@ -51,6 +52,104 @@ function Modal({ children, onClose }) {
 
 function Campo({ label, children, erro }) {
   return <div><label className="mb-1.5 block text-xs font-semibold text-slate-600">{label}</label>{children}{erro && <p className="mt-1 text-xs text-rose-600">{erro}</p>}</div>;
+}
+
+function FilterSelect({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const selected = options.find(
+    (option) => option.value === value
+  );
+
+  useEffect(() => {
+    function fecharFora(event) {
+      if (!containerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", fecharFora);
+
+    return () => {
+      document.removeEventListener("pointerdown", fecharFora);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          event.stopPropagation();
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Unidade de saúde"
+        aria-expanded={open}
+        onClick={() => setOpen((atual) => !atual)}
+        className={`flex h-12 w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 text-left text-sm font-normal text-[#0B1756] outline-none transition-all focus-visible:ring-4 focus-visible:ring-[#023E8A]/10 ${
+          open
+            ? "border-[#CBD6E8] ring-4 ring-[#023E8A]/5"
+            : "border-[#C8D8EC] hover:border-[#023E8A]/30"
+        }`}
+      >
+        <span className="min-w-0 flex-1 truncate">
+          {selected?.label || "Selecione uma unidade"}
+        </span>
+
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#023E8A] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 space-y-1 overflow-y-auto rounded-[18px] border border-[#DCE3ED] bg-white p-1.5 shadow-[0_12px_28px_rgba(11,23,86,0.14)]">
+          {options.map((option) => {
+            const active = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition-colors ${
+                  active
+                    ? "bg-[#023E8A] font-semibold text-white"
+                    : "text-[#0B1756] hover:bg-[#F1F6FB]"
+                }`}
+              >
+                <span className="min-w-0 flex-1">
+                  {option.label}
+                </span>
+
+                {active && (
+                  <Check size={16} className="shrink-0" />
+                )}
+              </button>
+            );
+          })}
+
+          {options.length === 0 && (
+            <p className="px-3 py-3 text-sm text-slate-500">
+              Nenhuma unidade disponível
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function enderecoDoPaciente(paciente = {}) {
@@ -166,9 +265,11 @@ export default function MinhasVisitasPage() {
         <section className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <span className="inline-flex items-center rounded-full border border-[#B8D0EF] bg-[#DCE9FB] px-4 py-2 text-xs font-bold tracking-wide text-[#17418E]">
-  Visita domiciliar
-</span>
-            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px]">Minhas visitas</h1>
+              Visita domiciliar
+            </span>
+            <h1 className="mt-4 font-sans text-4xl font-bold leading-tight tracking-tight text-[#0B1756] sm:text-[42px]">
+              Minhas visitas
+            </h1>
             <p className="mt-3 text-base leading-7 text-slate-600">Solicite uma visita da equipe de saúde em casa e acompanhe o andamento por aqui.</p>
           </div>
           <button type="button" onClick={() => { setErro(""); setForm((atual) => ({ ...atual, ...enderecoDoPaciente(paciente) })); setModal({ tipo: "nova" }); }} disabled={!paciente} className="rounded-xl bg-gradient-to-r from-[#023E8A] to-[#174E9E] px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#023E8A]/20 transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50">+ Solicitar visita</button>
@@ -213,7 +314,18 @@ export default function MinhasVisitasPage() {
       {modal?.tipo === "nova" && <Modal onClose={() => !enviando && setModal(null)}>
         <div className="mb-5 flex items-start justify-between border-b border-slate-100 pb-4"><div><h3 className="text-lg font-bold">Solicitar visita domiciliar</h3><p className="mt-1 text-sm text-slate-500">Informe a unidade, o motivo e confirme o endereço da visita.</p></div><button type="button" onClick={() => setModal(null)} className="rounded-lg p-2 text-xl text-slate-500 hover:bg-[#EAF3F7]">×</button></div>
         <form onSubmit={enviarSolicitacao} className="space-y-4">
-          <Campo label="Unidade de saúde"><select required value={form.unidade_id} onChange={(e) => atualizarCampo("unidade_id", e.target.value)} className={inputCls}><option value="">Selecione uma unidade</option>{unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}{u.tipo_unidade ? ` — ${u.tipo_unidade}` : ""}</option>)}</select></Campo>
+        <Campo label="Unidade de saúde">
+        <FilterSelect
+          value={String(form.unidade_id ?? "")}
+          onChange={(valor) =>
+            atualizarCampo("unidade_id", valor)
+          }
+          options={unidades.map((u) => ({
+            value: String(u.id),
+            label: `${u.nome}${u.tipo_unidade ? ` — ${u.tipo_unidade}` : ""}`,
+          }))}
+        />
+      </Campo>
           {unidades.length === 0 && <p className="text-xs text-amber-700">Nenhuma unidade ativa foi retornada pela API. Verifique o cadastro de unidades.</p>}
           <Campo label="Motivo da visita"><textarea required minLength={5} rows={3} value={form.motivo} onChange={(e) => atualizarCampo("motivo", e.target.value)} placeholder="Descreva por que precisa de atendimento domiciliar" className={inputCls} /></Campo>
           <div className="border-t border-slate-100 pt-4"><h4 className="mb-3 text-sm font-bold">Endereço da visita</h4><div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
