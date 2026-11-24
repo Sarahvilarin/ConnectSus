@@ -264,7 +264,7 @@ export default function MeusExamesPage() {
     <main className="relative min-h-screen overflow-hidden bg-[#F4F9FE] pb-14 text-[#0B1756]">
       <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#DCEBFA]/80" />
       <div className="pointer-events-none absolute -left-28 top-[510px] h-56 w-56 rounded-full border border-[#DCEBFA]" />
-      <div className="relative mx-auto max-w-[1320px] px-4 pt-7 sm:px-6 lg:px-8 lg:pt-9">
+      <div className="relative mx-auto w-full max-w-[1600px] px-4 pt-7 sm:px-6 lg:pt-9 2xl:px-10">
         <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-3xl">
             <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#DCE8F5] px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#023E8A]"><FlaskConical size={14} /> Área do paciente · Exames</span>
