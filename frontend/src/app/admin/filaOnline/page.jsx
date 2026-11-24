@@ -1084,14 +1084,11 @@ export default function FilaOnlineAdminPage() {
                   >
                     <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#3563A7]/10 transition group-hover:bg-[#3563A7]/15" />
 
-                    <div className="relative z-10 flex min-w-0 items-center gap-3">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3F7] text-[#023E8A]">
-                        <Stethoscope size={21} />
-                      </span>
-                      <span className="truncate text-base font-semibold text-[#0B1756]" title={item.nome}>
-                        {item.nome}
-                      </span>
-                    </div>
+                    <div className="relative z-10 flex min-w-0 items-center">
+  <span className="truncate text-base font-semibold text-[#0B1756]" title={item.nome}>
+    {item.nome}
+  </span>
+</div>
 
                     <button
                       type="button"
