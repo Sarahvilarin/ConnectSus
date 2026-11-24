@@ -944,7 +944,7 @@ function FilaOnlineConteudo() {
       Área do paciente · Atendimento
     </span>
 
-    <h1 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px]">
+    <h1 className="font-sans text-4xl font-bold leading-tight tracking-tight text-[#0B1756] sm:text-[42px]">
       Fila Online
     </h1>
 
