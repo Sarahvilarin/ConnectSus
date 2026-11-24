@@ -265,9 +265,11 @@ export default function MinhasVisitasPage() {
         <section className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <span className="inline-flex items-center rounded-full border border-[#B8D0EF] bg-[#DCE9FB] px-4 py-2 text-xs font-bold tracking-wide text-[#17418E]">
-  Visita domiciliar
-</span>
-            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px]">Minhas visitas</h1>
+              Visita domiciliar
+            </span>
+            <h1 className="mt-4 font-sans text-4xl font-bold leading-tight tracking-tight text-[#0B1756] sm:text-[42px]">
+              Minhas visitas
+            </h1>
             <p className="mt-3 text-base leading-7 text-slate-600">Solicite uma visita da equipe de saúde em casa e acompanhe o andamento por aqui.</p>
           </div>
           <button type="button" onClick={() => { setErro(""); setForm((atual) => ({ ...atual, ...enderecoDoPaciente(paciente) })); setModal({ tipo: "nova" }); }} disabled={!paciente} className="rounded-xl bg-gradient-to-r from-[#023E8A] to-[#174E9E] px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#023E8A]/20 transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50">+ Solicitar visita</button>

@@ -268,7 +268,9 @@ export default function MeusExamesPage() {
         <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-3xl">
             <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#DCE8F5] px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#023E8A]"><FlaskConical size={14} /> Área do paciente · Exames</span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#0B1756] sm:text-4xl lg:text-[42px]">Meus exames</h1>
+            <h1 className="font-sans text-4xl font-bold leading-tight tracking-tight text-[#0B1756] sm:text-[42px]">
+              Meus exames
+            </h1>
             <p className="mt-2 max-w-2xl text-base leading-7 text-[#344968] sm:text-lg">Acompanhe seus exames, confira os agendamentos e consulte os resultados disponibilizados pela unidade.</p>
           </div>
           <div className="flex max-w-[440px] items-start gap-3 rounded-xl border border-[#B8CDEB] bg-[#EAF2FC] px-4 py-4 text-sm leading-6 text-[#17366F] shadow-sm"><Info size={21} className="mt-0.5 shrink-0 text-[#023E8A]" /><div><p className="font-bold">Informações sobre seus exames</p><p className="mt-1">Os agendamentos são realizados pela equipe responsável. Consulte as orientações diretamente com a unidade de saúde.</p></div></div>
