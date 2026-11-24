@@ -348,7 +348,6 @@ function DateFilter({ value, onChange }) {
           bg-white p-4
           shadow-[0_16px_35px_rgba(11,23,86,0.16)]"
         >
-          {/* Cabeçalho do calendário */}
           <div className="flex items-center justify-between
             gap-2 rounded-xl bg-[#023E8A]
             px-3 py-2.5 text-white"
@@ -381,8 +380,6 @@ function DateFilter({ value, onChange }) {
               </button>
             </div>
           </div>
-
-          {/* Dias da semana */}
           <div className="mt-3 grid grid-cols-7 gap-1">
             {diasSemana.map((dia) => (
               <span
@@ -395,7 +392,6 @@ function DateFilter({ value, onChange }) {
             ))}
           </div>
 
-          {/* Dias do mês */}
           <div className="mt-1 grid grid-cols-7 gap-1">
             {dias.map((dia, index) => {
               if (!dia) {
@@ -435,7 +431,6 @@ function DateFilter({ value, onChange }) {
             })}
           </div>
 
-          {/* Rodapé do calendário */}
           <div className="mt-4 flex items-center
             justify-between border-t border-slate-200 pt-3"
           >
@@ -626,20 +621,38 @@ export default function MinhasVisitasPage() {
               <h2 className="text-lg font-bold text-[#0B1756]">Atendimentos atribuídos a você</h2>
               <p className="mt-1 text-sm text-slate-500">A lista é carregada a partir do seu usuário autenticado.</p>
             </div>
-            
-            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[650px]">
-              <div className="relative sm:col-span-1">
-                <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar paciente ou bairro..." className={`${inputCls} pl-10`} />
+            <div className="relative z-30 grid w-full gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[650px]">
+
+              <div className="relative">
+                <Search
+                  size={17}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#023E8A]"
+                />
+
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar paciente ou bairro..."
+                  className="h-12 w-full rounded-2xl border border-[#DCE3ED] bg-white pl-11 pr-4 text-sm text-[#0B1756] outline-none transition-all placeholder:text-slate-400 hover:border-[#023E8A]/30 focus:border-[#CBD6E8] focus:ring-4 focus:ring-[#023E8A]/5"
+                />
               </div>
-              <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className={inputCls}>
-                <option value="todos">Todos os status</option>
-                <option value="agendado">Agendadas</option>
-                <option value="em_andamento">Em atendimento</option>
-                <option value="concluido">Concluídas</option>
-                <option value="cancelado">Canceladas</option>
-              </select>
-              <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)} className={inputCls} aria-label="Filtrar por data" />
+
+              <FilterSelect
+                value={filtroStatus}
+                onChange={setFiltroStatus}
+                options={[
+                  { value: "todos", label: "Todos os status" },
+                  { value: "agendado", label: "Agendadas" },
+                  { value: "em_andamento", label: "Em atendimento" },
+                  { value: "concluido", label: "Concluídas" },
+                  { value: "cancelado", label: "Canceladas" },
+                ]}
+              />
+              <DateFilter
+                value={filtroData}
+                onChange={setFiltroData}
+              />
+
             </div>
           </div>
 
