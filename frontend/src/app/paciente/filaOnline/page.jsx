@@ -953,16 +953,7 @@ function FilaOnlineConteudo() {
     </p>
   </div>
 
-  {unidadeAtual && (
-    <div className="flex max-w-[440px] items-center justify-between gap-4 rounded-xl border border-[#B8CDEB] bg-[#EAF2FC] px-4 py-4 shadow-sm">
-      <div className="min-w-0">
-        <p className="font-bold text-[#17366F]">
-          Deseja sair da fila?
-        </p>
-        <p className="mt-1 text-sm leading-5 text-[#496A91]">
-          Você poderá entrar novamente quando precisar.
-        </p>
-      </div>
+
 
       <button
         type="button"
@@ -972,8 +963,7 @@ function FilaOnlineConteudo() {
         Sair da fila
       </button>
     </div>
-  )}
-</div>
+
 
 
         {/* POSIÇÃO NA FILA / DETALHES COMPLETOS QUANDO SELECIONADO */}
