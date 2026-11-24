@@ -71,18 +71,18 @@ const Icon = ({ name, className = "h-6 w-6" }) => {
 
 const servicos = [
   {
-  titulo: "Triagem",
-  descricao: "Receba orientações para direcionar seu atendimento.",
-  icon: "users",
-  href: "/paciente/triagem",
-},
-
-  {
     titulo: "Fila de atendimento",
     descricao:
       "Acompanhe sua posição na fila e consulte atualizações do atendimento.",
     icon: "clock",
-    href: "/paciente/fila",
+    href: "/paciente/filaOnline",
+  },
+  {
+    titulo: "Visita domiciliar",
+    descricao:
+      "Solicite e acompanhe atendimentos de saúde realizados em sua residência.",
+    icon: "heart",
+    href: "/paciente/visitadomiciliar",
   },
   {
     titulo: "Exames e resultados",
@@ -97,7 +97,7 @@ const servicos = [
       "Consulte seus agendamentos e acompanhe seus próximos atendimentos.",
     icon: "calendar",
     href: "/paciente/consultas",
-  }
+  },
 ];
 
 const etapas = [
