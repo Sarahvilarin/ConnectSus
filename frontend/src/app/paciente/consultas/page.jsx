@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../../../lib/api";
 import {
-  Activity, ArrowLeft, ArrowRight, Baby, Bone, Brain, Building2, CalendarCheck, CalendarDays, CalendarPlus, Check,
-  CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock, Eye, FileText, HeartPulse, Hospital, Info, Lock,
-  MapPin, RefreshCw, ShieldCheck, Stethoscope, UserRound, X,
+  Activity, ArrowLeft, ArrowRight, CalendarCheck, CalendarDays, CalendarPlus, Check, CheckCircle2, ChevronDown,
+  ChevronLeft, ChevronRight, ClipboardList, Clock, FileText, Hospital, Info, Lock, MapPin, RefreshCw, Search,
+  ShieldCheck, Stethoscope, UserRound, X,
 } from "lucide-react";
 
 /*
@@ -17,11 +17,6 @@ import {
   Os dados vêm da API do paciente autenticado. Prontuário é dado sensível (LGPD): o back-end
   deve devolver só os registros do paciente logado e registrar log de acesso.
 */
-
-const iconesEspecialidade = {
-  "clínica geral": Stethoscope, cardiologia: HeartPulse, neurologia: Brain,
-  oftalmologia: Eye, pediatria: Baby, ortopedia: Bone,
-};
 
 const etapas = ["Agendamento", "Revisão", "Confirmação"];
 const filtros = ["Todas", "Agendada", "Concluída", "Cancelada"];
@@ -124,6 +119,95 @@ function Dado({ label, valor, className = "" }) {
   );
 }
 
+const semAcento = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/* Seletor compacto: abre uma lista com busca (digite para filtrar) */
+function SelectBusca({ rotulo, valor, opcoes, onChange, placeholder = "Selecione", desabilitado = false }) {
+  const [aberto, setAberto] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [destaque, setDestaque] = useState(0);
+  const ref = useRef(null);
+  const filtradas = opcoes.filter((o) => semAcento(o).includes(semAcento(busca.trim())));
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e) => !ref.current?.contains(e.target) && setAberto(false);
+    document.addEventListener("mousedown", fora);
+    return () => document.removeEventListener("mousedown", fora);
+  }, [aberto]);
+  function alternar() {
+    if (aberto) return setAberto(false);
+    setBusca("");
+    setDestaque(Math.max(0, opcoes.indexOf(valor)));
+    setAberto(true);
+  }
+  function escolher(opcao) {
+    onChange(opcao);
+    setAberto(false);
+  }
+  function aoTeclar(e) {
+    if (e.key === "Escape") return setAberto(false);
+    if (e.key === "ArrowDown") { e.preventDefault(); setDestaque((d) => Math.min(d + 1, filtradas.length - 1)); }
+    if (e.key === "ArrowUp") { e.preventDefault(); setDestaque((d) => Math.max(d - 1, 0)); }
+    if (e.key === "Enter") { e.preventDefault(); if (filtradas[destaque]) escolher(filtradas[destaque]); }
+  }
+  return (
+    <div ref={ref} className="relative w-full" onKeyDown={aoTeclar}>
+      <button
+        type="button"
+        aria-label={rotulo}
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        disabled={desabilitado}
+        onClick={alternar}
+        className={`flex min-h-[50px] w-full items-center justify-between gap-3 rounded-lg border bg-white px-4 py-2 text-left text-sm font-semibold text-[#0B1756] transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30 disabled:cursor-not-allowed disabled:opacity-60 ${
+          aberto ? "border-[#023E8A] ring-2 ring-[#3563A7]/30" : "border-[#3563A7]/40 hover:border-[#3563A7]"
+        }`}
+      >
+        <span className={`min-w-0 truncate ${valor ? "" : "font-normal opacity-60"}`}>{valor || placeholder}</span>
+        <ChevronDown size={18} className={`shrink-0 text-[#3563A7] transition ${aberto ? "rotate-180" : ""}`} />
+      </button>
+      {aberto && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-blue-100 bg-white p-2 shadow-xl">
+          <div className="relative mb-2">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#3563A7]" />
+            <input
+              autoFocus
+              type="text"
+              value={busca}
+              onChange={(e) => { setBusca(e.target.value); setDestaque(0); }}
+              placeholder="Buscar especialidade..."
+              aria-label={`Buscar ${rotulo.toLowerCase()}`}
+              className="min-h-[42px] w-full rounded-lg border border-[#3563A7]/40 bg-white pl-9 pr-3 text-sm outline-none transition placeholder:text-[#0B1756]/50 focus:border-[#023E8A] focus:ring-2 focus:ring-[#3563A7]/30"
+            />
+          </div>
+          <ul role="listbox" aria-label={rotulo} className="max-h-60 overflow-y-auto">
+            {filtradas.length === 0 && <li className="px-3 py-3 text-sm opacity-70">Nenhum resultado encontrado.</li>}
+            {filtradas.map((opcao, i) => {
+              const sel = opcao === valor;
+              return (
+                <li
+                  key={opcao}
+                  role="option"
+                  aria-selected={sel}
+                  ref={(el) => { if (i === destaque) el?.scrollIntoView({ block: "nearest" }); }}
+                  onMouseEnter={() => setDestaque(i)}
+                  onClick={() => escolher(opcao)}
+                  className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm ${
+                    i === destaque ? "bg-[#3563A7]/10" : ""
+                  } ${sel ? "font-bold text-[#023E8A]" : "font-medium"}`}
+                >
+                  {opcao}
+                  {sel && <Check size={16} className="shrink-0" />}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana = false, placeholder = "Selecione a data", largura = "w-full" }) {
   const [aberto, setAberto] = useState(false);
   const [visao, setVisao] = useState(() => ({ ano: new Date().getFullYear(), mes: new Date().getMonth() }));
@@ -147,7 +231,7 @@ function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana
       setVisao({ ano: base.getFullYear(), mes: base.getMonth() });
       if (ref.current) {
         const r = ref.current.getBoundingClientRect();
-        const ALT = 360;
+        const ALT = 420;
         const LARG = 320;
         let top = r.bottom + 8;
         if (top + ALT > window.innerHeight - 12) {
@@ -164,12 +248,21 @@ function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana
       const d = new Date(ano, mes + delta, 1);
       return { ano: d.getFullYear(), mes: d.getMonth() };
     });
+  const diaBloqueado = (iso, data) => Boolean((minimo && iso < minimo) || (bloquearFinsDeSemana && [0, 6].includes(data.getDay())));
+  function irParaHoje() {
+    const hoje = new Date();
+    setVisao({ ano: hoje.getFullYear(), mes: hoje.getMonth() });
+    if (!diaBloqueado(hojeIso, hoje)) {
+      onChange(hojeIso);
+      setAberto(false);
+    }
+  }
   const primeiroDia = new Date(visao.ano, visao.mes, 1).getDay();
   const totalDias = new Date(visao.ano, visao.mes + 1, 0).getDate();
   const celulas = [...Array(primeiroDia).fill(null), ...Array.from({ length: totalDias }, (_, i) => i + 1)];
   // Impede voltar para meses totalmente bloqueados
   const bloqueiaAnterior = minimo && paraIso(visao.ano, visao.mes, 1).slice(0, 7) <= minimo.slice(0, 7);
-  const setaCls = "flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#3563A7]/10";
+  const setaCls = "flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white/15";
   return (
     <div ref={ref} className={`relative ${largura}`} onKeyDown={(e) => e.key === "Escape" && setAberto(false)}>
       <button
@@ -193,25 +286,28 @@ function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana
             role="dialog"
             aria-label={rotulo}
             style={{ top: pos.top, left: pos.left }}
-            className="fixed z-20 w-[320px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-blue-100 bg-white p-3 shadow-xl"
+            className="fixed z-20 w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-blue-100 bg-white p-3 shadow-xl"
           >
-            <div className="mb-3 flex items-center justify-between">
-              <button type="button" aria-label="Mês anterior" disabled={bloqueiaAnterior} onClick={() => mudarMes(-1)} className={`${setaCls} disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent`}>
-                <ChevronLeft size={19} />
-              </button>
+            <div className="mb-3 flex items-center justify-between rounded-xl bg-[#023E8A] px-4 py-3 text-white">
               <p className="text-sm font-bold">{nomesMeses[visao.mes]} {visao.ano}</p>
-              <button type="button" aria-label="Próximo mês" onClick={() => mudarMes(1)} className={setaCls}>
-                <ChevronRight size={19} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" aria-label="Mês anterior" disabled={bloqueiaAnterior} onClick={() => mudarMes(-1)} className={setaCls}>
+                  <ChevronLeft size={18} />
+                </button>
+                <button type="button" aria-label="Próximo mês" onClick={() => mudarMes(1)} className={setaCls}>
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
-            <div className="mb-1 grid grid-cols-7 text-center">{nomesSemana.map((d) => <span key={d} className="py-1 text-xs font-semibold opacity-60">{d}</span>)}</div>
+            <div className="mb-1 grid grid-cols-7 text-center">
+              {nomesSemana.map((d) => <span key={d} className="py-1.5 text-xs font-bold text-[#023E8A]">{d}</span>)}
+            </div>
             <div className="grid grid-cols-7 gap-y-1">
               {celulas.map((dia, i) => {
                 if (!dia) return <span key={`vazio-${i}`} />;
                 const iso = paraIso(visao.ano, visao.mes, dia);
                 const selecionado = iso === valor;
-                const fimDeSemana = [0, 6].includes(new Date(visao.ano, visao.mes, dia).getDay());
-                const bloqueado = (minimo && iso < minimo) || (bloquearFinsDeSemana && fimDeSemana);
+                const bloqueado = diaBloqueado(iso, new Date(visao.ano, visao.mes, dia));
                 return (
                   <button
                     key={iso}
@@ -219,13 +315,13 @@ function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana
                     disabled={bloqueado}
                     aria-pressed={selecionado}
                     onClick={() => { onChange(iso); setAberto(false); }}
-                    className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm transition ${
+                    className={`mx-auto flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold transition ${
                       bloqueado
                         ? "cursor-not-allowed opacity-30"
                         : selecionado
-                          ? "bg-[#023E8A] font-bold text-white"
+                          ? "border-2 border-[#023E8A] bg-[#3563A7]/15 font-bold text-[#023E8A]"
                           : iso === hojeIso
-                            ? "border border-[#023E8A] font-bold hover:bg-[#3563A7]/10"
+                            ? "bg-[#3563A7]/10 font-bold text-[#023E8A] hover:bg-[#3563A7]/20"
                             : "hover:bg-[#3563A7]/10"
                     }`}
                   >
@@ -233,6 +329,14 @@ function DatePicker({ rotulo, valor, onChange, minimo = "", bloquearFinsDeSemana
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-blue-100 pt-3">
+              <button type="button" onClick={() => { onChange(""); setAberto(false); }} className="rounded-lg px-1 py-1 text-xs font-semibold text-[#3563A7] transition hover:text-[#023E8A]">
+                Limpar data
+              </button>
+              <button type="button" onClick={irParaHoje} className="min-h-[36px] rounded-lg border-2 border-[#023E8A] bg-white px-4 text-sm font-bold text-[#023E8A] transition hover:bg-[#3563A7]/10 focus:outline-none focus:ring-2 focus:ring-[#3563A7]/30">
+                Hoje
+              </button>
             </div>
           </div>
         </>
@@ -377,7 +481,7 @@ export default function Consultas() {
           extrairLista(resEsp, ["especialidades", "dados", "resultados"])
             .map((item) => {
               const nome = item.nome || item.nome_especialidade || "";
-              return { id: Number(item.id), nome, Icone: iconesEspecialidade[nome.toLocaleLowerCase("pt-BR")] || Stethoscope };
+              return { id: Number(item.id), nome };
             })
             .filter((item) => item.id && item.nome)
         );
@@ -387,7 +491,7 @@ export default function Consultas() {
             .map((item) => ({
               id: Number(item.id),
               nome: item.nome || item.nome_unidade || "",
-              bairro: item.bairro || "Endereço não informado",
+              bairro: item.bairro || "",
               horario: item.horario_funcionamento || "Horário conforme unidade",
               distancia: "",
               rua: item.rua || "",
@@ -568,35 +672,28 @@ export default function Consultas() {
             </section>
             {etapaAtual === 1 && (
               <form onSubmit={continuar}>
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 lg:items-stretch">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 lg:items-start">
                   <section className={`${cardBase} p-5 sm:p-7 lg:col-span-3`}>
                     <CabecalhoCard Icone={CalendarPlus} titulo="Dados da consulta" sub="Preencha as informações abaixo." />
                     {carregandoDados && <Aviso className="mb-5">Carregando especialidades e unidades...</Aviso>}
-                    <fieldset className="mb-7">
-                      <Legenda>Qual especialidade você procura?</Legenda>
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {especialidades.map(({ nome, Icone }) => {
-                          const sel = especialidade === nome;
-                          return (
-                            <button
-                              key={nome}
-                              type="button"
-                              aria-pressed={sel}
-                              onClick={() => escolherEspecialidade(nome)}
-                              className={`flex min-h-[110px] flex-col items-center justify-center rounded-xl border p-3 text-center transition ${
-                                sel ? "border-[#023E8A] bg-[#3563A7]/15 ring-1 ring-[#023E8A]" : "border-blue-100 bg-[#fbfdff] hover:border-[#3563A7] hover:bg-[#3563A7]/10"
-                              }`}
-                            >
-                              <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${iconeCls(sel)}`}>
-                                <Icone size={22} />
-                              </div>
-                              <span className="text-sm font-bold">{nome}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </fieldset>
-                    <fieldset className="mb-7">
+                    <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <fieldset>
+                        <Legenda>Qual especialidade você procura?</Legenda>
+                        <SelectBusca
+                          rotulo="Especialidade"
+                          valor={especialidade}
+                          opcoes={especialidades.map((e) => e.nome)}
+                          onChange={escolherEspecialidade}
+                          placeholder={carregandoDados ? "Carregando..." : "Selecione ou digite para buscar"}
+                          desabilitado={carregandoDados || especialidades.length === 0}
+                        />
+                      </fieldset>
+                      <fieldset>
+                        <Legenda>Qual dia é melhor para você?</Legenda>
+                        <DatePicker rotulo="Data da consulta" valor={dia} onChange={setDia} minimo={minimoIso} bloquearFinsDeSemana placeholder="Selecione o dia" />
+                      </fieldset>
+                    </div>
+                    <fieldset className="mb-6">
                       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <Legenda className="">Qual unidade mais próxima de você?</Legenda>
                         {especialidade && (
@@ -606,67 +703,57 @@ export default function Consultas() {
                         )}
                       </div>
                       {!especialidade ? (
-                        <div className="flex flex-col items-center rounded-xl border border-dashed border-[#3563A7]/40 px-4 py-8 text-center">
-                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#3563A7]/10 text-[#023E8A]">
-                            <Hospital size={24} />
+                        <div className="flex items-center gap-3 rounded-xl border border-dashed border-[#3563A7]/40 px-4 py-4">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/10 text-[#023E8A]">
+                            <Hospital size={20} />
                           </div>
-                          <p className="text-sm font-bold">Escolha a especialidade primeiro</p>
-                          <p className="mt-1 text-xs">As unidades disponíveis aparecerão automaticamente.</p>
+                          <div>
+                            <p className="text-sm font-bold">Escolha a especialidade primeiro</p>
+                            <p className="mt-0.5 text-xs">As unidades disponíveis aparecerão automaticamente.</p>
+                          </div>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {unidades.map((u) => {
                             const sel = unidade?.id === u.id;
+                            const endereco = [u.rua, u.bairro].filter(Boolean).join(" · ") || "Endereço não informado";
                             return (
                               <button
                                 key={u.id}
                                 type="button"
                                 aria-pressed={sel}
                                 onClick={() => setUnidade(u)}
-                                className={`group relative overflow-hidden rounded-[22px] border p-5 text-left transition-all ${
+                                className={`relative flex items-start gap-3 overflow-hidden rounded-xl border p-3.5 text-left transition-all ${
                                   sel
-                                    ? "border-[#023E8A] bg-[#3563A7]/15 shadow-[0_10px_28px_rgba(2,62,138,0.12)]"
+                                    ? "border-[#023E8A] bg-[#3563A7]/15 shadow-[0_8px_20px_rgba(2,62,138,0.12)]"
                                     : "border-blue-100 bg-[#fbfdff] hover:-translate-y-0.5 hover:border-[#3563A7] hover:bg-white hover:shadow-sm"
                                 }`}
                               >
-                                <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#3563A7]/10" />
-                                <div className="relative z-10">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconeCls(sel)}`}>
-                                      <Hospital size={22} />
-                                    </div>
-                                    {sel && (
-                                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#023E8A] text-white">
-                                        <Check size={14} />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <h3 className="mt-4 text-sm font-bold leading-5">{u.nome}</h3>
-                                  <div className="mt-4 space-y-2.5 text-sm">
-                                    {[[MapPin, u.bairro], [Clock, u.horario], [Building2, u.rua || u.bairro]].map(([Icone, texto], k) => (
-                                      <p key={k} className="flex items-center gap-2">
-                                        <Icone size={15} className="shrink-0 text-[#3563A7]" />
-                                        {texto}
-                                      </p>
-                                    ))}
-                                  </div>
-                                  <div className="mt-4 flex items-center justify-between border-t border-blue-100 pt-4">
-                                    <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                                      <CheckCircle2 size={13} />
-                                      Atende {especialidade}
-                                    </span>
-                                    <ArrowRight size={15} className="text-[#023E8A] transition group-hover:translate-x-1" />
-                                  </div>
+                                <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#3563A7]/10" />
+                                <div className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconeCls(sel)}`}>
+                                  <Hospital size={20} />
                                 </div>
+                                <div className="relative z-10 min-w-0 flex-1">
+                                  <h3 className="pr-7 text-sm font-bold leading-5">{u.nome}</h3>
+                                  <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-5">
+                                    <MapPin size={14} className="mt-0.5 shrink-0 text-[#3563A7]" />
+                                    {endereco}
+                                  </p>
+                                  <p className="mt-0.5 flex items-start gap-1.5 text-xs leading-5">
+                                    <Clock size={14} className="mt-0.5 shrink-0 text-[#3563A7]" />
+                                    {u.horario}
+                                  </p>
+                                </div>
+                                {sel && (
+                                  <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#023E8A] text-white">
+                                    <Check size={13} />
+                                  </div>
+                                )}
                               </button>
                             );
                           })}
                         </div>
                       )}
-                    </fieldset>
-                    <fieldset className="mb-7">
-                      <Legenda>Qual dia é melhor para você?</Legenda>
-                      <DatePicker rotulo="Data da consulta" valor={dia} onChange={setDia} minimo={minimoIso} bloquearFinsDeSemana placeholder="Selecione o dia" largura="w-full sm:w-60" />
                     </fieldset>
                     <fieldset>
                       <Legenda>Escolha o horário</Legenda>
@@ -695,7 +782,7 @@ export default function Consultas() {
                       </div>
                     </fieldset>
                   </section>
-                  <aside className="flex h-full flex-col gap-5 lg:col-span-2">
+                  <aside className="flex flex-col gap-5 lg:col-span-2">
                     <section className={`${cardBase} p-5 sm:p-6`}>
                       <CabecalhoCard Icone={ClipboardList} icone={24} titulo="Informações adicionais" sub="Conte um pouco mais." tituloCls="text-xl font-bold" />
                       <div className="mb-7">
@@ -724,15 +811,15 @@ export default function Consultas() {
                         </p>
                       </div>
                     </section>
-                    <section className={`${cardBase} flex h-full flex-col p-5 sm:p-6`}>
-                      <h3 className="mb-6 mt-1 text-lg font-bold">Próximos passos</h3>
-                      <div className="flex flex-1 flex-col justify-evenly gap-6 pb-4">
+                    <section className={`${cardBase} p-5 sm:p-6`}>
+                      <h3 className="mb-4 text-lg font-bold">Próximos passos</h3>
+                      <div className="space-y-4">
                         {PASSOS.map(([titulo, descricao], i) => (
                           <div key={titulo} className="flex items-start gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/15 text-sm font-bold">{i + 1}</div>
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3563A7]/15 text-sm font-bold">{i + 1}</div>
                             <div>
                               <h4 className="text-sm font-bold">{titulo}</h4>
-                              <p className="mt-1 text-xs leading-5 sm:text-sm">{descricao}</p>
+                              <p className="mt-0.5 text-xs leading-5 sm:text-sm">{descricao}</p>
                             </div>
                           </div>
                         ))}
