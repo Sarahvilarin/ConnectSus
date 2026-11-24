@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../../lib/api";
 import {
   Activity,
   AlertTriangle,
   CalendarDays,
+  Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   MapPin,
   Phone,
@@ -121,6 +125,342 @@ function Card({ children, className = "" }) {
     <section className={`rounded-[24px] border border-[#DFEAF5] bg-white p-5 shadow-[0_5px_18px_rgba(20,55,100,0.04)] sm:p-6 ${className}`}>
       {children}
     </section>
+  );
+}
+
+function FilterSelect({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const selected = options.find(
+    (option) => option.value === value
+  );
+
+  useEffect(() => {
+    function fecharFora(event) {
+      if (!containerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function fecharEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", fecharFora);
+    document.addEventListener("keydown", fecharEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", fecharFora);
+      document.removeEventListener("keydown", fecharEscape);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        aria-label="Filtrar por status"
+        aria-expanded={open}
+        onClick={() => setOpen((atual) => !atual)}
+        className={`flex h-12 w-full items-center justify-between gap-3
+          rounded-2xl border bg-white px-4 text-left text-sm
+          font-normal text-[#0B1756] outline-none transition-all
+          focus-visible:ring-4 focus-visible:ring-[#023E8A]/10 ${
+            open
+              ? "border-[#CBD6E8] ring-4 ring-[#023E8A]/5"
+              : "border-[#DCE3ED] hover:border-[#023E8A]/30"
+          }`}
+      >
+        <span className="min-w-0 flex-1 truncate">
+          {selected?.label || "Todos os status"}
+        </span>
+
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#023E8A] transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2
+          space-y-1 rounded-[18px] border border-[#DCE3ED]
+          bg-white p-1.5
+          shadow-[0_12px_28px_rgba(11,23,86,0.14)]"
+        >
+          {options.map((option) => {
+            const active = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                className={`flex min-h-10 w-full items-center
+                  justify-between gap-3 rounded-xl px-3.5
+                  py-2.5 text-left text-sm transition-colors ${
+                    active
+                      ? "bg-[#023E8A] font-semibold text-white"
+                      : "text-[#0B1756] hover:bg-[#F1F6FB]"
+                  }`}
+              >
+                <span className="min-w-0 flex-1">
+                  {option.label}
+                </span>
+
+                {active && (
+                  <Check size={16} className="shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DateFilter({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const [mes, setMes] = useState(() => {
+    const hoje = new Date();
+    return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    function fecharFora(event) {
+      if (!containerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function fecharEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", fecharFora);
+    document.addEventListener("keydown", fecharEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", fecharFora);
+      document.removeEventListener("keydown", fecharEscape);
+    };
+  }, []);
+
+  const meses = [
+    "Janeiro", "Fevereiro", "Março", "Abril",
+    "Maio", "Junho", "Julho", "Agosto",
+    "Setembro", "Outubro", "Novembro", "Dezembro",
+  ];
+
+  const diasSemana = [
+    "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb",
+  ];
+
+  const ano = mes.getFullYear();
+  const mesAtual = mes.getMonth();
+
+  const primeiroDia = new Date(ano, mesAtual, 1).getDay();
+  const quantidadeDias = new Date(ano, mesAtual + 1, 0).getDate();
+
+  const hojeISO = dataHojeISO();
+
+  const dias = [
+    ...Array(primeiroDia).fill(null),
+    ...Array.from(
+      { length: quantidadeDias },
+      (_, index) => index + 1
+    ),
+  ];
+
+  function mudarMes(direcao) {
+    setMes((atual) =>
+      new Date(
+        atual.getFullYear(),
+        atual.getMonth() + direcao,
+        1
+      )
+    );
+  }
+
+  function selecionarData(data) {
+    onChange(data);
+    setOpen(false);
+  }
+
+  function abrirCalendario() {
+    if (!open) {
+      const referencia = value
+        ? new Date(`${value}T00:00:00`)
+        : new Date();
+
+      setMes(
+        new Date(
+          referencia.getFullYear(),
+          referencia.getMonth(),
+          1
+        )
+      );
+    }
+
+    setOpen((atual) => !atual);
+  }
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        aria-label="Filtrar por data"
+        aria-expanded={open}
+        onClick={abrirCalendario}
+        className={`flex h-12 w-full items-center
+          justify-between gap-3 rounded-2xl border
+          bg-white px-4 text-left text-sm text-[#0B1756]
+          outline-none transition-all
+          focus-visible:ring-4 focus-visible:ring-[#023E8A]/10 ${
+            open
+              ? "border-[#CBD6E8] ring-4 ring-[#023E8A]/5"
+              : "border-[#DCE3ED] hover:border-[#023E8A]/30"
+          }`}
+      >
+        <span>
+          {value ? formatarData(value) : "Filtrar por data"}
+        </span>
+
+        <CalendarDays
+          size={16}
+          className="shrink-0 text-[#023E8A]"
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2
+          w-[300px] max-w-[calc(100vw-80px)] sm:left-auto sm:right-0
+          rounded-[20px] border border-[#DCE3ED]
+          bg-white p-4
+          shadow-[0_16px_35px_rgba(11,23,86,0.16)]"
+        >
+          {/* Cabeçalho do calendário */}
+          <div className="flex items-center justify-between
+            gap-2 rounded-xl bg-[#023E8A]
+            px-3 py-2.5 text-white"
+          >
+            <span className="text-sm font-bold">
+              {meses[mesAtual]} {ano}
+            </span>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => mudarMes(-1)}
+                className="flex h-8 w-8 items-center
+                  justify-center rounded-full bg-white/10
+                  transition hover:bg-white/20"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => mudarMes(1)}
+                className="flex h-8 w-8 items-center
+                  justify-center rounded-full bg-white/10
+                  transition hover:bg-white/20"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Dias da semana */}
+          <div className="mt-3 grid grid-cols-7 gap-1">
+            {diasSemana.map((dia) => (
+              <span
+                key={dia}
+                className="py-2 text-center text-xs
+                  font-semibold text-[#023E8A]"
+              >
+                {dia}
+              </span>
+            ))}
+          </div>
+
+          {/* Dias do mês */}
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {dias.map((dia, index) => {
+              if (!dia) {
+                return <div key={`vazio-${index}`} />;
+              }
+
+              const data = `${ano}-${String(
+                mesAtual + 1
+              ).padStart(2, "0")}-${String(dia).padStart(
+                2,
+                "0"
+              )}`;
+
+              const selecionado = value === data;
+              const ehHoje = hojeISO === data;
+
+              return (
+                <button
+                  key={data}
+                  type="button"
+                  aria-label={formatarData(data)}
+                  aria-pressed={selecionado}
+                  onClick={() => selecionarData(data)}
+                  className={`flex h-8 w-full items-center
+                    justify-center rounded-lg border
+                    text-xs font-medium transition-all ${
+                      selecionado
+                        ? "border-[#023E8A] bg-[#023E8A] text-white"
+                        : ehHoje
+                          ? "border-2 border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]"
+                          : "border-transparent text-[#0B1756] hover:bg-[#EAF3F7]"
+                    }`}
+                >
+                  {dia}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Rodapé do calendário */}
+          <div className="mt-4 flex items-center
+            justify-between border-t border-slate-200 pt-3"
+          >
+            <button
+              type="button"
+              onClick={() => selecionarData("")}
+              className="text-xs font-semibold text-slate-500
+                transition hover:text-[#023E8A]"
+            >
+              Limpar data
+            </button>
+
+            <button
+              type="button"
+              onClick={() => selecionarData(hojeISO)}
+              className="rounded-lg border border-[#023E8A]
+                px-3 py-2 text-xs font-semibold text-[#023E8A]
+                transition hover:bg-[#EAF3F7]"
+            >
+              Hoje
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -286,6 +626,7 @@ export default function MinhasVisitasPage() {
               <h2 className="text-lg font-bold text-[#0B1756]">Atendimentos atribuídos a você</h2>
               <p className="mt-1 text-sm text-slate-500">A lista é carregada a partir do seu usuário autenticado.</p>
             </div>
+            
             <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[650px]">
               <div className="relative sm:col-span-1">
                 <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
