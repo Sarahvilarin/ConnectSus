@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 
 import {
-  ArrowRight,
   Check,
   ChevronDown,
   Clock3,
@@ -80,13 +78,18 @@ export default function ContatoPage() {
 
       <div className="relative z-10 mx-auto max-w-[1300px] px-4 py-8 sm:px-6 lg:px-8">
         {/* Cabeçalho */}
-        <section className="mb-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+        <section className="mb-7 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-[#0B1756] lg:text-[42px]">
-              Estamos aqui para ajudar.
+            <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-[#0B1756] sm:text-4xl lg:whitespace-nowrap lg:text-5xl">
+              Estamos aqui para{" "}
+              <span className="bg-gradient-to-r from-[#023E8A] to-[#3563A7] bg-clip-text text-transparent">
+                ajudar você.
+              </span>
             </h1>
 
-            <p className="mt-3 max-w-2xl text-base font-normal leading-7 text-slate-600">
+            <div className="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-[#023E8A] to-[#A9D3F5]" />
+
+            <p className="mt-4 text-base font-normal leading-7 text-slate-600 lg:whitespace-nowrap">
               Tire dúvidas, envie sugestões ou fale com nossa equipe sobre o
               uso da plataforma.
             </p>
@@ -261,59 +264,6 @@ export default function ContatoPage() {
                   Enviar mensagem
                 </button>
               </form>
-            </div>
-          </div>
-        </section>
-
-        {/* Cards inferiores */}
-        <section className="mt-6 grid gap-4 md:grid-cols-3">
-          <Link
-            href="/publico/acessibilidade"
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
-          >
-            <div>
-              <h3 className="text-lg font-bold leading-snug text-[#0B1756]">
-                Acessibilidade e Ajuda
-              </h3>
-              <p className="mt-1 text-sm font-normal leading-6 text-slate-600">
-                Encontre respostas e recursos de acessibilidade.
-              </p>
-            </div>
-
-            <ArrowRight
-              size={17}
-              className="ml-auto shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-[#023E8A]"
-            />
-          </Link>
-
-          <Link
-            href="/publico/unidades"
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
-          >
-            <div>
-              <h3 className="text-lg font-bold leading-snug text-[#0B1756]">
-                Unidades de saúde
-              </h3>
-              <p className="mt-1 text-sm font-normal leading-6 text-slate-600">
-                Consulte unidades, serviços e informações.
-              </p>
-            </div>
-
-            <ArrowRight
-              size={17}
-              className="ml-auto shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-[#023E8A]"
-            />
-          </Link>
-
-          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-[#EAF3F7] p-5 shadow-sm">
-            <div>
-              <h3 className="text-lg font-bold leading-snug text-[#0B1756]">
-                Precisa de atendimento?
-              </h3>
-              <p className="mt-1 text-sm font-normal leading-6 text-slate-600">
-                Em situações de saúde, procure a unidade adequada para o seu
-                atendimento.
-              </p>
             </div>
           </div>
         </section>

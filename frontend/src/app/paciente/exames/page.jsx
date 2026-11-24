@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarClock, CalendarDays, CheckCircle2, Clock3, FileCheck2,
   FileText, FlaskConical, Info, MapPin, Search, ShieldCheck, X,
   ClipboardList, Building2, CircleHelp, Stethoscope, HeartPulse,
+  ChevronDown, Check,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -92,17 +93,107 @@ function Modal({ titulo, descricao, children, onClose }) {
   );
 }
 
-function StatCard({ icon: Icone, label, valor, descricao, tone = "blue" }) {
-  const tones = {
-    blue: "border-blue-100 bg-blue-50/70 text-[#023E8A]",
-    amber: "border-amber-100 bg-amber-50/70 text-amber-700",
-    green: "border-emerald-100 bg-emerald-50/70 text-emerald-700",
-    slate: "border-slate-200 bg-slate-50 text-slate-600",
-  };
+function ListaEscolha({
+  value,
+  onChange,
+  options,
+  placeholder = "Selecione uma opção",
+  ariaLabel = "Lista de opções",
+  className = "",
+}) {
+  const [aberta, setAberta] = useState(false);
+  const raizRef = useRef(null);
+  const selecionada = options.find((opcao) => String(opcao.value) === String(value));
+
+  useEffect(() => {
+    if (!aberta) return undefined;
+
+    function fecharFora(event) {
+      if (raizRef.current && !raizRef.current.contains(event.target)) setAberta(false);
+    }
+    function fecharEscape(event) {
+      if (event.key === "Escape") setAberta(false);
+    }
+
+    document.addEventListener("mousedown", fecharFora);
+    document.addEventListener("touchstart", fecharFora);
+    document.addEventListener("keydown", fecharEscape);
+    return () => {
+      document.removeEventListener("mousedown", fecharFora);
+      document.removeEventListener("touchstart", fecharFora);
+      document.removeEventListener("keydown", fecharEscape);
+    };
+  }, [aberta]);
+
   return (
-    <div className="rounded-2xl border border-[#DCE8F5] bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-[#0B1756]">{valor}</p></div><span className={`flex h-11 w-11 items-center justify-center rounded-xl border ${tones[tone]}`}><Icone size={22} /></span></div>
-      <p className="mt-2 text-xs leading-5 text-slate-500">{descricao}</p>
+    <div ref={raizRef} className={`relative min-w-0 ${className}`}>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={aberta}
+        onClick={() => setAberta((atual) => !atual)}
+        className={`flex h-12 w-full items-center gap-3 rounded-xl border bg-white px-3 py-2 text-left shadow-[0_2px_5px_rgba(15,45,85,0.035)] outline-none transition hover:border-[#AFC5DF] hover:bg-[#FCFDFF] focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10 ${
+          aberta ? "border-[#8EADD0] ring-4 ring-[#023E8A]/[0.08]" : "border-[#D8E4F1]"
+        }`}
+      >
+        <span className={`min-w-0 flex-1 truncate text-sm ${selecionada ? "font-semibold text-[#14245B]" : "text-slate-400"}`}>
+          {selecionada?.label || placeholder}
+        </span>
+        <ChevronDown
+          size={17}
+          className={`shrink-0 text-[#6B83A3] transition-transform duration-200 ${aberta ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {aberta && (
+        <div className="absolute left-0 top-full z-[90] mt-2 w-full min-w-[230px] overflow-hidden rounded-[20px] border border-[#E0EAF5] bg-white p-1.5 shadow-[0_20px_48px_rgba(16,45,88,0.18)]">
+          <div
+            role="listbox"
+            aria-label={ariaLabel}
+            className="max-h-[270px] overflow-y-auto overscroll-contain pr-0.5 [scrollbar-color:#9CA3AF_transparent] [scrollbar-width:thin]"
+          >
+            {options.map((opcao) => {
+              const ativa = String(opcao.value) === String(value);
+              return (
+                <button
+                  key={String(opcao.value)}
+                  type="button"
+                  role="option"
+                  aria-selected={ativa}
+                  onClick={() => {
+                    onChange(opcao.value);
+                    setAberta(false);
+                  }}
+                  className={`mb-1 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition last:mb-0 ${
+                    ativa ? "bg-[#1B438E] text-white shadow-sm" : "text-[#14245B] hover:bg-[#F1F6FB]"
+                  }`}
+                >
+                  <span className={`min-w-0 flex-1 truncate text-sm ${ativa ? "font-bold" : "font-medium"}`}>
+                    {opcao.label}
+                  </span>
+                  {ativa && <Check size={16} className="shrink-0 text-white" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ icon: Icone, label, valor, descricao }) {
+  return (
+    <div className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
+        <Icone size={26} strokeWidth={2} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-tight text-[#0B1756]">{label}</p>
+        <p className="mt-1 text-2xl font-extrabold leading-none tracking-tight text-[#0B1756]">{valor}</p>
+        <p className="mt-1.5 text-xs leading-snug text-slate-500">{descricao}</p>
+      </div>
     </div>
   );
 }
@@ -215,11 +306,29 @@ export default function MeusExamesPage() {
 
         {secao === "proximos" && !proximoExame && !carregando && !erro && <section className="mb-7 rounded-2xl border border-[#D5E4F7] bg-white px-6 py-10 text-center shadow-sm"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF1FA] text-[#023E8A]"><CalendarDays size={26} /></span><h2 className="mt-4 text-xl font-bold text-[#0B1756]">Você não tem exames agendados</h2><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">Quando um profissional solicitar ou agendar um exame, as informações aparecerão aqui.</p></section>}
 
-        <section className="overflow-hidden rounded-2xl border border-[#D5E4F7] bg-white shadow-sm">
+        <section className="overflow-visible rounded-2xl border border-[#D5E4F7] bg-white shadow-sm">
           <div className="border-b border-[#E5EDF7] px-5 py-5 sm:px-7"><div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end"><div><h2 className="text-xl font-bold text-[#0B1756]">{secao === "proximos" ? "Todos os próximos exames" : "Histórico de exames"}</h2><p className="mt-1.5 text-sm leading-6 text-slate-500">{secao === "proximos" ? "Acompanhe o status dos exames solicitados e agendados." : "Veja os exames concluídos e os agendamentos cancelados."}</p></div><span className="text-sm text-slate-500">{examesFiltrados.length} {examesFiltrados.length === 1 ? "registro" : "registros"}</span></div>
             <div className="mt-5 flex flex-col gap-3 lg:flex-row"><label className="relative block min-w-0 flex-1"><Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por exame, protocolo ou unidade..." className="h-12 w-full rounded-xl border border-[#D6E2F2] bg-white pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#8EAFDF] focus:ring-2 focus:ring-[#023E8A]/10" /></label>
-              <select aria-label="Filtrar por situação" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="h-12 rounded-xl border border-[#D6E2F2] bg-white px-3.5 text-sm text-slate-700 outline-none focus:border-[#8EAFDF]">{opcoesStatus.map((s) => <option key={s} value={s}>{s === "Todos" ? "Todas as situações" : s}</option>)}</select>
-              <select aria-label="Filtrar por categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="h-12 rounded-xl border border-[#D6E2F2] bg-white px-3.5 text-sm text-slate-700 outline-none focus:border-[#8EAFDF]"><option>Todas as categorias</option><option>Exame</option></select>
+             <ListaEscolha
+                    value={filtroStatus}
+                    onChange={setFiltroStatus}
+                    ariaLabel="Filtrar por situação"
+                    className="lg:w-[220px]"
+                    options={opcoesStatus.map((s) => ({
+                      value: s,
+                      label: s === "Todos" ? "Todas as situações" : s,
+                    }))}
+                  />
+                  <ListaEscolha
+                    value={filtroCategoria}
+                    onChange={setFiltroCategoria}
+                    ariaLabel="Filtrar por categoria"
+                    className="lg:w-[220px]"
+                    options={[
+                      { value: "Todas as categorias", label: "Todas as categorias" },
+                      { value: "Exame", label: "Exame" },
+                    ]}
+                  />
               <button type="button" onClick={limparFiltros} className="h-12 rounded-xl border border-[#D6E2F2] bg-white px-4 text-sm font-bold text-[#023E8A] transition hover:bg-[#F2F7FD]">Limpar filtros</button>
             </div>
           </div>
@@ -230,7 +339,7 @@ export default function MeusExamesPage() {
               {examesFiltrados.length === 0 && <div className="px-5 py-14 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#EAF1FA] text-[#4779B9]"><Search size={22} /></span><h3 className="mt-4 text-lg font-bold text-[#0B1756]">Nenhum exame encontrado</h3><p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">Não há exames correspondentes à seção ou aos filtros selecionados.</p><button type="button" onClick={limparFiltros} className="mt-4 rounded-xl bg-[#023E8A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0B1756]">Limpar filtros</button></div>}
             </div>
           )}
-          <div className="flex flex-col justify-between gap-2 border-t border-[#E5EDF7] bg-[#FBFDFF] px-5 py-4 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:px-7"><span>As informações são carregadas diretamente do sistema de saúde.</span><span className="inline-flex items-center gap-1.5"><ShieldCheck size={15} className="text-[#4779B9]" /> Informações de saúde protegidas por autenticação.</span></div>
+          <div className="flex flex-col justify-between gap-2 rounded-b-2xl border-t border-[#E5EDF7] bg-[#FBFDFF] px-5 py-4 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:px-7"><span>As informações são carregadas diretamente do sistema de saúde.</span><span className="inline-flex items-center gap-1.5"><ShieldCheck size={15} className="text-[#4779B9]" /> Informações de saúde protegidas por autenticação.</span></div>
         </section>
       </div>
 

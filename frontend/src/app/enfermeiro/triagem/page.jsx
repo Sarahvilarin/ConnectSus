@@ -1,7 +1,7 @@
-
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import {
   AlertCircle,
   Activity,
@@ -11,13 +11,13 @@ import {
   ClipboardList,
   Clock3,
   FileText,
-  Filter,
   HeartPulse,
   Info,
   ListChecks,
   Plus,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Stethoscope,
   Thermometer,
   UserRound,
@@ -100,9 +100,18 @@ function formatarTriagemApi(item) {
   };
 }
 
-/* =========================
-   COMPONENTE PRINCIPAL
-========================= */
+const OPCOES_DOR = [
+  { value: "Sem dor", label: "Sem dor", icon: CheckCircle2 },
+  { value: "Leve", label: "Leve", icon: Thermometer },
+  { value: "Moderada", label: "Moderada", icon: Activity },
+  { value: "Intensa", label: "Intensa", icon: AlertCircle },
+];
+
+const OPCOES_STATUS = [
+  { value: "Todos", label: "Todos", icon: SlidersHorizontal },
+  { value: "Aguardando atendimento médico", label: "Aguardando atendimento médico", icon: Clock3 },
+  { value: "Encaminhada ao médico", label: "Encaminhada ao médico", icon: CheckCircle2 },
+];
 
 export default function TriagemEnfermagemPage() {
   const [salvandoTriagem, setSalvandoTriagem] = useState(false);
@@ -146,16 +155,7 @@ export default function TriagemEnfermagemPage() {
     async function carregarTriagens() {
       try {
         setCarregandoTriagens(true);
-        const token = localStorage.getItem("unesus_token");
-        const resposta = await fetch("http://localhost:8080/api/triagens", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const dados = await resposta.json();
-
-        if (!resposta.ok) {
-          throw new Error(dados.mensagem || "Não foi possível carregar as triagens.");
-        }
-
+        const dados = await api("/api/triagens");
         const lista = Array.isArray(dados) ? dados : dados.triagens || [];
         setTriagens(lista.map(formatarTriagemApi));
       } catch (error) {
@@ -185,23 +185,12 @@ export default function TriagemEnfermagemPage() {
         setCarregandoPacientes(true);
         setErroBuscaPaciente("");
 
-        const token = localStorage.getItem("unesus_token");
-
-        const resposta = await fetch(
-          `http://localhost:8080/api/pacientes/busca?termo=${encodeURIComponent(termo)}`,
+        const dados = await api(
+          `/api/pacientes/busca?termo=${encodeURIComponent(termo)}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
             signal: controller.signal,
           }
         );
-
-        const dados = await resposta.json();
-
-        if (!resposta.ok) {
-          throw new Error(dados.mensagem || "Erro ao buscar pacientes.");
-        }
 
         const pacientes = (dados.pacientes || []).map((item) => {
           const nascimento = item.data_nascimento
@@ -383,22 +372,10 @@ export default function TriagemEnfermagemPage() {
       setSalvandoTriagem(true);
       setErro("");
 
-      const token = localStorage.getItem("unesus_token");
-
-      const resposta = await fetch("http://localhost:8080/api/triagens", {
+      const dados = await api("/api/triagens", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(payload),
       });
-
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(dados.mensagem || "Não foi possível registrar a triagem.");
-      }
 
       const registro = {
         id: dados.triagem.id,
@@ -439,25 +416,13 @@ export default function TriagemEnfermagemPage() {
   }
 
   async function abrirDetalhe(item) {
-    // Abre o modal imediatamente com os dados já disponíveis na tabela.
+
     setDetalhe(item);
     setCarregandoDetalhe(true);
     setErroDetalhe("");
 
     try {
-      const token = localStorage.getItem("unesus_token");
-      const resposta = await fetch(
-        `http://localhost:8080/api/triagens/${item.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(dados.mensagem || "Não foi possível carregar os detalhes da triagem.");
-      }
+      const dados = await api(`/api/triagens/${item.id}`);
 
       const classificacoes = {
         azul: "Não urgente",
@@ -540,23 +505,9 @@ export default function TriagemEnfermagemPage() {
                 e encaminhe as informações do paciente para avaliação médica.
               </p>
             </div>
-
-            <div className="grid w-full max-w-[410px] grid-cols-2 gap-3">
-              <HeroInfo
-                icon={<ShieldCheck size={18} />}
-                titulo="Registro seguro"
-                texto="Avaliação inicial"
-              />
-              <HeroInfo
-                icon={<Activity size={18} />}
-                titulo="Fluxo clínico"
-                texto="Encaminhamento médico"
-              />
-            </div>
           </div>
         </section>
 
-        {/* INDICADORES */}
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             icon={<ClipboardList size={20} />}
@@ -584,7 +535,6 @@ export default function TriagemEnfermagemPage() {
           />
         </section>
 
-        {/* ABAS */}
         <section className="mt-6 overflow-hidden rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
           <div className="grid grid-cols-2 gap-2 p-2 sm:p-3">
             <button
@@ -619,7 +569,6 @@ export default function TriagemEnfermagemPage() {
           </div>
         </section>
 
-        {/* AVISOS */}
         {aviso && (
           <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#C9DDF0] bg-[#EAF3FA] px-4 py-3 text-sm text-[#174693]">
             <Info size={18} className="mt-0.5 shrink-0" />
@@ -634,18 +583,14 @@ export default function TriagemEnfermagemPage() {
           </div>
         )}
 
-        {/* FORMULÁRIO */}
         {aba === "nova" ? (
           <form onSubmit={salvarTriagem} className="mt-5">
 
 
-
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,1fr)]">
 
-              {/* COLUNA PRINCIPAL */}
               <div className="space-y-5">
 
-                {/* IDENTIFICAÇÃO */}
                 <section className="rounded-[24px] border border-[#DCE8F3] bg-white p-5 shadow-[0_10px_30px_rgba(2,62,138,0.05)] sm:p-7">
                   <SectionHeading
                     number="01"
@@ -741,7 +686,6 @@ export default function TriagemEnfermagemPage() {
                   </div>
                 </section>
 
-                {/* SINAIS VITAIS */}
                 <section className="rounded-[24px] border border-[#DCE8F3] bg-white p-5 shadow-[0_10px_30px_rgba(2,62,138,0.05)] sm:p-7">
                   <SectionHeading
                     number="02"
@@ -816,7 +760,6 @@ export default function TriagemEnfermagemPage() {
                   </div>
                 </section>
 
-                {/* AVALIAÇÃO */}
                 <section className="rounded-[24px] border border-[#DCE8F3] bg-white p-5 shadow-[0_10px_30px_rgba(2,62,138,0.05)] sm:p-7">
                   <SectionHeading
                     number="03"
@@ -851,7 +794,7 @@ export default function TriagemEnfermagemPage() {
                       />
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="relative z-40 grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-semibold text-[#0B1756]">
                           Início dos sintomas
@@ -868,17 +811,13 @@ export default function TriagemEnfermagemPage() {
                         <label className="mb-2 block text-sm font-semibold text-[#0B1756]">
                           Intensidade da dor
                         </label>
-                        <select
+                        <FilterSelect
+                          ariaLabel="Intensidade da dor"
                           value={dor}
-                          onChange={(event) => setDor(event.target.value)}
-                          className="h-12 w-full rounded-xl border border-slate-200 bg-[#F8FAFD] px-4 text-sm outline-none focus:border-[#3563A7] focus:bg-white"
-                        >
-                          <option value="">Selecione</option>
-                          <option>Sem dor</option>
-                          <option>Leve</option>
-                          <option>Moderada</option>
-                          <option>Intensa</option>
-                        </select>
+                          onChange={setDor}
+                          options={OPCOES_DOR}
+                          placeholder="Selecione"
+                        />
                       </div>
                     </div>
 
@@ -927,7 +866,6 @@ export default function TriagemEnfermagemPage() {
 
               </div>
 
-              {/* COLUNA LATERAL */}
               <aside className="space-y-5 xl:sticky xl:top-5">
 
                 <section className="overflow-hidden rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_10px_30px_rgba(2,62,138,0.06)]">
@@ -1017,7 +955,6 @@ export default function TriagemEnfermagemPage() {
                   </div>
                 </section>
 
-                {/* CLASSIFICAÇÃO */}
                 <section className="rounded-[24px] min-h-[620px] border border-[#DCE8F3] bg-white p-5 shadow-[0_10px_30px_rgba(2,62,138,0.05)] sm:p-7">
                   <SectionHeading
                     number="04"
@@ -1101,7 +1038,6 @@ export default function TriagemEnfermagemPage() {
           </form>
         ) : (
 
-          /* LISTA DE TRIAGENS */
           <section className="mt-5 overflow-hidden rounded-[24px] border border-[#DCE8F3] bg-white shadow-[0_12px_36px_rgba(2,62,138,0.07)]">
             <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -1114,7 +1050,7 @@ export default function TriagemEnfermagemPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_250px] sm:p-6">
+            <div className="relative z-30 grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-6">
               <div className="relative">
                 <Search
                   size={18}
@@ -1128,29 +1064,12 @@ export default function TriagemEnfermagemPage() {
                 />
               </div>
 
-              <div className="relative">
-                <Filter
-                  size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <select
-                  value={filtroStatus}
-                  onChange={(event) => setFiltroStatus(event.target.value)}
-                  className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-[#F8FAFD] pl-10 pr-9 text-sm text-[#0B1756] outline-none focus:border-[#3563A7]"
-                >
-                  {[
-                    "Todos",
-                    "Aguardando atendimento médico",
-                    "Encaminhada ao médico",
-                  ].map((status) => (
-                    <option key={status}>{status}</option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={15}
-                  className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-              </div>
+              <FilterSelect
+                ariaLabel="Filtrar por situação"
+                value={filtroStatus}
+                onChange={setFiltroStatus}
+                options={OPCOES_STATUS}
+              />
             </div>
 
             <div className="flex flex-wrap gap-2 px-5 pb-5 sm:px-6">
@@ -1266,7 +1185,6 @@ export default function TriagemEnfermagemPage() {
 
             )}
 
-            {/* VERSÃO MOBILE */}
             {!carregandoTriagens && (
             <div className="space-y-3 border-t border-slate-100 p-4 md:hidden">
               {triagensFiltradas.map((item) => (
@@ -1335,7 +1253,6 @@ export default function TriagemEnfermagemPage() {
         )}
       </div>
 
-      {/* MODAL DE DETALHES */}
       {detalhe && (
         <Modal
           onClose={() => setDetalhe(null)}
@@ -1413,9 +1330,80 @@ export default function TriagemEnfermagemPage() {
   );
 }
 
-/* =========================
-   COMPONENTES AUXILIARES
-========================= */
+/* Filtro/seleção no mesmo padrão da página de exames:
+   botão com ícone em caixinha e menu arredondado com item selecionado em #29478F. */
+function FilterSelect({ value, onChange, options, ariaLabel, placeholder = "Selecione" }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+  const selected = options.find((option) => option.value === value);
+  const TriggerIcon = selected?.icon || SlidersHorizontal;
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!containerRef.current?.contains(event.target)) setOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={`flex h-12 w-full items-center gap-3 rounded-xl border bg-white px-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-[#3563A7]/20 ${open ? "border-[#3563A7] shadow-[0_0_0_4px_rgba(53,99,167,0.10)]" : "border-slate-200 hover:border-[#9BB5D2]"}`}
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EAF1F8] text-[#174693]">
+          <TriggerIcon size={16} />
+        </span>
+        <span className={`min-w-0 flex-1 truncate text-sm ${selected ? "font-bold text-[#0B1756]" : "text-slate-400"}`}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+9px)] z-[90] rounded-[22px] border border-[#E1EAF3] bg-white p-2 shadow-[0_18px_42px_rgba(15,38,80,0.17)]">
+          <div role="menu" aria-label={ariaLabel} className="space-y-1">
+            {options.map((option) => {
+              const active = option.value === value;
+              const OptionIcon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={active}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition ${active ? "bg-[#29478F] font-semibold text-white shadow-sm" : "text-[#0B1756] hover:bg-[#F2F6FB]"}`}
+                >
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-white/15 text-white" : "bg-[#EAF1F8] text-[#174693]"}`}>
+                    <OptionIcon size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">{option.label}</span>
+                  {active && <Check size={16} className="shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function HeroInfo({ icon, titulo, texto }) {
   return (
@@ -1433,17 +1421,10 @@ function HeroInfo({ icon, titulo, texto }) {
   );
 }
 
-function MetricCard({ icon, label, value, tone }) {
-  const styles = {
-    blue: "bg-[#EAF1F8] text-[#174693]",
-    green: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-700",
-    red: "bg-red-50 text-red-700",
-  };
-
+function MetricCard({ icon, label, value }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-[#DCE8F3] bg-white p-5 shadow-[0_8px_24px_rgba(2,62,138,0.04)]">
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${styles[tone]}`}>
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#174693]/20 bg-[#174693]/[0.08] text-[#174693] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
         {icon}
       </span>
       <span>

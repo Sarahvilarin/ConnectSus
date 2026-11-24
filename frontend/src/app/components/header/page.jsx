@@ -285,7 +285,7 @@ export default function Header() {
     });
 
     fecharMenus();
-    router.replace("/publico/login");
+    router.replace("/publico/selecionar-acesso");
   }
 
   useEffect(() => {

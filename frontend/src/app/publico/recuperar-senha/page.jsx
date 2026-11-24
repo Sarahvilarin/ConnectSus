@@ -47,7 +47,7 @@ export default function RecuperarSenhaPage() {
     setCarregando(true);
 
     try {
-      await api("/auth/admin/recuperar-senha", {
+      await api("/api/auth/admin/recuperar-senha", {
         method: "POST",
         body: JSON.stringify({
           email: dados.identificacao.trim().toLowerCase(),
@@ -71,7 +71,7 @@ export default function RecuperarSenhaPage() {
     setCarregando(true);
 
     try {
-      const resposta = await api("/auth/admin/verificar-codigo", {
+      const resposta = await api("/api/auth/admin/verificar-codigo", {
         method: "POST",
         body: JSON.stringify({
           email: dados.identificacao.trim().toLowerCase(),
@@ -95,7 +95,7 @@ export default function RecuperarSenhaPage() {
     setCarregando(true);
 
     try {
-      await api("/auth/admin/recuperar-senha", {
+      await api("/api/auth/admin/recuperar-senha", {
         method: "POST",
         body: JSON.stringify({
           email: dados.identificacao.trim().toLowerCase(),
@@ -136,7 +136,7 @@ export default function RecuperarSenhaPage() {
     setCarregando(true);
 
     try {
-      await api("/auth/admin/redefinir-senha", {
+      await api("/api/auth/admin/redefinir-senha", {
         method: "POST",
         body: JSON.stringify({
           resetToken,

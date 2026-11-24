@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import {
   Activity,
   Building2,
@@ -26,7 +27,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 
 const TIPOS_UNIDADE = [
   { id: 1, nome: "UBS" },
@@ -52,48 +52,11 @@ const FORM_INICIAL = {
 const inputClass =
   "w-full rounded-xl border border-[#D8E4F1] bg-white px-4 py-3 text-sm text-[#14245B] outline-none transition placeholder:text-slate-400 focus:border-[#3974B9] focus:ring-4 focus:ring-[#023E8A]/10";
 
-function obterToken() {
-  if (typeof window === "undefined") return null;
-
-  return (
-    localStorage.getItem("unesus_token") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("jwt")
-  );
-}
-
 async function requisicaoApi(caminho, opcoes = {}) {
-  const token = obterToken();
-  const headers = { ...(opcoes.headers || {}) };
-  if (opcoes.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const resposta = await fetch(`${API_URL}${caminho}`, {
-    ...opcoes,
-    headers,
+  return api(caminho, {
     cache: "no-store",
+    ...opcoes,
   });
-
-  const texto = await resposta.text();
-  let dados = {};
-  try {
-    dados = texto ? JSON.parse(texto) : {};
-  } catch {
-    dados = { mensagem: texto };
-  }
-
-  if (!resposta.ok) {
-    throw new Error(
-      dados?.mensagem ||
-      dados?.message ||
-      (resposta.status === 401 || resposta.status === 403
-        ? "Acesso não autorizado. Entre novamente com uma conta administradora."
-        : `Não foi possível concluir a operação (erro ${resposta.status}).`),
-    );
-  }
-  return dados;
 }
 
 function normalizarUnidades(resposta) {
@@ -305,29 +268,16 @@ function Campo({ label, children, className = "" }) {
   );
 }
 
-function Indicador({ titulo, valor, detalhe, icone: Icone, cor = "azul" }) {
-  const cores = {
-    azul: "bg-[#EAF2FB] text-[#023E8A]",
-    verde: "bg-emerald-50 text-emerald-700",
-    roxo: "bg-violet-50 text-violet-700",
-    cinza: "bg-slate-100 text-slate-600",
-  };
-
+function Indicador({ titulo, valor, detalhe, icone: Icone }) {
   return (
-    <article className="rounded-2xl border border-[#DFEAF5] bg-white p-5 shadow-[0_5px_18px_rgba(20,55,100,0.04)] sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500">{titulo}</p>
-          <p className="mt-3 text-3xl font-extrabold tracking-tight text-[#10245C]">
-            {valor}
-          </p>
-          <p className="mt-2 text-xs text-slate-400">{detalhe}</p>
-        </div>
-        <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${cores[cor]}`}
-        >
-          <Icone size={21} />
-        </span>
+    <article className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
+        <Icone size={26} strokeWidth={2} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-tight text-[#0B1756]">{titulo}</p>
+        <p className="mt-1 text-2xl font-extrabold leading-none tracking-tight text-[#0B1756]">{valor}</p>
+        <p className="mt-1.5 text-xs leading-snug text-slate-500">{detalhe}</p>
       </div>
     </article>
   );

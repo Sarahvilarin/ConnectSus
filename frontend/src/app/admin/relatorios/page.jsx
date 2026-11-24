@@ -30,15 +30,15 @@ function PainelCard({ titulo, children, className = "" }) {
 
 function IndicadorCard({ titulo, valor, Icone, descricao }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#EAF3F7] text-[#3563A7]">
-          <Icone size={25} />
-        </div>
-        <p className="text-base font-semibold text-[#0B1756]">{titulo}</p>
+    <article className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#023E8A]/20 bg-[#023E8A]/[0.08] text-[#023E8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm">
+        <Icone size={26} strokeWidth={2} />
       </div>
-      <p className="mt-4 text-2xl font-bold tracking-tight text-[#0B1756]">{numero(valor)}</p>
-      <p className="mt-2 text-xs text-slate-500">{descricao}</p>
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-tight text-[#0B1756]">{titulo}</p>
+        <p className="mt-1 text-2xl font-extrabold leading-none tracking-tight text-[#0B1756]">{numero(valor)}</p>
+        <p className="mt-1.5 text-xs leading-snug text-slate-500">{descricao}</p>
+      </div>
     </article>
   );
 }

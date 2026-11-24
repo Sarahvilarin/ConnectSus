@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { Building2, Check, ChevronDown } from "lucide-react";
 
 const ITENS_POR_PAGINA = 6;
 
@@ -70,31 +71,78 @@ function SecaoTitulo({ titulo, descricao }) {
 // MODAL DE CADASTRO E EDIÇÃO
 // ======================================================
 
+
 function FiltroSelect({ value, onChange, placeholder, options }) {
   const [aberto, setAberto] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const ref = useRef(null);
 
   const selecionado = options.find((option) => option.value === value);
 
+  // fecha ao rolar a página ou redimensionar a janela
+  useEffect(() => {
+    if (!aberto) return;
+    const fechar = (e) => {
+      if (e.target?.closest?.("[data-popup]")) return;
+      setAberto(false);
+    };
+    window.addEventListener("scroll", fechar, true);
+    window.addEventListener("resize", fechar);
+    return () => {
+      window.removeEventListener("scroll", fechar, true);
+      window.removeEventListener("resize", fechar);
+    };
+  }, [aberto]);
+
+  function alternar() {
+    if (!aberto && ref.current) {
+      const altura = Math.min(240, options.length * 44 + 12);
+      const r = ref.current.getBoundingClientRect();
+      const largura = Math.max(r.width, 170);
+      let top = r.bottom + 8;
+
+      // abre para cima se não couber embaixo
+      if (top + altura > window.innerHeight - 12) {
+        const acima = r.top - altura - 8;
+        top = acima >= 12 ? acima : Math.max(12, window.innerHeight - altura - 12);
+      }
+
+      setPos({
+        top,
+        left: Math.max(12, Math.min(r.left, window.innerWidth - largura - 12)),
+        width: largura,
+      });
+    }
+    setAberto((atual) => !atual);
+  }
+
   return (
-    <div className="relative w-full">
+    <div
+      ref={ref}
+      className="relative w-full"
+      onKeyDown={(e) => e.key === "Escape" && setAberto(false)}
+    >
       <button
         type="button"
-        onClick={() => setAberto((atual) => !atual)}
-        className="flex w-full items-center justify-between rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-left text-sm text-[#0B1756] outline-none transition hover:border-[#3563A7] focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        onClick={alternar}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#C9D7EB] bg-white px-4 py-3 text-left text-sm text-[#121554] outline-none transition hover:bg-[#EAF3F7] focus:ring-4 focus:ring-[#C9D7EB]/30"
       >
-        <span>{selecionado?.label || placeholder}</span>
+        <span
+          className={`min-w-0 truncate ${
+            selecionado ? "text-[#0B1756]" : "text-slate-400"
+          }`}
+        >
+          {selecionado ? selecionado.label : placeholder}
+        </span>
 
-        <svg
-          className={`h-4 w-4 transition-transform ${
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#023E8A] transition-transform ${
             aberto ? "rotate-180" : ""
           }`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        />
       </button>
 
       {aberto && (
@@ -102,26 +150,36 @@ function FiltroSelect({ value, onChange, placeholder, options }) {
           <button
             type="button"
             aria-label="Fechar opções"
-            className="fixed inset-0 z-10 cursor-default"
             onClick={() => setAberto(false)}
+            className="fixed inset-0 z-10 cursor-default"
           />
 
-          <div className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#C8D8EC] bg-white p-1.5 shadow-lg">
+          <div
+            data-popup
+            role="listbox"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+            className="fixed z-20 max-h-60 overflow-y-auto rounded-2xl border border-[#D5E2F1] bg-white p-1.5 shadow-[0_12px_30px_rgba(11,23,86,0.16)]"
+          >
             {options.map((option) => (
               <button
                 key={option.value}
                 type="button"
+                role="option"
+                aria-selected={option.value === value}
                 onClick={() => {
                   onChange(option.value);
                   setAberto(false);
                 }}
-                className={`w-full rounded-xl px-4 py-3 text-left text-sm transition ${
-                  value === option.value
-                    ? "bg-[#0B1756] font-semibold text-white"
-                    : "text-[#0B1756] hover:bg-[#EAF3F7]"
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
+                  option.value === value
+                    ? "bg-[#023E8A] font-semibold text-white"
+                    : "bg-white text-[#0B1756] hover:bg-[#EAF3F7]"
                 }`}
               >
-                {option.label}
+                <span>{option.label}</span>
+                {option.value === value && (
+                  <Check size={16} className="shrink-0 text-white" />
+                )}
               </button>
             ))}
           </div>
@@ -347,7 +405,7 @@ export default function FilaOnlineAdminPage() {
 
       <div className="pointer-events-none absolute -left-40 top-10 h-[330px] w-[330px] rounded-full border-2 border-[#C8DEFF]/50" />
 
-      <main className="relative z-10 mx-auto w-full max-w-[1480px] space-y-6 px-4 pb-12 pt-8 sm:px-6 xl:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-[1600px] space-y-6 px-4 pb-12 pt-8 sm:px-6 2xl:px-10">
         {(erro || mensagem) && (
           <div className={`rounded-xl border px-4 py-3 text-sm ${erro ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
             <div className="flex items-center justify-between gap-3"><span>{erro || mensagem}</span><button type="button" onClick={() => { setErro(""); setMensagem(""); }} className="font-semibold">Fechar</button></div>
@@ -360,24 +418,35 @@ export default function FilaOnlineAdminPage() {
         ================================================== */}
 
         <div className="relative mb-14">
-          <div className="relative min-h-[230px] overflow-hidden rounded-[30px] bg-gradient-to-br from-[#023E8A] via-[#084B9A] to-[#0B1756] px-7 py-10 shadow-[0_22px_60px_rgba(2,62,138,0.18)] sm:px-10 sm:py-12">
+          <div className="relative min-h-[230px] overflow-hidden rounded-[30px] bg-gradient-to-br from-[#174693] via-[#234E96] to-[#151A67] px-6 py-8 text-white shadow-[0_20px_55px_rgba(2,62,138,0.16)] sm:px-9 lg:px-10">
 
             <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-white/10" />
             <div className="pointer-events-none absolute -bottom-28 right-[30%] h-64 w-64 rounded-full border-[45px] border-white/[0.04]" />
 
-            <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-[40px]">
-                  Fila Online
-                </h1>
+            <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+  <div className="max-w-3xl">
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
+    <Building2 size={14} />
+    ADMINISTRAÇÃO · FILA ONLINE
+  </div>
+    <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+      Fila Online
+    </h1>
 
-                <p className="mt-3 max-w-3xl text-sm font-normal leading-6 text-white/85 sm:text-base">
-                  Acompanhe a demanda, os indicadores e o funcionamento das
-                  unidades de saúde.
-                </p>
-                <button type="button" onClick={carregarDados} className="mt-5 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Atualizar dados</button>
-              </div>
-            </div>
+    <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
+      Acompanhe a demanda, os indicadores e o funcionamento das
+      unidades de saúde.
+    </p>
+  </div>
+
+  <button
+    type="button"
+    onClick={carregarDados}
+    className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-[#123B80] shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+  >
+    Atualizar dados
+  </button>
+</div>
           </div>
 
           {/* CARDS DE NAVEGAÇÃO */}
@@ -695,19 +764,23 @@ export default function FilaOnlineAdminPage() {
                   descricao="Acompanhe os registros de entrada e saída das filas."
                 />
 
-                <select
-                  value={filtroHistorico}
-                  onChange={(e) => setFiltroHistorico(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-[#0B1756] outline-none focus:border-[#023E8A]"
-                >
-                  <option value="Todos">Todos os status</option>
-                  <option value="Aguardando">Aguardando</option>
-                  <option value="Em atendimento">Em atendimento</option>
-                  <option value="Chamado">Chamado</option>
-                  <option value="Concluído">Concluído</option>
-                  <option value="Desistente">Desistente</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
+                <div className="w-full sm:w-64">
+               <FiltroSelect
+                value={filtroHistorico}
+                onChange={setFiltroHistorico}
+                placeholder="Todos os status"
+                options={[
+                  { value: "Todos", label: "Todos os status" },
+                  { value: "Aguardando", label: "Aguardando" },
+                  { value: "Em atendimento", label: "Em atendimento" },
+                  { value: "Chamado", label: "Chamado" },
+                  { value: "Concluído", label: "Concluído" },
+                  { value: "Desistente", label: "Desistente" },
+                  { value: "Cancelado", label: "Cancelado" },
+                ]}
+              />
+              </div>
+
               </div>
             </div>
 

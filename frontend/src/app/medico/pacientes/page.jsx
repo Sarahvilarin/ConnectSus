@@ -66,12 +66,44 @@ function Status({ valor }) {
 function Prioridade({ valor }) {
   return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold ${PRIORIDADE_COR[valor] || PRIORIDADE_COR.Rotina}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{valor}</span>;
 }
-
 function Metrica({ titulo, numero, legenda, Icone, ativo, onClick }) {
+  const estilos = {
+    Aguardando: "bg-amber-50",
+    "Em atendimento": "bg-blue-50",
+    "Triagens recebidas": "bg-teal-50",
+    "Total no PA": "bg-indigo-50",
+  };
+
+  const fundoIcone = estilos[titulo] || "bg-[#EAF3F7]";
+
   return (
-    <button type="button" onClick={onClick} className={`${CARD} flex min-h-[112px] items-center gap-4 p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lg ${ativo ? "ring-2 ring-[#0B1756]/20" : ""}`}>
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3F7] text-[#0B1756]"><Icone size={22} /></span>
-      <span className="min-w-0"><span className="block text-[12px] font-semibold text-[#0B1756]">{titulo}</span><span className="block text-2xl font-extrabold leading-tight text-[#0B1756]">{String(numero).padStart(2, "0")}</span><span className="block text-[11px] text-[#3563A7]">{legenda}</span></span>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${CARD} group relative flex min-h-[130px] w-full flex-col justify-between overflow-hidden rounded-[24px] p-5 text-left transition-all duration-300
+        ${ativo ? "ring-2 ring-[#0B1756]/20" : ""}
+        hover:-translate-y-1 hover:shadow-lg`}
+    >
+     
+     
+
+      {/* Ícone */}
+      <span className={`absolute right-5 top-5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#0B1756]/20 bg-[#0B1756]/[0.08] text-[#0B1756] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]`}>
+        <Icone size={22} />
+      </span>
+
+      {/* Conteúdo */}
+      <div className="relative z-10 flex flex-col items-start">
+        <span className="pr-14 text-sm font-semibold text-[#52709A]">
+          {titulo}
+        </span>
+
+        <span className="mt-3 text-3xl font-extrabold tracking-tight text-[#0B1756]">
+          {String(numero).padStart(2, "0")}
+        </span>
+
+       
+      </div>
     </button>
   );
 }
@@ -117,8 +149,7 @@ function Select({ valor, alterar, titulo, opcoes }) {
 
   return (
     <div ref={containerRef} className="relative min-w-0">
-      <button type="button" aria-label={`${titulo}: ${valor}`} aria-haspopup="listbox" aria-expanded={aberto} aria-controls={`opcoes-${id}`} onClick={() => setAberto((atual) => !atual)} className={`flex h-11 w-full items-center gap-2.5 rounded-2xl border px-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#3563A7]/20 ${aberto ? "border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]" : "border-[#3563A7]/20 bg-white text-[#0B1756] hover:border-[#3563A7]"}`}>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#EAF3F7] text-[#023E8A]"><AlertTriangle size={16} strokeWidth={1.8} /></span>
+      <button type="button" aria-label={`${titulo}: ${valor}`} aria-haspopup="listbox" aria-expanded={aberto} aria-controls={`opcoes-${id}`} onClick={() => setAberto((atual) => !atual)} className={`flex h-11 w-full items-center gap-2.5 rounded-2xl border px-4 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#3563A7]/20 ${aberto ? "border-[#023E8A] bg-[#EAF3F7] text-[#023E8A]" : "border-[#3563A7]/20 bg-white text-[#0B1756] hover:border-[#3563A7]"}`}>
         <span className="min-w-0 flex-1 truncate">{valor}</span>
         <ChevronDown size={16} className={`shrink-0 text-[#3563A7] transition-transform ${aberto ? "rotate-180" : ""}`} />
       </button>
@@ -127,7 +158,6 @@ function Select({ valor, alterar, titulo, opcoes }) {
           {opcoes.map((opcao) => {
             const selecionado = opcao === valor;
             return <button key={opcao} type="button" role="option" aria-selected={selecionado} onClick={() => { alterar(opcao); setAberto(false); }} className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left text-sm transition ${selecionado ? "bg-[#023E8A] font-bold text-white" : "bg-white font-medium text-[#0B1756] hover:bg-[#EAF3F7]"}`}>
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${selecionado ? "bg-white/15 text-white" : "bg-[#EAF3F7] text-[#023E8A]"}`}><AlertTriangle size={16} /></span>
               <span className="min-w-0 flex-1">{opcao}</span>
               {selecionado && <Check size={16} />}
             </button>;
@@ -492,10 +522,6 @@ export default function PacientesProntoAtendimentoPage() {
               <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Central de pronto atendimento</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">Consulte os dados encaminhados pela triagem, acesse as telas de prescrição e atestado e finalize o atendimento.</p>
             </div>
-            <div className="grid w-full max-w-[390px] grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><ShieldCheck size={19} /></span><div><p className="text-xs font-bold">Área profissional</p><p className="mt-0.5 text-[11px] text-white/80">Acesso controlado</p></div></div>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><Activity size={19} /></span><div><p className="text-xs font-bold">Fluxo rápido</p><p className="mt-0.5 text-[11px] text-white/80">Atender até a alta</p></div></div>
-            </div>
           </div>
         </section>
 
@@ -510,9 +536,9 @@ export default function PacientesProntoAtendimentoPage() {
 
         <section className={`${CARD} overflow-visible`}>
           <div className="border-b border-[#EAF3F7] px-5 pb-4 pt-5 sm:px-6">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-bold text-[#0B1756]">Pacientes no pronto atendimento</h2><p className="mt-1 text-xs text-[#52709A]">Selecione um paciente para iniciar ou continuar o atendimento.</p></div><span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><AlertTriangle size={13} /> Dados carregados da API</span></div>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold text-[#0B1756]">Pacientes no pronto atendimento</h2><p className="mt-1.5 text-sm text-[#52709A]">Selecione um paciente para iniciar ou continuar o atendimento.</p></div><span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800"><AlertTriangle size={15} /> Dados carregados da API</span></div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <label className="relative"><span className="sr-only">Buscar paciente</span><Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#52709A]" /><input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, CPF, protocolo, queixa ou unidade" className="h-11 w-full rounded-xl border border-[#D7E4F1] bg-white pl-11 pr-4 text-sm outline-none focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10" /></label>
+              <label className="relative"><span className="sr-only">Buscar paciente</span><Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#52709A]" /><input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, CPF, protocolo, queixa ou unidade" className="h-12 w-full rounded-xl border border-[#D7E4F1] bg-white pl-11 pr-4 text-base outline-none focus:border-[#3563A7] focus:ring-4 focus:ring-[#3563A7]/10" /></label>
               <Select valor={prioridade} alterar={setPrioridade} titulo="Prioridade" opcoes={["Todas as prioridades", "Emergência", "Urgente", "Prioritário", "Rotina"]} />
             </div>
             <div className="mt-5 flex gap-1 overflow-x-auto border-b border-[#EAF3F7]">{ABAS.map((item) => {

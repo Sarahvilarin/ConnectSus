@@ -171,25 +171,25 @@ export default function Home() {
       titulo: "Mais organização",
       descricao:
         "Informações e atendimentos organizados em um só lugar.",
-      icone: "users",
+      
     },
     {
       titulo: "Mais praticidade",
       descricao:
         "Acompanhe as informações da fila com mais facilidade.",
-      icone: "clock",
+   
     },
     {
       titulo: "Inclusão para todos",
       descricao:
         "Uma proposta que considera diferentes necessidades de acesso.",
-      icone: "hospital",
+      
     },
     {
       titulo: "Cuidado e segurança",
       descricao:
         "Atenção à privacidade e ao uso responsável das informações.",
-      icone: "shield",
+     
     },
   ];
 
@@ -425,11 +425,9 @@ export default function Home() {
                   key={beneficio.titulo}
                   className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 transition duration-200 hover:bg-white/[0.10]"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#3563A7]/40 text-[#EAF3F7]">
-                    <Icone tipo={beneficio.icone} className="h-7 w-7" />
-                  </div>
+                  
 
-                  <h3 className="mt-5 text-lg font-extrabold">
+                  <h3 className=" text-lg font-extrabold">
                     {beneficio.titulo}
                   </h3>
 
