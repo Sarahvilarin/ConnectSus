@@ -127,21 +127,44 @@ export default function DashboardAdmin() {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
+    let ativo = true;
+
     async function carregarDashboard() {
       try {
         const resposta = await api("/api/dashboard/admin");
-        setDadosDashboard(resposta.dados);
+        if (ativo) {
+          setDadosDashboard(resposta.dados);
+          setErro("");
+        }
       } catch (error) {
-        setErro(error.message);
+        if (ativo) setErro(error.message || "Não foi possível carregar o dashboard.");
       } finally {
-        setCarregando(false);
+        if (ativo) setCarregando(false);
       }
     }
 
     carregarDashboard();
+    const intervalo = setInterval(carregarDashboard, 30000);
+
+    return () => {
+      ativo = false;
+      clearInterval(intervalo);
+    };
   }, []);
 
   const unidades = dadosDashboard?.unidades ?? [];
+
+  // Fila elevada: 5 ou mais pacientes aguardando na unidade.
+  const LIMITE_FILA_ELEVADA = 5;
+  const alertas = unidades
+    .map((unidade) => ({
+      id: unidade.id,
+      nome: unidade.nome || "Unidade sem nome",
+      bairro: unidade.bairro || "",
+      pacientesAguardando: Number(unidade.pacientes_aguardando) || 0,
+    }))
+    .filter((unidade) => unidade.pacientesAguardando >= LIMITE_FILA_ELEVADA)
+    .sort((a, b) => b.pacientesAguardando - a.pacientesAguardando);
 
   const maiorVolume = Math.max(
     ...unidades.map((unidade) => Number(unidade.total_consultas) || 0),
@@ -362,28 +385,61 @@ export default function DashboardAdmin() {
                     Alertas importantes
                   </h2>
                   <p className="mt-1 text-sm text-[#0B1756]/55">
-                    Situações que merecem atenção.
+                    Unidades com 5 ou mais pacientes aguardando.
                   </p>
                 </div>
-
                 <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-[#EAF3F7] px-2 text-sm font-bold text-[#023E8A]">
-                  1
+                  {carregando ? "..." : alertas.length}
                 </span>
               </div>
 
-              <div className="mt-5 flex gap-3 rounded-xl bg-amber-50/80 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                  <span className="text-lg font-extrabold">!</span>
-                </div>
-
-                <div>
-                  <p className="font-bold text-[#0B1756]">
-                    Fila elevada na UBS Centro
+              <div className="mt-5 space-y-3">
+                {carregando ? (
+                  <p className="rounded-xl bg-[#F8FBFE] px-4 py-6 text-center text-sm text-[#0B1756]/55">
+                    Verificando situação das filas...
                   </p>
-                  <p className="mt-1 text-sm leading-relaxed text-[#0B1756]/65">
-                    A fila desta unidade precisa de acompanhamento.
+                ) : erro ? (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-700">
+                    Não foi possível consultar os alertas. {erro}
                   </p>
-                </div>
+                ) : alertas.length === 0 ? (
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                        <Icone tipo="check" className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-[#0B1756]">
+                          Nenhuma fila elevada
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-[#0B1756]/65">
+                          Todas as unidades estão abaixo do limite de 5 pacientes aguardando.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  alertas.map((alerta) => (
+                    <div
+                      key={alerta.id}
+                      className="flex gap-3 rounded-xl bg-amber-50/80 p-4"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                        <span className="text-lg font-extrabold">!</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#0B1756]">
+                          Fila elevada em {alerta.nome}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-[#0B1756]/65">
+                          {alerta.pacientesAguardando} pacientes aguardando
+                          {alerta.bairro ? ` · ${alerta.bairro}` : ""}.
+                          A unidade precisa de acompanhamento.
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </article>
 
