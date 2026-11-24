@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../../lib/api";
 
-const CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
+const CONTAINER = "mx-auto w-full max-w-[1600px] px-4 sm:px-6 2xl:px-10";
 const inputCls = "w-full rounded-2xl border border-[#C8D8EC] bg-white px-4 py-3 text-sm text-[#0B1756] outline-none transition placeholder:text-slate-400 hover:border-[#3563A7]/70 focus:border-[#023E8A] focus:ring-4 focus:ring-[#3563A7]/15";
 
 const STATUS = {
