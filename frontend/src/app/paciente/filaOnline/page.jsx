@@ -1091,11 +1091,11 @@ function FilaOnlineConteudo() {
 
         {/* LISTA DE UNIDADES E MAPA */}
 
-        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[1.65fr_1fr]">
-        <section className="min-w-0 min-h-[650px] rounded-2xl border border-[#D9E6F8] bg-white p-7 shadow-[0_8px_25px_rgba(31,65,119,0.05)] sm:p-9">
+        <div className="grid w-full grid-cols-1 items-stretch gap-6">
+          <section className="min-h-[750px] w-full min-w-0 rounded-2xl border border-[#D9E6F8] bg-white p-8 shadow-[0_8px_25px_rgba(31,65,119,0.05)] sm:p-10">
             <div className="mb-4 flex flex-col gap-3 border-b border-[#E5EDF9] pb-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="flex items-center gap-3 text-lg font-bold text-[#142F68] sm:text-xl">
+                <h2 className="flex items-center gap-3 font-sans text-4xl font-bold leading-tight tracking-tight text-[#0B1756] sm:text-[42px]">
                   Unidades de saúde mais próximas
                 </h2>
               </div>
