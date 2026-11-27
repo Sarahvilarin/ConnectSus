@@ -1162,32 +1162,6 @@ function FilaOnlineConteudo() {
 
                       <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-center sm:gap-1">
                         <div className="flex items-center gap-2">
-                          <div>
-                            <p className="text-[11px] text-[#304A7D]">
-                              Média de espera da unidade
-                            </p>
-
-                            <p
-                              className={`text-xl font-bold leading-tight ${unidade.tipo === "rapida"
-                                ? "text-[#17418E]"
-                                : "text-[#17418E]"
-                                }`}
-                            >
-                              {unidade.espera} min
-                            </p>
-
-                            <span
-                              className={`mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-medium ${unidade.tipo === "rapida"
-                                ? "bg-green-100 text-[#17418E]"
-                                : "bg-[#E8F0FD] text-[#17418E]"
-                                }`}
-                            >
-                              Fila{" "}
-                              {unidade.tipo === "rapida"
-                                ? "rápida"
-                                : "normal"}
-                            </span>
-                          </div>
                         </div>
                       </div>
 
