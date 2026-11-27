@@ -405,7 +405,6 @@ export default function Consultas() {
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [especialidades, setEspecialidades] = useState([]);
   const [unidades, setUnidades] = useState([]);
-  const [unidadesPorEspecialidade, setUnidadesPorEspecialidade] = useState({});
   const [especialidade, setEspecialidade] = useState("");
   const [unidade, setUnidade] = useState(null);
   const [dia, setDia] = useState("");
@@ -439,9 +438,6 @@ export default function Consultas() {
     filtro === "Todas" ? true : filtro === "Agendada" ? ATIVAS.includes(c.status) : c.status === filtro
   );
   const especialidadeSelecionada = especialidades.find((item) => item.nome === especialidade) || null;
-  const unidadesDisponiveis = especialidadeSelecionada
-    ? unidades.filter((item) => (unidadesPorEspecialidade[especialidadeSelecionada.id] || []).includes(item.id))
-    : [];
   function extrairLista(resposta, chaves) {
     if (Array.isArray(resposta)) return resposta;
     for (const chave of chaves) if (Array.isArray(resposta?.[chave])) return resposta[chave];
@@ -481,59 +477,26 @@ export default function Consultas() {
       try {
         const [resEsp, resUni] = await Promise.all([api("/api/especialidades"), api("/api/unidades")]);
         if (!ativo) return;
-
-        const listaEspecialidades = extrairLista(resEsp, ["especialidades", "dados", "resultados"])
-          .map((item) => {
-            const nome = item.nome || item.nome_especialidade || "";
-            return { id: Number(item.id), nome };
-          })
-          .filter((item) => item.id && item.nome);
-
-        const listaUnidades = extrairLista(resUni, ["unidades", "dados", "resultados"])
-          .filter((item) => item.ativo !== false && item.ativo !== 0)
-          .map((item) => ({
-            id: Number(item.id),
-            nome: item.nome || item.nome_unidade || "",
-            bairro: item.bairro || "",
-            horario: item.horario_funcionamento || "Horário conforme unidade",
-            distancia: "",
-            rua: item.rua || "",
-          }))
-          .filter((item) => item.id && item.nome);
-
-        setEspecialidades(listaEspecialidades);
-        setUnidades(listaUnidades);
-
-        // A rota de detalhes já retorna as especialidades e os vínculos de cada médico.
-        // Combinamos os dois relacionamentos para descobrir em quais unidades cada
-        // especialidade possui atendimento, sem alterar o backend.
-        const listaMedicos = extrairLista(await api("/api/medicos"), ["medicos", "dados", "resultados"]);
-        const detalhesMedicos = await Promise.all(
-          listaMedicos
-            .filter((medico) => medico.ativo !== false && medico.ativo !== 0)
-            .map((medico) => api(`/api/medicos/${medico.id}`))
+        setEspecialidades(
+          extrairLista(resEsp, ["especialidades", "dados", "resultados"])
+            .map((item) => {
+              const nome = item.nome || item.nome_especialidade || "";
+              return { id: Number(item.id), nome };
+            })
+            .filter((item) => item.id && item.nome)
         );
-
-        const mapa = {};
-        detalhesMedicos.forEach((detalhe) => {
-          const especialidadesDoMedico = Array.isArray(detalhe?.especialidades) ? detalhe.especialidades : [];
-          const vinculosDoMedico = Array.isArray(detalhe?.vinculos) ? detalhe.vinculos : [];
-
-          especialidadesDoMedico.forEach((esp) => {
-            const especialidadeId = Number(esp.id || esp.especialidade_id);
-            if (!especialidadeId) return;
-            if (!mapa[especialidadeId]) mapa[especialidadeId] = new Set();
-
-            vinculosDoMedico.forEach((vinculo) => {
-              const unidadeId = Number(vinculo.unidade_id || vinculo.id);
-              if (unidadeId) mapa[especialidadeId].add(unidadeId);
-            });
-          });
-        });
-
-        if (!ativo) return;
-        setUnidadesPorEspecialidade(
-          Object.fromEntries(Object.entries(mapa).map(([id, ids]) => [id, Array.from(ids)]))
+        setUnidades(
+          extrairLista(resUni, ["unidades", "dados", "resultados"])
+            .filter((item) => item.ativo !== false && item.ativo !== 0)
+            .map((item) => ({
+              id: Number(item.id),
+              nome: item.nome || item.nome_unidade || "",
+              bairro: item.bairro || "",
+              horario: item.horario_funcionamento || "Horário conforme unidade",
+              distancia: "",
+              rua: item.rua || "",
+            }))
+            .filter((item) => item.id && item.nome)
         );
       } catch (error) {
         if (ativo) setErro(error.message || "Não foi possível carregar especialidades e unidades.");
@@ -640,7 +603,7 @@ export default function Consultas() {
         "Confira os dados da consulta antes de confirmar.",
         "Sua solicitação foi enviada e aguarda confirmação da unidade.",
       ][etapaAtual - 1];
-  const plural = unidadesDisponiveis.length === 1;
+  const plural = unidades.length === 1;
   const iconeCls = (sel) => (sel ? "bg-[#023E8A] text-white" : "bg-[#3563A7]/15 text-[#023E8A]");
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#f5faff] text-[#0B1756]">
@@ -737,7 +700,7 @@ export default function Consultas() {
                         <Legenda className="">Qual unidade mais próxima de você?</Legenda>
                         {especialidade && (
                           <span className="w-fit rounded-full bg-[#3563A7]/15 px-3 py-1.5 text-xs font-semibold">
-                            {unidadesDisponiveis.length} unidade{plural ? "" : "s"} disponíve{plural ? "l" : "is"}
+                            {unidades.length} unidade{plural ? "" : "s"} disponíve{plural ? "l" : "is"}
                           </span>
                         )}
                       </div>
@@ -751,17 +714,9 @@ export default function Consultas() {
                             <p className="mt-0.5 text-xs">As unidades disponíveis aparecerão automaticamente.</p>
                           </div>
                         </div>
-                      ) : unidadesDisponiveis.length === 0 ? (
-                        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
-                          <Info size={20} className="mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-bold">Nenhuma unidade disponível para esta especialidade.</p>
-                            <p className="mt-1 text-xs leading-5">No momento, não encontramos médicos ativos dessa especialidade vinculados às unidades cadastradas.</p>
-                          </div>
-                        </div>
                       ) : (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          {unidadesDisponiveis.map((u) => {
+                          {unidades.map((u) => {
                             const sel = unidade?.id === u.id;
                             const endereco = [u.rua, u.bairro].filter(Boolean).join(" · ") || "Endereço não informado";
                             return (
