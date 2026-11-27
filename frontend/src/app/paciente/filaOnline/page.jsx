@@ -1218,20 +1218,7 @@ function FilaOnlineConteudo() {
 
           {/* MAPA REAL */}
 
-          <section className="flex flex-col rounded-2xl border border-[#D9E6F8] bg-white p-5 shadow-[0_8px_25px_rgba(31,65,119,0.05)] sm:p-6">
-            <h2 className="mb-4 flex items-center gap-3 text-lg font-bold text-[#142F68]">
-              <MapPin size={22} className="text-[#023E8A]" />
-
-              Unidades no seu bairro
-            </h2>
-
-            <div className="relative min-h-[320px] flex-1">
-              <MapaUnidades
-                unidades={unidades}
-                onSelecionar={abrirConfirmacao}
-              />
-            </div>
-          </section>
+          
         </div>
       </main>
 
